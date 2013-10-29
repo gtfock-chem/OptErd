@@ -1,0 +1,32 @@
+#arch = mic
+#arch = cpu
+
+CC  = /opt/intel/bin/icc
+CXX = /opt/intel/bin/icpc
+FC  = /opt/intel/bin/ifort
+AR  = /opt/intel/bin/xiar rcs
+
+BLAS_LIBDIR = /opt/intel/mkl/lib/intel64
+BLAS_INCDIR = /opt/intel/mkl/include
+BLAS_LIBS = -lmkl_core           \
+            -lmkl_intel_lp64     \
+            -lmkl_intel_thread   \
+            -liomp5
+
+SCALAPACK_LIBDIR = /opt/intel/mkl/lib/intel64
+SCALAPACK_LIBS = -lmkl_scalapack_lp64 -lmkl_blacs_intelmpi_lp64
+
+MPICC = /opt/intel/impi/4.1.1.036/bin64/mpiicc
+MPI_LIBDIR = /opt/intel/impi/4.1.1.036/lib64
+MPI_LIBS =
+MPI_INCDIR = /opt/intel/impi/4.1.1.036/include64
+
+GA_INCDIR = /home/xing/test/GTFock/GAlib/include
+GA_LIBDIR = /home/xing/test/GTFock/GAlib/lib
+GA_LIBS = -lga -larmci
+
+ifeq "${arch}" "mic"
+OPTFLAGS = -mmic
+else
+OPTFLAGS = -xHost
+endif
