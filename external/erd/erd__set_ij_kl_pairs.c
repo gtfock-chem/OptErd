@@ -24,8 +24,8 @@ static void set_pairs (int *npgtoa, int *npgtob,
                        double *ftable, int *mgrid,
                        double *tmax, double *tstep,
                        double *tvstep,
-                       int *nij, int *restrict prima, int *restrict primb,
-                       double *restrict rho, double qmin, double smaxcd, double rminsq,
+                       int *nij, int *prima, int *primb,
+                       double *rho, double qmin, double smaxcd, double rminsq,
                        double *mytable)
 {
     int i;
@@ -79,11 +79,10 @@ static void set_pairs (int *npgtoa, int *npgtob,
             f0 = sqrt (M_PI / t) * 0.5;
                 if (t <= *tmax)
                 {
-                 //   tgrid = (int) (t * *tvstep + .5);
-                   tgrid = (((int) (t * *tvstep + .5)));
-                    f0 = mytable[tgrid];
-            //        delta = tgrid * *tstep - t;
-          /*          f0 = (((((  ftable[(*mgrid + 1) * tgrid + 6] * delta *
+                   tgrid = (int)(t * *tvstep + .5);
+                 //   f0 = mytable[tgrid];
+                   delta = tgrid * *tstep - t;
+                   f0 = (((((  ftable[(*mgrid + 1) * tgrid + 6] * delta *
                               0.166666666666667
                               + ftable[(*mgrid + 1) * tgrid + 5]) * delta * 0.2
                               + ftable[(*mgrid + 1) * tgrid + 4]) * delta * 0.25
@@ -91,8 +90,7 @@ static void set_pairs (int *npgtoa, int *npgtob,
                               0.333333333333333
                               + ftable[(*mgrid + 1) * tgrid + 2]) * delta * 0.5
                               + ftable[(*mgrid + 1) * tgrid + 1]) * delta
-                              + ftable[(*mgrid + 1) * tgrid + 0];*/
-             //       printf ("f0 %lf\n", f0);
+                              + ftable[(*mgrid + 1) * tgrid + 0];
                 }
                 if (ssssmx * f0 >= TOL)
                 {
@@ -150,9 +148,9 @@ static void set_pairs (int *npgtoa, int *npgtob,
                      if (t <= *tmax)
                     {
                //         tgrid = (int) (t * *tvstep + 0.5);
-                        tgrid = (((int) (t * *tvstep + .5)));
-               f0 = mytable[tgrid];
-                   /*     delta = tgrid * *tstep - t;
+                        tgrid = (int) (t * *tvstep + .5);
+             //  f0 = mytable[tgrid];
+                        delta = tgrid * *tstep - t;
                         f0 = (((((ftable[(*mgrid + 1) * tgrid + 6] * delta *
                               0.166666666666667
                               + ftable[(*mgrid + 1) * tgrid + 5]) * delta * 0.2
@@ -161,8 +159,7 @@ static void set_pairs (int *npgtoa, int *npgtob,
                               0.333333333333333
                               + ftable[(*mgrid + 1) * tgrid + 2]) * delta * 0.5
                               + ftable[(*mgrid + 1) * tgrid + 1]) * delta
-                              + ftable[(*mgrid + 1) * tgrid]; */
-                      //  printf ("f0 %lf\n", f0);
+                              + ftable[(*mgrid + 1) * tgrid];
                     }
                     ssss1[j] = ssssmx * f0;
                 }
@@ -207,7 +204,7 @@ static void set_pairs (int *npgtoa, int *npgtob,
                      //   tgrid = (int) (t * *tvstep + .5);
                        tgrid = (((int) (t * *tvstep + .5)));
                 f0 = mytable[tgrid];
-                   /*    delta = tgrid * *tstep - t;
+                       delta = tgrid * *tstep - t;
                         f0 = (((((ftable[(*mgrid + 1) * tgrid + 6] * delta *
                               0.166666666666667
                               + ftable[(*mgrid + 1) * tgrid + 5]) * delta * 0.2
@@ -216,7 +213,7 @@ static void set_pairs (int *npgtoa, int *npgtob,
                               0.333333333333333
                               + ftable[(*mgrid + 1) * tgrid + 2]) * delta * 0.5
                               + ftable[(*mgrid + 1) * tgrid + 1]) * delta
-                              + ftable[(*mgrid + 1) * tgrid];*/
+                              + ftable[(*mgrid + 1) * tgrid];
                     //    printf ("f0 %lf\n", f0);
                     }
                     ssss1[j] = ssssmx * f0;
@@ -286,7 +283,7 @@ int erd__set_ij_kl_pairs_ (int *npgtoa, int *npgtob,
 
     t0 = __rdtsc();
     *empty = 0;
-#if 1
+#if 0
     for (i = 0; i <= 46; i++)
     {
          double delta;
@@ -493,14 +490,11 @@ int erd__set_ij_kl_pairs_ (int *npgtoa, int *npgtob,
                 }
             }
         }
-        return 0;
     }
 
     // compute min
     rminsq = erd__dsqmin_line_segments_ (xa, ya, za, xb, yb, zb, xc, yc, zc,
                                          xd, yd, zd);
-    t1 = __rdtsc();
-    mytime[1] += t1 - t0;
     
     a = alphaa[0];
     i1 = *npgtoa;
@@ -552,8 +546,6 @@ int erd__set_ij_kl_pairs_ (int *npgtoa, int *npgtob,
                nij, prima, primb, rho, qmin, smaxcd, rminsq, mytable);
     if (*nij == 0)
     {
-        t1 = __rdtsc();
-        mytime[0] += t1 - t0;
         *empty = 1;
         return 0;
     }
@@ -564,13 +556,9 @@ int erd__set_ij_kl_pairs_ (int *npgtoa, int *npgtob,
                nkl, primc, primd, &(rho[*nij]), pmin, smaxab, rminsq, mytable);
     if (*nkl == 0)
     {
-        t1 = __rdtsc();
-        mytime[0] += t1 - t0;
         *empty = 1;
         return 0;
     }
     
-    t1 = __rdtsc();
-    mytime[0] += t1 - t0;
     return 0;
 }

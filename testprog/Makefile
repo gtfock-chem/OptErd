@@ -1,8 +1,5 @@
 include ../make.in
 
-OBJS_PFOCK := testPFock.o
-OBJS_SCR := testScr.o
-
 CFLAGS = -O3 -Wall -openmp -w2
 CFLAGS += -Wunknown-pragmas -Wunused-variable #-Wunused-function
 CFLAGS += ${OPTFLAGS}
@@ -18,38 +15,45 @@ LDFLAGS = -L./ -L${MPI_LIBDIR} -L${BLAS_LIBDIR}
 LIBS =  -lifcore
 
 ifeq "${arch}" "mic"
-EXE1 = testCInt_mic
-EXE2 = testCInt2_mic
-OBJS_CINT := mic/testCInt.o
-OBJS_CINT2 := mic/testCInt2.o
+UNIT_TEST_REF_EXE = Test.Ref.MIC
+UNIT_TEST_OPT_EXE = Test.Opt.MIC
+PERF_TEST_EXE = Test.Perf.MIC
+UNIT_TEST_REF_OBJS := mic/testCInt.ref.o
+UNIT_TEST_OPT_OBJS := mic/testCInt.opt.o
+PERF_TEST_OBJS := mic/testCInt2.o
 LIBS_CINT = ../lib/libcint_mic.a \
             ../lib/liberd_mic.a  \
             ../lib/liboed_mic.a
 else
-EXE1 = testCInt
-EXE2 = testCInt2
-OBJS_CINT := testCInt.o
-OBJS_CINT2 := testCInt2.o
+UNIT_TEST_REF_EXE = Test.Ref
+UNIT_TEST_OPT_EXE = Test.Opt
+PERF_TEST_EXE = Test.Perf
+UNIT_TEST_REF_OBJS := testCInt.ref.o
+UNIT_TEST_OPT_OBJS := testCInt.opt.o
+PERF_TEST_OBJS := testCInt2.o
 LIBS_CINT = ../lib/libcint.a \
-            ../lib/liberd.a  \
             ../lib/liboed.a
 endif
 
-LIBS_PFOCK = ../lib/libpfock.a ${MPI_LIBS} ${SCALAPACK_LIBS} ${GA_LIBS} ${BLAS_LIBS}
+all: ${UNIT_TEST_REF_EXE} ${UNIT_TEST_OPT_EXE} ${PERF_TEST_EXE}
 
-all: ${EXE1} ${EXE2}
+${UNIT_TEST_REF_EXE}: $(UNIT_TEST_REF_OBJS) $(LIBS_CINT) ../lib/liberd_ref.a
+	$(CC) ${CFLAGS} ${LDFLAGS} $(UNIT_TEST_REF_OBJS) -o $@ ${LIBS} ${LIBS_CINT} ../lib/liberd_ref.a
 
-${EXE1}: $(OBJS_CINT)
-	$(CC) ${CFLAGS} ${LDFLAGS} $(OBJS_CINT) -o $@ ${LIBS} ${LIBS_CINT}
+${UNIT_TEST_OPT_EXE}: $(UNIT_TEST_OPT_OBJS) $(LIBS_CINT) ../lib/liberd_opt.a
+	$(CC) ${CFLAGS} ${LDFLAGS} $(UNIT_TEST_OPT_OBJS) -o $@ ${LIBS} ${LIBS_CINT} ../lib/liberd_opt.a
 
-${EXE2}: $(OBJS_CINT2)
-	$(CC) ${CFLAGS} ${LDFLAGS} $(OBJS_CINT2) -o $@ ${LIBS} ${LIBS_CINT}
-
-testPFock: $(OBJS_PFOCK)
-	$(MPICC) ${CFLAGS} ${LDFLAGS} $(OBJS_PFOCK) -o $@ ${LIBS} ${LIBS_PFOCK} ${LIBS_CINT}
+${PERF_TEST_EXE}: $(PERF_TEST_OBJS) $(LIBS_CINT) ../lib/liberd_opt.a
+	$(CC) ${CFLAGS} ${LDFLAGS} $(PERF_TEST_OBJS) -o $@ ${LIBS} ${LIBS_CINT} ../lib/liberd_opt.a
 
 %.o : %.c Makefile
-	$(CC) ${CFLAGS} ${INC} -c $< -o $@ 
+	$(CC) ${CFLAGS} ${INC} -c $< -o $@
+
+%.ref.o : %.c Makefile
+	$(CC) ${CFLAGS} -DOPTERD_TEST_REFERENCE ${INC} -c $< -o $@
+
+%.opt.o : %.c Makefile
+	$(CC) ${CFLAGS} -DOPTERD_TEST_OPTIMIZED ${INC} -c $< -o $@
 
 mic/%.o : %.c Makefile
 	$(CC) ${CFLAGS} ${INC} -c $< -o $@
