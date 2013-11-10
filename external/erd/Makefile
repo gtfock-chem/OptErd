@@ -124,7 +124,7 @@ FFLAGS = -O3 -fPIC -g
 FFLAGS += -reentrancy threaded -recursive
 FFLAGS += ${OPTFLAGS}
 
-CFLAGS = -O3 -fPIC -g -I../Yeppp/include
+CFLAGS = -O3 -fPIC -g -std=gnu99 -I../Yeppp/include
 CFLAGS += ${OPTFLAGS}
 
 all: ${ERDLIB_OPT} ${ERDLIB_REF}
