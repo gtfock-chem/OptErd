@@ -248,6 +248,7 @@ int erd__csgto (int imax, int zmax,
     lcc2 = lcc1 + npgto1 * ncgto1;
     lcc3 = lcc2 + npgto2 * ncgto2;
     lcc4 = lcc3 + npgto3 * ncgto3;
+    #if 0
     erd__set_abcd (ncgto1, ncgto2, ncgto3, ncgto4,
                    npgto1, npgto2, npgto3, npgto4,
                    shell1, shell2, shell3, shell4,
@@ -277,6 +278,37 @@ int erd__csgto (int imax, int zmax,
                    &lcca, &lccb, &lccc, &lccd,
                    &lccsega, &lccsegb, &lccsegc, &lccsegd,
                    &nxyzhrr, &ncolhrr, &nrothrr, &empty);
+    #else
+    erd__set_abcd_ (&ncgto1, &ncgto2, &ncgto3, &ncgto4,
+                    &npgto1, &npgto2, &npgto3, &npgto4,
+                    &shell1, &shell2, &shell3, &shell4,
+                    &x1, &y1, &z1, &x2, &y2, &z2,
+                    &x3, &y3, &z3, &x4, &y4, &z4,
+                    &alpha[lexp1], &alpha[lexp2],
+                    &alpha[lexp3], &alpha[lexp4],
+                    &cc[lcc1], &cc[lcc2],
+                    &cc[lcc3], &cc[lcc4],
+                    &spheric, &ncgtoa, &ncgtob,
+                    &ncgtoc, &ncgtod,
+                    &npgtoa, &npgtob, &npgtoc, &npgtod,
+                    &shella, &shellb, &shellc, &shelld,
+                    &shellp, &shellq, &shellt, &mxshell,
+                    &xa, &ya, &za, &xb, &yb, &zb,
+                    &xc, &yc, &zc, &xd, &yd, &zd,
+                    &atomic, &atomab, &atomcd,
+                    &equalab, &equalcd,
+                    &abx, &aby, &abz, &cdx, &cdy, &cdz,
+                    &nabcoor, &ncdcoor, &rnabsq, &rncdsq,
+                    &spnorm, &nxyza, &nxyzb, &nxyzc, &nxyzd,
+                    &nxyzet, &nxyzft, &nxyzp, &nxyzq,
+                    &nrya, &nryb, &nryc, &nryd,
+                    &indexa, &indexb, &indexc, &indexd,
+                    &swap12, &swap34, &swaprs, &swaptu, &tr1234,
+                    &lexpa, &lexpb, &lexpc, &lexpd,
+                    &lcca, &lccb, &lccc, &lccd,
+                    &lccsega, &lccsegb, &lccsegc, &lccsegd,
+                    &nxyzhrr, &ncolhrr, &nrothrr, &empty);    
+    #endif
     if (empty)
     {
         *nbatch = 0;
@@ -312,6 +344,7 @@ int erd__csgto (int imax, int zmax,
     iprimb = iprima + npgtoab;
     iprimc = iprimb + npgtoab;
     iprimd = iprimc + npgtocd;
+    #if 0
     erd__set_ij_kl_pairs (npgtoa, npgtob, npgtoc, npgtod,
                           atomab, atomcd, equalab, equalcd,
                           swaprs, swaptu, xa, ya, za, xb, yb, zb,
@@ -324,6 +357,23 @@ int erd__csgto (int imax, int zmax,
                           screen, &empty, &nij, &nkl,
                           &icore[iprima], &icore[iprimb], &icore[iprimc],
                           &icore[iprimd], &zcore[1]);
+    #else
+    double aa = PREFACT;
+    erd__set_ij_kl_pairs_ (&npgtoa, &npgtob, &npgtoc, &npgtod,
+                           &npgtoab, &npgtocd,
+                           &atomab, &atomcd, &equalab, &equalcd,
+                           &swaprs, &swaptu,
+                           &xa, &ya, &za, &xb, &yb, &zb,
+                           &xc, &yc, &zc, &xd, &yd, &zd,
+                           &rnabsq, &rncdsq, &aa,
+                           &alpha[lexpa], &alpha[lexpb],
+                           &alpha[lexpc], &alpha[lexpd],
+                           &ftable[ftable_offset], &mgrid, &ngrid,
+                           &tmax, &tstep, &tvstep,
+                           &screen, &empty, &nij, &nkl,
+                           &icore[iprima], &icore[iprimb], &icore[iprimc],
+                           &icore[iprimd], &zcore[1]);
+    #endif
     if (empty)
     {
         *nbatch = 0;

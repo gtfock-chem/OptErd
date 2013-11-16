@@ -229,10 +229,11 @@ C
          DOUBLE PRECISION  CC3 (1:NPGTO3,1:NCGTO3)
          DOUBLE PRECISION  CC4 (1:NPGTO4,1:NCGTO4)
 
-         DATA  ADD    /0,0,1/
 
          PARAMETER  (ZERO    =  0.D0)
          PARAMETER  (ONE     =  1.D0)
+
+         DATA  ADD    /0,0,1/
 C
 C
 C------------------------------------------------------------------------
