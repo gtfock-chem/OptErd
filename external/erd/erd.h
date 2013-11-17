@@ -281,10 +281,8 @@ int erd__hrr_transform (int m, int nrow,
                         int *lrow, int *row,
                         double *rot, double *x, double *y);
 
-int erd__xyz_to_ry_abcd (int nxyza, int nxyzb,
-                         int nxyzc, int nxyzd,
-                         int nrya, int nryb,
-                         int nryc, int nryd,
+int erd__xyz_to_ry_abcd (int nxyza, int nxyzb, int nxyzc, int nxyzd,
+                         int nrya, int nryb, int nryc, int nryd,
                          int shella, int shellb,
                          int shellc, int shelld,
                          int istart, int zstart,
@@ -292,14 +290,20 @@ int erd__xyz_to_ry_abcd (int nxyza, int nxyzb,
                          int *nrowc, int *nrowd,
                          int *nrota, int *nrotb,
                          int *nrotc, int *nrotd,
-                         int *z00a, int *z00b,
-                         int *z00c, int *z00d,
-                         int *i0a1, int *i0b1,
-                         int *i0c1, int *i0d1,
-                         int *i0a2, int *i0b2,
-                         int *i0c2, int *i0d2,
-                         int *iused, int *zused, 
+                         int *z00a, int *z00b, int *z00c, int *z00d,
+                         int *i0a1, int *i0b1, int *i0c1, int *i0d1,
+                         int *i0a2, int *i0b2, int *i0c2, int *i0d2,
+                         int *iused, int *zused,
                          int *icore, double *zcore);
+
+int erd__xyz_to_ry_matrix (int nxyz, int nry,
+                           int nrowmx, int l,
+                           double *temp, int *nrow,
+                           int *row, double *tmat);
+
+int erd__spherical_transform (int m, int nrow, int nxyz, int nry,
+                              int *lrow, int *row, double *rot,
+                              double *x, double *y);
 
 
 /*******************************************************************/
@@ -314,20 +318,10 @@ double erd__dsqmin_line_segments_ (double *, double *,
 
 int erd__normalize_cartesian_ (int *, int *, int *, double *, double *);
 
-int erd__spherical_transform_ (int *, int *, int *,
-                               int *, int *, int *,
-                               double *, double *, double *);
-
-int erd__xyz_to_ry_abcd__(int *, int *, 
-	    int *, int *, int *, int *, int *, int *, 
-	    int *, int *, int *, int *, int *, int *, 
-	    int *, int *, int *, int *, int *, int *, 
-	    int *, int *, int *, int *, int *, int *, 
-	    int *, int *, int *, int *, int *, int *, 
-	    int *, int *, int *, int *, int *, double*);
-
 int erd__normalize_cartesian__(int *, int *, 
 	    int *, double *, double *);
 
-    
+int erd__cartesian_norms_ (int *, double *);
+
+
 #endif /* __ERD_H__ */

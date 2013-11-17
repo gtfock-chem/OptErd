@@ -91,7 +91,7 @@ SRC_OPT = erd__1111_csgto.c \
 	erd__rys_x_roots_weights.f \
 	erd__set_abcd.f \
 	erd__set_ij_kl_pairs.c \
-	erd__spherical_transform.f \
+	erd__spherical_transform.c \
 	erd__sppp_pcgto_block.c \
 	erd__sspp_pcgto_block.c \
 	erd__sssp_pcgto_block.c \

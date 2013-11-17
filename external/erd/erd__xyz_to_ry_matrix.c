@@ -385,15 +385,3 @@ int erd__xyz_to_ry_matrix (int nxyz, int nry,
 
     return 0;
 }
-
-
-int erd__xyz_to_ry_matrix_ (int *nxyz, int *nry,
-                           int *nrowmx, int *l,
-                           double *temp, int *nrow,
-                           int *row, double *tmat)
-{
-    erd__xyz_to_ry_matrix (*nxyz, *nry, *nrowmx, *l,
-                           temp,nrow, row, tmat);
-    
-    return 0;
-}

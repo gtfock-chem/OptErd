@@ -669,10 +669,11 @@ int erd__csgto (int imax, int zmax,
             if (spheric)
             {
                 i__1 = nctr * nxyzet * nxyzc;
-                erd__spherical_transform_ (&i__1, &nrowd, &nxyzd, &nryd,
-                                           &icore[isnrowd], &icore[isrowd],
-                                           &zcore[zsrotd], &zcore[in],
-                                           &zcore[out]);
+                erd__spherical_transform (nctr * nxyzet * nxyzc,
+                                          nrowd, nxyzd, nryd,
+                                          &icore[isnrowd], &icore[isrowd],
+                                          &zcore[zsrotd], &zcore[in],
+                                          &zcore[out]);
                 temp = in;
                 in = out;
                 out = temp;
@@ -704,11 +705,11 @@ int erd__csgto (int imax, int zmax,
         int i__1;
         if (spheric)
         {
-            i__1 = nctr * nxyzet * nryd;
-            erd__spherical_transform_ (&i__1, &nrowc, &nxyzc, &nryc,
-                                        &icore[isnrowc], &icore[isrowc],
-                                        &zcore[zsrotc], &zcore[in],
-                                        &zcore[out]);
+            erd__spherical_transform (nctr * nxyzet * nryd,
+                                      nrowc, nxyzc, nryc,
+                                      &icore[isnrowc], &icore[isrowc],
+                                      &zcore[zsrotc], &zcore[in],
+                                      &zcore[out]);
             temp = in;
             in = out;
             out = temp;
@@ -762,10 +763,11 @@ int erd__csgto (int imax, int zmax,
             if (spheric)
             {
                 i__1 = nctr * nryc * nryd * nxyza;
-                erd__spherical_transform_ (&i__1, &nrowb, &nxyzb, &nryb,
-                                           &icore[isnrowb], &icore[isrowb],
-                                           &zcore[zsrotb], &zcore[in],
-                                           &zcore[out]);
+                erd__spherical_transform (nctr * nryc * nryd * nxyza,
+                                          nrowb, nxyzb, nryb,
+                                          &icore[isnrowb], &icore[isrowb],
+                                          &zcore[zsrotb], &zcore[in],
+                                          &zcore[out]);
                 temp = in;
                 in = out;
                 out = temp;
@@ -798,10 +800,11 @@ int erd__csgto (int imax, int zmax,
         {
             int i__1;
             i__1 = nctr * nryb * nryc * nryd;
-            erd__spherical_transform_ (&i__1, &nrowa, &nxyza, &nrya,
-                                        &icore[isnrowa], &icore[isrowa],
-                                        &zcore[zsrota], &zcore[in],
-                                        &zcore[out]);
+            erd__spherical_transform (nctr * nryb * nryc * nryd,
+                                      nrowa, nxyza, nrya,
+                                      &icore[isnrowa], &icore[isrowa],
+                                      &zcore[zsrota], &zcore[in],
+                                      &zcore[out]);
             temp = in;
             in = out;
             out = temp;
