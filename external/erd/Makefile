@@ -97,8 +97,8 @@ SRC_OPT = erd__1111_csgto.c \
 	erd__sssp_pcgto_block.c \
 	erd__ssss_pcgto_block.c \
 	erd__transpose_batch.c \
-	erd__xyz_to_ry_abcd.f \
-	erd__xyz_to_ry_matrix.f \
+	erd__xyz_to_ry_abcd.c \
+	erd__xyz_to_ry_matrix.c \
 	erd__prepare_ctr.c
 
 ifeq "${arch}" "mic"

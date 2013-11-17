@@ -604,15 +604,16 @@ int erd__csgto (int imax, int zmax,
         if (mxshell > 1)
         {
             int c__1 = 1;
-            erd__xyz_to_ry_abcd_ (&nxyza, &nxyzb, &nxyzc, &nxyzd, &nrya,
-                                  &nryb, &nryc, &nryd, &shella, &shellb,
-                                  &shellc, &shelld, &c__1, &zbase, &nrowa,
-                                  &nrowb, &nrowc, &nrowd, &nrota, &nrotb,
-                                  &nrotc, &nrotd, &zsrota, &zsrotb, &zsrotc,
-                                  &zsrotd, &isnrowa, &isnrowb, &isnrowc,
-                                  &isnrowd, &isrowa, &isrowb, &isrowc,
-                                  &isrowd, &iused, &zused, &icore[1],
-                                  &zcore[1]);
+            erd__xyz_to_ry_abcd (nxyza, nxyzb, nxyzc, nxyzd,
+                                 nrya, nryb, nryc, nryd,
+                                 shella, shellb, shellc, shelld,
+                                 1, zbase,
+                                 &nrowa, &nrowb, &nrowc, &nrowd,
+                                 &nrota, &nrotb, &nrotc, &nrotd,
+                                 &zsrota, &zsrotb, &zsrotc, &zsrotd,
+                                 &isnrowa, &isnrowb, &isnrowc, &isnrowd,
+                                 &isrowa, &isrowb, &isrowc, &isrowd,
+                                 &iused, &zused, &icore[1], &zcore[1]);
         }
         else
         {
