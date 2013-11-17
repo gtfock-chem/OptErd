@@ -50,8 +50,7 @@ SRC_REF = erd__1111_csgto.f \
 	erd__transpose_batch.f \
 	erd__xyz_to_ry_abcd.f \
 	erd__xyz_to_ry_matrix.f \
-	erd__prepare_ctr.F \
-	timer.c
+	erd__prepare_ctr.F
 
 SRC_OPT = erd__1111_csgto.c \
 	erd__1111_def_blocks.c \
@@ -100,8 +99,7 @@ SRC_OPT = erd__1111_csgto.c \
 	erd__transpose_batch.c \
 	erd__xyz_to_ry_abcd.f \
 	erd__xyz_to_ry_matrix.f \
-	erd__prepare_ctr.c \
-	timer.c
+	erd__prepare_ctr.c
 
 ifeq "${arch}" "mic"
 ERDLIB_REF = liberd_ref_mic.a
