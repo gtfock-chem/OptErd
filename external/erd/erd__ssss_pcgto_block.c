@@ -4,6 +4,105 @@
 #include <math.h>
 
 
+/* ------------------------------------------------------------------------ */
+/*  OPERATION   : ERD__SSSS_PCGTO_BLOCK */
+/*  MODULE      : ELECTRON REPULSION INTEGRALS DIRECT */
+/*  MODULE-ID   : ERD */
+/*  SUBROUTINES : none */
+/*  DESCRIPTION : This operation is designed to provide ultrafast block */
+/*                evaluation of a batch of normalized electron repulsion */
+/*                integrals between s-shell primitive gaussian type */
+/*                orbitals. */
+/*                A batch is defined here as containing all possible */
+/*                integrals, that is its dimension is determined by */
+/*                the total number of primitive functions (here = 1) */
+/*                times the total number of ij and kl exponent pair */
+/*                combinations. */
+/*                The integrals are ordered in the batch the following */
+/*                way (first index varying fastest): */
+/*                    batch (nxyz1,nxyz2,nxyz3,nxyz4,kl,ij) */
+/*                where ij and kl indicates alpha exponent pairs */
+/*                defining the present block. */
+/*                The present routine evaluates batches of the type: */
+/*                                     ssss */
+/*                The cartesian primitive integrals are evaluated using */
+/*                the auxillary functions technique, described by */
+/*                V.R. Saunders, "An Introduction to Molecular Integral */
+/*                Evaluation" in "Computational Techniques in Quantum */
+/*                Chemistry and Molecular Physics" edited by */
+/*                GHF Diercksen, BT Sutcliff and A Veillard, D. Reidel */
+/*                Publ. Comp. Dordrecht (1975), p. 347. */
+/*                The cartesian primitive integrals are each evaluated */
+/*                explicitely using common multipliers if possible and */
+/*                avoiding array addresses. */
+/*                  Input: */
+/*                    NBATCH       =  size of the primitive cartesian */
+/*                                    ssss integral batch */
+/*                    ATOMIC       =  indicates, if purely atomic */
+/*                                    integrals will be evaluated */
+/*                    ATOM12(34)   =  indicates, if centers 1 and 2 */
+/*                                    (3 and 4) coincide */
+/*                    MIJ(KL)      =  current # of ij (kl) primitive */
+/*                                    index pairs corresponding to */
+/*                                    the contracted shell pairs 1,2 */
+/*                                    (3,4) */
+/*                    NIJ          =  total # of ij primitive index */
+/*                                    pairs for the contracted shell */
+/*                                    pair 1,2 */
+/*                    NIJBEG(END)  =  first(last) ij primitive index */
+/*                                    defining the ij block */
+/*                    NKL          =  total # of kl primitive index */
+/*                                    pairs for the contracted shell */
+/*                                    pair 3,4 */
+/*                    NKLBEG(END)  =  first(last) kl primitive index */
+/*                                    defining the kl block */
+/*                    NPGTOx       =  # of primitives per contraction */
+/*                                    for contraction shells x = 1,2,3,4 */
+/*                    Xx,Yx,Zx     =  the x,y,z-coordinates for centers */
+/*                                    x = 1,2,3,4 */
+/*                    Xxx,Yxx,Zxx  =  the x,y,z-coordinate differences */
+/*                                    between centers xx = 12 and 34 */
+/*                    ALPHAx       =  the primitive exponents for */
+/*                                    contraction shells x = 1,2,3,4 */
+/*                    FTABLE       =  Fm (T) table for interpolation */
+/*                                    in low T region */
+/*                    MGRID        =  maximum m in Fm (T) table */
+/*                    NGRID        =  # of T's for which Fm (T) table */
+/*                                    was set up */
+/*                    TMAX         =  maximum T in Fm (T) table */
+/*                    TSTEP        =  difference between two consecutive */
+/*                                    T's in Fm (T) table */
+/*                    TVSTEP       =  Inverse of TSTEP */
+/*                    PRIMx        =  i,j,k,l labels of primitives for */
+/*                                    the respective contraction shells */
+/*                                    x = 1,2,3,4 */
+/*                    NORMx        =  the normalization factors due to */
+/*                                    the primitive exponents for the */
+/*                                    contraction shells x = 1,2,3,4 */
+/*                    RHO12(34)    =  the complete set of NIJ (NKL) */
+/*                                    exponential prefactors between */
+/*                                    contraction shells 1 and 2 */
+/*                                    (3 and 4) */
+/*                    P            =  will hold current MIJ exponent */
+/*                                    sums for contraction shells 1 */
+/*                                    and 2 */
+/*                    Px           =  will hold current MIJ coordinates */
+/*                                    x=X,Y,Z for the gaussian product */
+/*                                    centers P=1+2 */
+/*                    SCALEP       =  will hold current MIJ values of */
+/*                                    scaling factors related to point P */
+/*                    Q            =  will hold current MKL exponent */
+/*                                    sums for contraction shells 3 */
+/*                                    and 4 */
+/*                    Qx           =  will hold current MKL coordinates */
+/*                                    x=X,Y,Z for the gaussian product */
+/*                                    centers Q=3+4 */
+/*                    SCALEQ       =  will hold current MKL values of */
+/*                                    scaling factors related to point Q */
+/*                  Output: */
+/*                    BATCH        =  current batch of primitive */
+/*                                    cartesian ssss integrals */
+/* ------------------------------------------------------------------------ */
 int erd__ssss_pcgto_block (int nbatch, int atomic, int atom12, int atom34,
                            int mij, int mkl,
                            int nij, int nijbeg, int nijend,
@@ -364,156 +463,6 @@ int erd__ssss_pcgto_block (int nbatch, int atomic, int atom12, int atom34,
             batch[m] = scale * f0;
         }
     }
-
-    return 0;
-}
-
-
-/* ------------------------------------------------------------------------ */
-/*  OPERATION   : ERD__SSSS_PCGTO_BLOCK */
-/*  MODULE      : ELECTRON REPULSION INTEGRALS DIRECT */
-/*  MODULE-ID   : ERD */
-/*  SUBROUTINES : none */
-/*  DESCRIPTION : This operation is designed to provide ultrafast block */
-/*                evaluation of a batch of normalized electron repulsion */
-/*                integrals between s-shell primitive gaussian type */
-/*                orbitals. */
-/*                A batch is defined here as containing all possible */
-/*                integrals, that is its dimension is determined by */
-/*                the total number of primitive functions (here = 1) */
-/*                times the total number of ij and kl exponent pair */
-/*                combinations. */
-/*                The integrals are ordered in the batch the following */
-/*                way (first index varying fastest): */
-/*                    batch (nxyz1,nxyz2,nxyz3,nxyz4,kl,ij) */
-/*                where ij and kl indicates alpha exponent pairs */
-/*                defining the present block. */
-/*                The present routine evaluates batches of the type: */
-/*                                     ssss */
-/*                The cartesian primitive integrals are evaluated using */
-/*                the auxillary functions technique, described by */
-/*                V.R. Saunders, "An Introduction to Molecular Integral */
-/*                Evaluation" in "Computational Techniques in Quantum */
-/*                Chemistry and Molecular Physics" edited by */
-/*                GHF Diercksen, BT Sutcliff and A Veillard, D. Reidel */
-/*                Publ. Comp. Dordrecht (1975), p. 347. */
-/*                The cartesian primitive integrals are each evaluated */
-/*                explicitely using common multipliers if possible and */
-/*                avoiding array addresses. */
-/*                  Input: */
-/*                    NBATCH       =  size of the primitive cartesian */
-/*                                    ssss integral batch */
-/*                    ATOMIC       =  indicates, if purely atomic */
-/*                                    integrals will be evaluated */
-/*                    ATOM12(34)   =  indicates, if centers 1 and 2 */
-/*                                    (3 and 4) coincide */
-/*                    MIJ(KL)      =  current # of ij (kl) primitive */
-/*                                    index pairs corresponding to */
-/*                                    the contracted shell pairs 1,2 */
-/*                                    (3,4) */
-/*                    NIJ          =  total # of ij primitive index */
-/*                                    pairs for the contracted shell */
-/*                                    pair 1,2 */
-/*                    NIJBEG(END)  =  first(last) ij primitive index */
-/*                                    defining the ij block */
-/*                    NKL          =  total # of kl primitive index */
-/*                                    pairs for the contracted shell */
-/*                                    pair 3,4 */
-/*                    NKLBEG(END)  =  first(last) kl primitive index */
-/*                                    defining the kl block */
-/*                    NPGTOx       =  # of primitives per contraction */
-/*                                    for contraction shells x = 1,2,3,4 */
-/*                    Xx,Yx,Zx     =  the x,y,z-coordinates for centers */
-/*                                    x = 1,2,3,4 */
-/*                    Xxx,Yxx,Zxx  =  the x,y,z-coordinate differences */
-/*                                    between centers xx = 12 and 34 */
-/*                    ALPHAx       =  the primitive exponents for */
-/*                                    contraction shells x = 1,2,3,4 */
-/*                    FTABLE       =  Fm (T) table for interpolation */
-/*                                    in low T region */
-/*                    MGRID        =  maximum m in Fm (T) table */
-/*                    NGRID        =  # of T's for which Fm (T) table */
-/*                                    was set up */
-/*                    TMAX         =  maximum T in Fm (T) table */
-/*                    TSTEP        =  difference between two consecutive */
-/*                                    T's in Fm (T) table */
-/*                    TVSTEP       =  Inverse of TSTEP */
-/*                    PRIMx        =  i,j,k,l labels of primitives for */
-/*                                    the respective contraction shells */
-/*                                    x = 1,2,3,4 */
-/*                    NORMx        =  the normalization factors due to */
-/*                                    the primitive exponents for the */
-/*                                    contraction shells x = 1,2,3,4 */
-/*                    RHO12(34)    =  the complete set of NIJ (NKL) */
-/*                                    exponential prefactors between */
-/*                                    contraction shells 1 and 2 */
-/*                                    (3 and 4) */
-/*                    P            =  will hold current MIJ exponent */
-/*                                    sums for contraction shells 1 */
-/*                                    and 2 */
-/*                    Px           =  will hold current MIJ coordinates */
-/*                                    x=X,Y,Z for the gaussian product */
-/*                                    centers P=1+2 */
-/*                    SCALEP       =  will hold current MIJ values of */
-/*                                    scaling factors related to point P */
-/*                    Q            =  will hold current MKL exponent */
-/*                                    sums for contraction shells 3 */
-/*                                    and 4 */
-/*                    Qx           =  will hold current MKL coordinates */
-/*                                    x=X,Y,Z for the gaussian product */
-/*                                    centers Q=3+4 */
-/*                    SCALEQ       =  will hold current MKL values of */
-/*                                    scaling factors related to point Q */
-/*                  Output: */
-/*                    BATCH        =  current batch of primitive */
-/*                                    cartesian ssss integrals */
-/* ------------------------------------------------------------------------ */
-int erd__ssss_pcgto_block_ (int * nbatch, int * atomic,
-                            int * atom12, int * atom34, int * mij,
-                            int * mkl, int * nij, int * nijbeg,
-                         int * nijend, int * nkl, int * nklbeg,
-                         int * nklend, int * npgto1, int * npgto2,
-                         int * npgto3, int * npgto4, double * x1,
-                         double * y1, double * z1, double * x2,
-                         double * y2, double * z2, double * x3,
-                         double * y3, double * z3, double * x4,
-                         double * y4, double * z4, double * x12,
-                         double * y12, double * z12, double * x34,
-                         double * y34, double * z34,
-                         double * alpha1, double * alpha2,
-                         double * alpha3, double * alpha4,
-                         double * ftable, int * mgrid,
-                         int * ngrid, double * tmax,
-                         double * tstep, double * tvstep,
-                         int * prim1, int * prim2, int * prim3,
-                         int * prim4, double * norm1,
-                         double * norm2, double * norm3,
-                         double * norm4, double * rho12,
-                         double * rho34, double * p, double * px,
-                         double * py, double * pz,
-                         double * scalep, double * q, double * qx,
-                         double * qy, double * qz,
-                         double * scaleq, double * batch)
-{
-    erd__ssss_pcgto_block (*nbatch, *atomic, *atom12, *atom34,
-                           *mij, *mkl, *nij, *nijbeg, *nijend,
-                           *nkl, *nklbeg, *nklend,
-                           *npgto1, *npgto2, *npgto3, *npgto4,
-                           *x1, *y1, *z1,
-                           *x2, *y2, *z2,
-                           *x3, *y3, *z3,
-                           *x4, *y4, *z4,
-                           *x12, *y12, *z12,
-                           *x34, *y34, *z34,
-                           alpha1, alpha2, alpha3, alpha4,
-                           ftable, *mgrid, *ngrid,
-                           *tmax, *tstep, *tvstep,
-                           prim1, prim2, prim3, prim4,
-                           norm1, norm2, norm3, norm4,
-                           rho12, rho34,
-                           p, px, py, pz,
-                           scalep, q, qx, qy, qz,
-                           scaleq, batch);
 
     return 0;
 }

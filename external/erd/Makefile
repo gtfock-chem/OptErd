@@ -72,14 +72,14 @@ SRC_OPT = erd__1111_csgto.c \
 	erd__gener_eri_batch.f \
 	erd__hrr_matrix.f \
 	erd__hrr_step.f \
-	erd__hrr_transform.f \
+	erd__hrr_transform.c \
 	erd__int2d_to_e000.f \
 	erd__int2d_to_e0f0.f \
 	erd__map_ijkl_to_ikjl.c \
 	erd__memory_1111_csgto.f \
 	erd__memory_csgto.f \
 	erd__memory_eri_batch.f \
-	erd__move_ry.f \
+	erd__move_ry.c \
 	erd__normalize_cartesian.f \
 	erd__pppp_pcgto_block.c \
 	erd__rys_1_roots_weights.f \
@@ -151,4 +151,4 @@ mic/%.F.o: %.F
 	${FC} ${FFLAGS} -c $< -o $@
 
 clean:
-	rm -f *.o mic/*.o *~ ${ERDLIB}
+	rm -f *.o mic/*.o *~ *.a

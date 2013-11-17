@@ -339,9 +339,7 @@ int erd__1111_csgto (int imax, int zmax,
     {
         spnorm += spnorm;
     }
-    #if 0
     erd__set_ij_kl_pairs  (npgto1, npgto2, npgto3, npgto4,
-                           npgto12, npgto34,
                            atom12, atom34, equal12, equal34,
                            swaprs, swaptu,
                            x1, y1, z1, x2, y2, z2,
@@ -354,24 +352,6 @@ int erd__1111_csgto (int imax, int zmax,
                            &empty, &nij, &nkl,
                            &icore[iprim1], &icore[iprim2],
                            &icore[iprim3], &icore[iprim4], &zcore[1]);
-    #else
-    double aa = PREFACT;
-    erd__set_ij_kl_pairs_  (&npgto1, &npgto2, &npgto3, &npgto4,
-                           &npgto12, &npgto34,
-                           &atom12, &atom34, &equal12, &equal34,
-                           &swaprs, &swaptu,
-                           &x1, &y1, &z1, &x2, &y2, &z2,
-                           &x3, &y3, &z3, &x4, &y4, &z4,
-                           &rn12sq, &rn34sq, &aa,
-                           &alpha[lexp1], &alpha[lexp2],
-                           &alpha[lexp3], &alpha[lexp4],
-                           &ftable[ftable_offset], &mgrid, &ngrid,
-                           &tmax, &tstep, &tvstep, &screen,
-                           &empty, &nij, &nkl,
-                           &icore[iprim1], &icore[iprim2],
-                           &icore[iprim3], &icore[iprim4], &zcore[1]);
-    #endif
-    
     if (empty)
     {
         *nbatch = 0;

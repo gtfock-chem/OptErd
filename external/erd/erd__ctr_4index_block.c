@@ -5,6 +5,126 @@
 #include "erd.h"
 
 
+/* ------------------------------------------------------------------------ */
+/*  OPERATION   : ERD__CTR_4INDEX_BLOCK */
+/*  MODULE      : ELECTRON REPULSION INTEGRALS DIRECT */
+/*  MODULE-ID   : ERD */
+/*  SUBROUTINES : ERD__TRANSPOSE_BATCH */
+/*                ERD__CTR_1ST_HALF */
+/*                ERD__MAP_IJKL_TO_IKJL */
+/*                ERD__CTR_2ND_HALF_NEW */
+/*                ERD__CTR_2ND_HALF_UPDATE */
+/*  DESCRIPTION : This operation performs a four-indexed contraction */
+/*                on a block of primitive integrals and updates all */
+/*                contracted integrals: */
+/*                  sum  [ab|cd]      -->  (ab|cd) */
+/*                 ijkl         ijkl              rstu */
+/*                                             r = 1,NCR */
+/*                                             s = 1,NCS */
+/*                                             t = 1,NCT */
+/*                                             u = 1,NCU */
+/*                For optimum performance of the contraction procedure, */
+/*                the contraction routine is written to operate on the */
+/*                block of primitive integrals ordered in the following */
+/*                form (i.e. primitive indices to the far right): */
+/*                              pbatch (nxyzt,kl,ij) */
+/*                where ij and kl are the partial primitive index pairs */
+/*                being treated here. If on entry to this routine the */
+/*                primitive integrals are ordered in the form: */
+/*                              pbatch (kl,ij,nxyzt) */
+/*                a transposition has to preceed the actual contraction */
+/*                procedure. This is triggered by the keyword PTRANS, */
+/*                which has to be set true, if such a transposition is */
+/*                needed. The complete set of cartesian monomial */
+/*                quadruplets is kept together for efficiency through */
+/*                the entire contraction sequence. */
+/*                STRATEGY: */
+/*                Perform overall contraction in 2 half contraction */
+/*                steps, using an intermediate reordering if necessary: */
+/*                1) Contract over ij primitives: */
+/*                  (nxyzt,kl,rs) = ccr (r,i) * ccs (s,j) * (nxyzt,kl,ij) */
+/*                2) Reorder kl <-> rs (if needed): */
+/*                  (nxyzt,kl,rs) --> (nxyzt,rs,kl) */
+/*                3) Contract over kl primitives and add result to the */
+/*                   final contraction vector: */
+/*                  (nxyzt,rs,tu) = (nxyzt,rs,tu) */
+/*                                + cct (t,k) * ccu (u,l) * (nxyzt,rs,kl) */
+/*                  Input: */
+/*                    NxSIZE       =  size of the primitive integral */
+/*                                    block (x=P), contracted integrals */
+/*                                    (x=C) and working (x=W) arrays */
+/*                    NXYZT        =  total # of cartesian monomial */
+/*                                    quadruplets */
+/*                    MIJKL        =  total # of partial primitive */
+/*                                    index quadruplets */
+/*                    MIJ(KL)      =  # of partial ij(kl) primitive */
+/*                                    pairs to be transformed */
+/*                    NRS(TU)      =  # of rs(tu) contraction pairs */
+/*                    NPx          =  # of respective i,j,k,l primitives */
+/*                                    for contractions x=R,S,T,U */
+/*                    NCx          =  # of contractions for x=R,S,T,U */
+/*                    MXPRIM       =  the maximum # of primitives */
+/*                                    between all i,j,k,l primitives, */
+/*                                    i.e. = max (i,j,k,l) */
+/*                    MNPRIM       =  the minimum # of primitives */
+/*                                    between i and j primitives and */
+/*                                    k and l primitives and form the */
+/*                                    maximum between these two values, */
+/*                                    i.e. = max (min(i,j),min(k,l)) */
+/*                    CCx          =  full set (including zeros) of */
+/*                                    contraction coefficients for */
+/*                                    x=R,S,T,U contractions */
+/*                    CCBEGx       =  lowest nonzero primitive i,j,k,l */
+/*                                    index for x=R,S,T,U contractions */
+/*                    CCENDx       =  highest nonzero primitive i,j,k,l */
+/*                                    index for x=R,S,T,U contractions */
+/*                    PRIMx        =  primitive i,j,k,l indices for */
+/*                                    the x=R,S,T,U contractions */
+/*                    L1CACHE      =  Size of level 1 cache in units of */
+/*                                    8 Byte */
+/*                    TILE         =  Number of rows and columns in */
+/*                                    units of 8 Byte of level 1 cache */
+/*                                    square tile array used for */
+/*                                    performing optimum matrix */
+/*                                    transpositions */
+/*                    NCTROW       =  minimum # of rows that are */
+/*                                    accepted for blocked contractions */
+/*                    EQUALRS(TU)  =  is true, if only the lower */
+/*                                    triangle of ij(kl) primitive */
+/*                                    indices is present and consequently */
+/*                                    only the lower triangle of rs(tu) */
+/*                                    contractions needs to be evaluated */
+/*                    SWAPRS(TU)   =  if this is true, the 1st quarter */
+/*                                    transformation will be over R(T) */
+/*                                    followed by the 2nd over S(U). */
+/*                                    If false, the order will be */
+/*                                    reversed: 1st over S(U) then 2nd */
+/*                                    over R(T) */
+/*                    PTRANS       =  if true, a necessary primitive */
+/*                                    integral transposition needs to */
+/*                                    be done in order to bring the */
+/*                                    ijkl primitive indices to the */
+/*                                    far right position */
+/*                    BLOCKED      =  if false, only one call will be */
+/*                                    made to the present contraction */
+/*                                    routine. The contraction batch */
+/*                                    has not! been initialized to zero */
+/*                                    and there is no need to perform */
+/*                                    an update of the contracted batch. */
+/*                    Pxxxx        =  intermediate storage arrays for */
+/*                                    primitive labels to bundle */
+/*                                    contraction steps in do loops */
+/*                                    (xxxx = USED,SAVE,PAIR) */
+/*                    PBATCH       =  the batch of primitive integrals */
+/*                                    to be contracted */
+/*                    WORK         =  the working array for intermediate */
+/*                                    storage */
+/*                    CBATCH       =  the batch of contracted integrals */
+/*                                    before contraction update */
+/*                  Output: */
+/*                    CBATCH       =  the update batch of contracted */
+/*                                    integrals after contraction */
+/* ------------------------------------------------------------------------ */
 int erd__ctr_4index_block (int npsize, int ncsize, int nwsize,
                            int nxyzt, int mijkl,
                            int mij, int mkl, int nrs, int ntu,
@@ -174,165 +294,5 @@ int erd__ctr_4index_block (int npsize, int ncsize, int nwsize,
                                &ppair[1], &pbatch[1], &work[1], &cbatch[1]);
     }
 
-    return 0;
-}
-
-
-/* ------------------------------------------------------------------------ */
-/*  OPERATION   : ERD__CTR_4INDEX_BLOCK */
-/*  MODULE      : ELECTRON REPULSION INTEGRALS DIRECT */
-/*  MODULE-ID   : ERD */
-/*  SUBROUTINES : ERD__TRANSPOSE_BATCH */
-/*                ERD__CTR_1ST_HALF */
-/*                ERD__MAP_IJKL_TO_IKJL */
-/*                ERD__CTR_2ND_HALF_NEW */
-/*                ERD__CTR_2ND_HALF_UPDATE */
-/*  DESCRIPTION : This operation performs a four-indexed contraction */
-/*                on a block of primitive integrals and updates all */
-/*                contracted integrals: */
-/*                  sum  [ab|cd]      -->  (ab|cd) */
-/*                 ijkl         ijkl              rstu */
-/*                                             r = 1,NCR */
-/*                                             s = 1,NCS */
-/*                                             t = 1,NCT */
-/*                                             u = 1,NCU */
-/*                For optimum performance of the contraction procedure, */
-/*                the contraction routine is written to operate on the */
-/*                block of primitive integrals ordered in the following */
-/*                form (i.e. primitive indices to the far right): */
-/*                              pbatch (nxyzt,kl,ij) */
-/*                where ij and kl are the partial primitive index pairs */
-/*                being treated here. If on entry to this routine the */
-/*                primitive integrals are ordered in the form: */
-/*                              pbatch (kl,ij,nxyzt) */
-/*                a transposition has to preceed the actual contraction */
-/*                procedure. This is triggered by the keyword PTRANS, */
-/*                which has to be set true, if such a transposition is */
-/*                needed. The complete set of cartesian monomial */
-/*                quadruplets is kept together for efficiency through */
-/*                the entire contraction sequence. */
-/*                STRATEGY: */
-/*                Perform overall contraction in 2 half contraction */
-/*                steps, using an intermediate reordering if necessary: */
-/*                1) Contract over ij primitives: */
-/*                  (nxyzt,kl,rs) = ccr (r,i) * ccs (s,j) * (nxyzt,kl,ij) */
-/*                2) Reorder kl <-> rs (if needed): */
-/*                  (nxyzt,kl,rs) --> (nxyzt,rs,kl) */
-/*                3) Contract over kl primitives and add result to the */
-/*                   final contraction vector: */
-/*                  (nxyzt,rs,tu) = (nxyzt,rs,tu) */
-/*                                + cct (t,k) * ccu (u,l) * (nxyzt,rs,kl) */
-/*                  Input: */
-/*                    NxSIZE       =  size of the primitive integral */
-/*                                    block (x=P), contracted integrals */
-/*                                    (x=C) and working (x=W) arrays */
-/*                    NXYZT        =  total # of cartesian monomial */
-/*                                    quadruplets */
-/*                    MIJKL        =  total # of partial primitive */
-/*                                    index quadruplets */
-/*                    MIJ(KL)      =  # of partial ij(kl) primitive */
-/*                                    pairs to be transformed */
-/*                    NRS(TU)      =  # of rs(tu) contraction pairs */
-/*                    NPx          =  # of respective i,j,k,l primitives */
-/*                                    for contractions x=R,S,T,U */
-/*                    NCx          =  # of contractions for x=R,S,T,U */
-/*                    MXPRIM       =  the maximum # of primitives */
-/*                                    between all i,j,k,l primitives, */
-/*                                    i.e. = max (i,j,k,l) */
-/*                    MNPRIM       =  the minimum # of primitives */
-/*                                    between i and j primitives and */
-/*                                    k and l primitives and form the */
-/*                                    maximum between these two values, */
-/*                                    i.e. = max (min(i,j),min(k,l)) */
-/*                    CCx          =  full set (including zeros) of */
-/*                                    contraction coefficients for */
-/*                                    x=R,S,T,U contractions */
-/*                    CCBEGx       =  lowest nonzero primitive i,j,k,l */
-/*                                    index for x=R,S,T,U contractions */
-/*                    CCENDx       =  highest nonzero primitive i,j,k,l */
-/*                                    index for x=R,S,T,U contractions */
-/*                    PRIMx        =  primitive i,j,k,l indices for */
-/*                                    the x=R,S,T,U contractions */
-/*                    L1CACHE      =  Size of level 1 cache in units of */
-/*                                    8 Byte */
-/*                    TILE         =  Number of rows and columns in */
-/*                                    units of 8 Byte of level 1 cache */
-/*                                    square tile array used for */
-/*                                    performing optimum matrix */
-/*                                    transpositions */
-/*                    NCTROW       =  minimum # of rows that are */
-/*                                    accepted for blocked contractions */
-/*                    EQUALRS(TU)  =  is true, if only the lower */
-/*                                    triangle of ij(kl) primitive */
-/*                                    indices is present and consequently */
-/*                                    only the lower triangle of rs(tu) */
-/*                                    contractions needs to be evaluated */
-/*                    SWAPRS(TU)   =  if this is true, the 1st quarter */
-/*                                    transformation will be over R(T) */
-/*                                    followed by the 2nd over S(U). */
-/*                                    If false, the order will be */
-/*                                    reversed: 1st over S(U) then 2nd */
-/*                                    over R(T) */
-/*                    PTRANS       =  if true, a necessary primitive */
-/*                                    integral transposition needs to */
-/*                                    be done in order to bring the */
-/*                                    ijkl primitive indices to the */
-/*                                    far right position */
-/*                    BLOCKED      =  if false, only one call will be */
-/*                                    made to the present contraction */
-/*                                    routine. The contraction batch */
-/*                                    has not! been initialized to zero */
-/*                                    and there is no need to perform */
-/*                                    an update of the contracted batch. */
-/*                    Pxxxx        =  intermediate storage arrays for */
-/*                                    primitive labels to bundle */
-/*                                    contraction steps in do loops */
-/*                                    (xxxx = USED,SAVE,PAIR) */
-/*                    PBATCH       =  the batch of primitive integrals */
-/*                                    to be contracted */
-/*                    WORK         =  the working array for intermediate */
-/*                                    storage */
-/*                    CBATCH       =  the batch of contracted integrals */
-/*                                    before contraction update */
-/*                  Output: */
-/*                    CBATCH       =  the update batch of contracted */
-/*                                    integrals after contraction */
-/* ------------------------------------------------------------------------ */
-int erd__ctr_4index_block_ (int * npsize, int * ncsize,
-                            int * nwsize, int * nxyzt, int * mijkl,
-                            int * mij, int * mkl, int * nrs,
-                            int * ntu, int * npr, int * nps,
-                            int * npt, int * npu, int * ncr,
-                            int * ncs, int * nct, int * ncu,
-                            int * mxprim, int * mnprim, double * ccr,
-                            double * ccs, double * cct, double * ccu,
-                            int * ccbegr, int * ccbegs, int * ccbegt,
-                            int * ccbegu, int * ccendr, int * ccends,
-                            int * ccendt, int * ccendu, int * primr,
-                            int * prims, int * primt, int * primu,
-                            int * l1cache, int * tile, int * nctrow,
-                            int * equalrs, int * equaltu,
-                            int * swaprs, int * swaptu, int * ptrans,
-                            int * blocked, int * pused, int * psave,
-                            int * ppair, double * pbatch,
-                            double * work, double * cbatch)
-{
-
-    erd__ctr_4index_block (*npsize, *ncsize, *nwsize, *nxyzt, *mijkl,
-                           *mij, *mkl, *nrs, *ntu,
-                           *npr, *nps, *npt, *npu,
-                           *ncr, *ncs, *nct, *ncu,
-                           *mxprim, *mnprim,
-                           ccr, ccs, cct, ccu,
-                           ccbegr, ccbegs, ccbegt, ccbegu,
-                           ccendr, ccends, ccendt, ccendu,
-                           primr, prims, primt, primu,
-                           *l1cache, *tile, *nctrow,
-                           *equalrs, *equaltu,
-                           *swaprs, *swaptu,
-                           *ptrans, *blocked,
-                           pused, psave, ppair,
-                           pbatch, work, cbatch);
-    
     return 0;
 }

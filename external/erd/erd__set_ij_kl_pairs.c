@@ -2,20 +2,12 @@
 #include <stdlib.h>
 #include <math.h>
 #include <stdint.h>
-#include <yepPredefines.h>
 
-extern double erd__dsqmin_line_segments_ (double *, double *,
-	double *, double *,
-	double *, double *,
-	double *, double *,
-	double *, double *,
-	double *, double *);
 
-#define MIN(a,b)    ((a) > (b) ? (b) : (a))
+#include "erd.h"
+
 
 #define TOL 1e-14
-
-extern double mytime[10];
 
 uint64_t erd__set_ij_kl_pairs_ticks = 0;
 
@@ -183,13 +175,13 @@ static YEP_NOINLINE void set_pairs(int npgtoa, int npgtob,
 	*nij_ptr = nij;
 }
 
-static int erd__set_ij_kl_pairs(int npgtoa, int npgtob, int npgtoc, int npgtod,
+int erd__set_ij_kl_pairs (int npgtoa, int npgtob, int npgtoc, int npgtod,
 	int atomab, int atomcd, int equalab, int equalcd,
 	int swaprs, int swaptu,
-	double *YEP_RESTRICT xa, double *YEP_RESTRICT ya, double *YEP_RESTRICT za,
-	double *YEP_RESTRICT xb, double *YEP_RESTRICT yb, double *YEP_RESTRICT zb,
-	double *YEP_RESTRICT xc, double *YEP_RESTRICT yc, double *YEP_RESTRICT zc,
-	double *YEP_RESTRICT xd, double *YEP_RESTRICT yd, double *YEP_RESTRICT zd,
+	double xa, double ya, double za,
+	double xb, double yb, double zb,
+	double xc, double yc, double zc,
+	double xd, double yd, double zd,
 	double rnabsq, double rncdsq, double prefact,
 	double *YEP_RESTRICT alphaa, double *YEP_RESTRICT alphab,
 	double *YEP_RESTRICT alphac, double *YEP_RESTRICT alphad,
@@ -356,7 +348,8 @@ static int erd__set_ij_kl_pairs(int npgtoa, int npgtob, int npgtoc, int npgtod,
 	}
 
 	// compute min
-	rminsq = erd__dsqmin_line_segments_(xa, ya, za, xb, yb, zb, xc, yc, zc, xd, yd, zd);
+	rminsq = erd__dsqmin_line_segments_ (&xa, &ya, &za, &xb, &yb, &zb,
+	                                     &xc, &yc, &zc, &xd, &yd, &zd);
 
 	const double a = vector_min(alphaa, npgtoa);
 	const double b = vector_min(alphab, npgtob);
@@ -406,42 +399,3 @@ static int erd__set_ij_kl_pairs(int npgtoa, int npgtob, int npgtoc, int npgtod,
 	*nkl_ptr = nkl;
 	return 0;
 }
-
-int erd__set_ij_kl_pairs_(int *YEP_RESTRICT npgtoa, int *YEP_RESTRICT npgtob,
-	int *YEP_RESTRICT npgtoc, int *YEP_RESTRICT npgtod, int *YEP_RESTRICT npgtoab,
-	int *YEP_RESTRICT npgtocd, int *YEP_RESTRICT atomab, int *YEP_RESTRICT atomcd,
-	int *YEP_RESTRICT equalab, int *YEP_RESTRICT equalcd, int *YEP_RESTRICT swaprs,
-	int *YEP_RESTRICT swaptu, double *YEP_RESTRICT xa, double *YEP_RESTRICT ya,
-	double *YEP_RESTRICT za, double *YEP_RESTRICT xb, double *YEP_RESTRICT yb,
-	double *YEP_RESTRICT zb, double *YEP_RESTRICT xc, double *YEP_RESTRICT yc,
-	double *YEP_RESTRICT zc, double *YEP_RESTRICT xd, double *YEP_RESTRICT yd,
-	double *YEP_RESTRICT zd, double *YEP_RESTRICT rnabsq,
-	double *YEP_RESTRICT rncdsq, double *YEP_RESTRICT prefact,
-	double *YEP_RESTRICT alphaa, double *YEP_RESTRICT alphab,
-	double *YEP_RESTRICT alphac, double *YEP_RESTRICT alphad,
-	double *YEP_RESTRICT ftable, int *YEP_RESTRICT mgrid, int *YEP_RESTRICT ngrid,
-	double *YEP_RESTRICT tmax, double *YEP_RESTRICT tstep,
-	double *YEP_RESTRICT tvstep, int *YEP_RESTRICT screen, int *YEP_RESTRICT empty,
-	int *YEP_RESTRICT nij, int *YEP_RESTRICT nkl, int *YEP_RESTRICT prima,
-	int *YEP_RESTRICT primb, int *YEP_RESTRICT primc, int *YEP_RESTRICT primd,
-	double *YEP_RESTRICT rho)
-{
-	return erd__set_ij_kl_pairs(*npgtoa, *npgtob, *npgtoc, *npgtod,
-		*atomab, *atomcd,
-		*equalab, *equalcd,
-		*swaprs, *swaptu,
-		xa, ya, za,
-		xb, yb, zb,
-		xc, yc, zc,
-		xd, yd, zd,
-		*rnabsq, *rncdsq,
-		*prefact,
-		alphaa, alphab, alphac, alphad,
-		ftable, *mgrid, *ngrid,
-		*tmax, *tstep,
-		*tvstep, *screen, empty,
-		nij, nkl, prima,
-		primb, primc, primd,
-		rho);
-}
-

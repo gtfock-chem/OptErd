@@ -2,24 +2,6 @@
 #include <stdlib.h>
 
 
-int erd__transpose_batch (int nrow, int ncol,
-                          double *batch, double *obatch)
-{
-    int i;
-    int j;
-    
-    for (j = 0; j < nrow; j++)
-    {
-        for (i = 0; i < ncol; i++)
-        {
-            obatch[i + j * ncol] = batch[j + i * nrow];
-        }
-    }
-
-    return 0;
-}            
-
-
 /* ------------------------------------------------------------------------ */
 /*  OPERATION   : ERD__TRANSPOSE_BATCH */
 /*  MODULE      : ELECTRON REPULSION INTEGRALS DIRECT */
@@ -36,11 +18,19 @@ int erd__transpose_batch (int nrow, int ncol,
 /*                  Output: */
 /*                    OBATCH       =  output integral batch */
 /* ------------------------------------------------------------------------ */
-int erd__transpose_batch_ (int *nrow, int *ncol,
-                           int *tile, double *batch,
-                           double *obatch)
+int erd__transpose_batch (int nrow, int ncol,
+                          double *batch, double *obatch)
 {
-    erd__transpose_batch (*nrow, *ncol, batch, obatch);
+    int i;
+    int j;
+    
+    for (j = 0; j < nrow; j++)
+    {
+        for (i = 0; i < ncol; i++)
+        {
+            obatch[i + j * ncol] = batch[j + i * nrow];
+        }
+    }
 
     return 0;
 }

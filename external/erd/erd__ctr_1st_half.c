@@ -3,6 +3,98 @@
 #include <assert.h>
 
 
+/* ------------------------------------------------------------------------ */
+/*  OPERATION   : ERD__CTR_1ST_HALF */
+/*  MODULE      : ELECTRON REPULSION INTEGRALS DIRECT */
+/*  MODULE-ID   : ERD */
+/*  SUBROUTINES : none */
+/*  DESCRIPTION : This operation performs the first half contraction */
+/*                step on the incomming integrals over primitives */
+/*                in blocked form over invariant indices n: */
+/*                    y (n,rs) = sum  ccr (r,i) * ccs (s,j) * x (n,ij) */
+/*                                ij */
+/*                where ccr and ccs are the arrays containing the */
+/*                contraction coefficients. The sum is over the i and */
+/*                j primitives which are transmitted in arrays PRIMR */
+/*                and PRIMS, respectively, and may constitute only */
+/*                a subset of the full range of primitives. */
+/*                The contraction is split into two quarter steps, */
+/*                the order of which is determined by the # of i and */
+/*                j primitives: */
+/*                   a) w (n,j/i) = sum ccr/s (r/s,i/j) * x (n,ij) */
+/*                                  i/j */
+/*                   b) y (n,rs)  = sum ccs/r (s/r,j/i) * w (n,j/i) */
+/*                                  j/i */
+/*                Size of the intermediate w (n,i) or w (n,j) array */
+/*                has to be kept to a minimum and blocking over the */
+/*                invariant indices n has to be performed such that */
+/*                the intermediate w array does not get kicked out */
+/*                from the cache lines after the first quarter */
+/*                transformation. */
+/*                In case of csh equality (EQUALRS = .true), we only */
+/*                have to consider the lower triangle of the primitive */
+/*                integrals, which, with the exception of the diagonals, */
+/*                have to be used twice. */
+/*                        --- SEGMENTED CONTRACTIONS --- */
+/*                Segmented contractions are those defined to be */
+/*                within a certain consecutive i- and j-range of */
+/*                primitives. The segmented limits for each contraction */
+/*                are sitting respectively in CCBEGR and CCBEGS (lowest */
+/*                limit) and CCENDR and CCENDS (highest limit) and they */
+/*                determine which of the actual i's and j's from the */
+/*                PRIMR and PRIMS lists have to be considered for each */
+/*                contraction index. */
+/*                The code also allows efficient contractions in case */
+/*                there is only one contraction coefficient present */
+/*                in a certain contraction and its value is equal to 1. */
+/*                In such cases we can save lots of multiplications by */
+/*                1 and since these cases are quite common for certain */
+/*                types of basis functions it is worth including some */
+/*                IF's inside the contraction loops to gain speed. */
+/*                  Input: */
+/*                    N            =  # of invariant indices */
+/*                    NPMAX(MIN)   =  the maximum (minimum) # of */
+/*                                    primitives between both primitive */
+/*                                    sets i,j */
+/*                    MIJ          =  # of ij primitive products to */
+/*                                    be transformed */
+/*                    NRS          =  # of rs contractions to be done */
+/*                    NBLOCK       =  blocking size for invariant */
+/*                                    indices n */
+/*                    NCR(S)       =  # of contractions for the i -> R */
+/*                                    (j -> S) primitives */
+/*                    NPR(S)       =  # of i(j) primitives */
+/*                    CCR(S)       =  full set (including zeros) of */
+/*                                    contraction coefficients for */
+/*                                    R(S) contractions */
+/*                    CCBEGR(S)    =  lowest nonzero primitive i(j) */
+/*                                    index for R(S) contractions */
+/*                    CCENDR(S)    =  highest nonzero primitive i(j) */
+/*                                    index for R(S) contractions */
+/*                    PRIMR(S)     =  primitive i(j) indices */
+/*                    EQUALRS      =  is true, if only the lower */
+/*                                    triangle of ij primitive indices */
+/*                                    is present and consequently */
+/*                                    only the lower triangle of rs */
+/*                                    contractions needs to be evaluated */
+/*                    SWAPRS       =  if this is true, the 1st quarter */
+/*                                    transformation is over R followed */
+/*                                    by the 2nd over S. If false, the */
+/*                                    order is reversed: 1st over S then */
+/*                                    2nd over R */
+/*                    Pxxxx        =  intermediate storage arrays for */
+/*                                    primitive labels to bundle */
+/*                                    contraction steps in do loops */
+/*                                    (xxxx = USED,SAVE,PAIR) */
+/*                    X            =  array containing the primitive */
+/*                                    integrals */
+/*                    W            =  intermediate storage array */
+/*                                    containing 1st quarter transformed */
+/*                                    primitive integrals */
+/*                  Output: */
+/*                    Y            =  contains the final half transformed */
+/*                                    integrals */
+/* ------------------------------------------------------------------------ */
 int erd__ctr_1st_half (int n, int npmax, int npmin,
                        int mij, int nrs, int nblock,
                        int ncr, int ncs, int npr, int nps,
@@ -1861,137 +1953,6 @@ int erd__ctr_1st_half (int n, int npmax, int npmin,
             }
         }
     }
-    
-    return 0;
-}
-
-
-/* ------------------------------------------------------------------------ */
-/*  OPERATION   : ERD__CTR_1ST_HALF */
-/*  MODULE      : ELECTRON REPULSION INTEGRALS DIRECT */
-/*  MODULE-ID   : ERD */
-/*  SUBROUTINES : none */
-/*  DESCRIPTION : This operation performs the first half contraction */
-/*                step on the incomming integrals over primitives */
-/*                in blocked form over invariant indices n: */
-
-/*                    y (n,rs) = sum  ccr (r,i) * ccs (s,j) * x (n,ij) */
-/*                                ij */
-
-/*                where ccr and ccs are the arrays containing the */
-/*                contraction coefficients. The sum is over the i and */
-/*                j primitives which are transmitted in arrays PRIMR */
-/*                and PRIMS, respectively, and may constitute only */
-/*                a subset of the full range of primitives. */
-
-/*                The contraction is split into two quarter steps, */
-/*                the order of which is determined by the # of i and */
-/*                j primitives: */
-
-/*                   a) w (n,j/i) = sum ccr/s (r/s,i/j) * x (n,ij) */
-/*                                  i/j */
-
-/*                   b) y (n,rs)  = sum ccs/r (s/r,j/i) * w (n,j/i) */
-/*                                  j/i */
-
-/*                Size of the intermediate w (n,i) or w (n,j) array */
-/*                has to be kept to a minimum and blocking over the */
-/*                invariant indices n has to be performed such that */
-/*                the intermediate w array does not get kicked out */
-/*                from the cache lines after the first quarter */
-/*                transformation. */
-
-/*                In case of csh equality (EQUALRS = .true), we only */
-/*                have to consider the lower triangle of the primitive */
-/*                integrals, which, with the exception of the diagonals, */
-/*                have to be used twice. */
-
-/*                        --- SEGMENTED CONTRACTIONS --- */
-
-/*                Segmented contractions are those defined to be */
-/*                within a certain consecutive i- and j-range of */
-/*                primitives. The segmented limits for each contraction */
-/*                are sitting respectively in CCBEGR and CCBEGS (lowest */
-/*                limit) and CCENDR and CCENDS (highest limit) and they */
-/*                determine which of the actual i's and j's from the */
-/*                PRIMR and PRIMS lists have to be considered for each */
-/*                contraction index. */
-
-/*                The code also allows efficient contractions in case */
-/*                there is only one contraction coefficient present */
-/*                in a certain contraction and its value is equal to 1. */
-/*                In such cases we can save lots of multiplications by */
-/*                1 and since these cases are quite common for certain */
-/*                types of basis functions it is worth including some */
-/*                IF's inside the contraction loops to gain speed. */
-
-
-/*                  Input: */
-
-/*                    N            =  # of invariant indices */
-/*                    NPMAX(MIN)   =  the maximum (minimum) # of */
-/*                                    primitives between both primitive */
-/*                                    sets i,j */
-/*                    MIJ          =  # of ij primitive products to */
-/*                                    be transformed */
-/*                    NRS          =  # of rs contractions to be done */
-/*                    NBLOCK       =  blocking size for invariant */
-/*                                    indices n */
-/*                    NCR(S)       =  # of contractions for the i -> R */
-/*                                    (j -> S) primitives */
-/*                    NPR(S)       =  # of i(j) primitives */
-/*                    CCR(S)       =  full set (including zeros) of */
-/*                                    contraction coefficients for */
-/*                                    R(S) contractions */
-/*                    CCBEGR(S)    =  lowest nonzero primitive i(j) */
-/*                                    index for R(S) contractions */
-/*                    CCENDR(S)    =  highest nonzero primitive i(j) */
-/*                                    index for R(S) contractions */
-/*                    PRIMR(S)     =  primitive i(j) indices */
-/*                    EQUALRS      =  is true, if only the lower */
-/*                                    triangle of ij primitive indices */
-/*                                    is present and consequently */
-/*                                    only the lower triangle of rs */
-/*                                    contractions needs to be evaluated */
-/*                    SWAPRS       =  if this is true, the 1st quarter */
-/*                                    transformation is over R followed */
-/*                                    by the 2nd over S. If false, the */
-/*                                    order is reversed: 1st over S then */
-/*                                    2nd over R */
-/*                    Pxxxx        =  intermediate storage arrays for */
-/*                                    primitive labels to bundle */
-/*                                    contraction steps in do loops */
-/*                                    (xxxx = USED,SAVE,PAIR) */
-/*                    X            =  array containing the primitive */
-/*                                    integrals */
-/*                    W            =  intermediate storage array */
-/*                                    containing 1st quarter transformed */
-/*                                    primitive integrals */
-
-/*                  Output: */
-
-/*                    Y            =  contains the final half transformed */
-/*                                    integrals */
-
-
-/*  AUTHOR      : Norbert Flocke */
-/* ------------------------------------------------------------------------ */
-int erd__ctr_1st_half_ (int * n, int * npmax, int * npmin,
-                        int * mij, int * nrs, int * nblock,
-                        int * ncr, int * ncs, int * npr,
-                        int * nps, double * ccr, double * ccs,
-                        int * ccbegr, int * ccbegs, int * ccendr,
-                        int * ccends, int * primr, int * prims,
-                        int * equalrs, int * swaprs, int * pused,
-                        int * psave, int * ppair, double * x,
-                        double * w, double * y)
-{
-    erd__ctr_1st_half (*n, *npmax, *npmin, *mij, *nrs, *nblock,
-                       *ncr, *ncs, *npr, *nps,
-                       ccr, ccs, ccbegr, ccbegs, ccendr, ccends,
-                       primr, prims, *equalrs, *swaprs,
-                       pused, psave, ppair,
-                       x, w, y);
     
     return 0;
 }

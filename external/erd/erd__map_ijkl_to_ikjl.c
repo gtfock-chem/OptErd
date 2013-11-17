@@ -31,12 +31,3 @@ int erd__map_ijkl_to_ikjl (int ni, int nj, int nk, int nl,
 
     return 0;
 }
-
-
-int erd__map_ijkl_to_ikjl_ (int *ni, int *nj, int *nk, int *nl,
-                            int *tile, double *x, double *y)
-{
-    erd__map_ijkl_to_ikjl (*ni, *nj, *nk, *nl, x, y);
-    
-    return 0;
-}

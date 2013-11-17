@@ -3,6 +3,101 @@
 #include <assert.h>
 
 
+/* ------------------------------------------------------------------------ */
+/*  OPERATION   : ERD__CTR_2ND_HALF_NEW */
+/*  MODULE      : ELECTRON REPULSION INTEGRALS DIRECT */
+/*  MODULE-ID   : ERD */
+/*  SUBROUTINES : none */
+/*  DESCRIPTION : This operation performs the second half contraction */
+/*                step on the incomming half transformed integrals */
+/*                in blocked form over invariant indices n and generates */
+/*                new fully transformed contracted batch of integrals: */
+/*                   y (n,tu) = sum  cct (t,k) * ccu (u,l) * x (n,kl) */
+/*                               kl */
+/*                where cct and ccu are the arrays containing the */
+/*                contraction coefficients. The sum is over the k and */
+/*                l primitives which are transmitted in arrays PRIMT */
+/*                and PRIMU, respectively, and may constitute only */
+/*                a subset of the full range of primitives. */
+/*                The contraction is split into two quarter steps, */
+/*                the order of which is determined by the # of k and */
+/*                l primitives: */
+/*                   a) w (n,l/k) = sum cct/u (t/u,k/l) * x (n,kl) */
+/*                                  k/l */
+/*                   b) y (n,tu)  = sum ccu/t (u/t,l/k) * w (n,l/k) */
+/*                                  l/k */
+/*                Size of the intermediate w (n,k) or w (n,l) array */
+/*                has to be kept to a minimum and blocking over the */
+/*                invariant indices n has to be performed such that */
+/*                the intermediate w array does not get kicked out */
+/*                from the cache lines after the first quarter */
+/*                transformation. */
+/*                In case of csh equality (EQUALTU = .true), we only */
+/*                have to consider the lower triangle of the primitive */
+/*                integrals, which, with the exception of the diagonals, */
+/*                have to be used twice. */
+/*                        --- SEGMENTED CONTRACTIONS --- */
+/*                Segmented contractions are those defined to be */
+/*                within a certain consecutive k- and l-range of */
+/*                primitives. The segmented limits for each contraction */
+/*                are sitting respectively in CCBEGT and CCBEGU (lowest */
+/*                limit) and CCENDT and CCENDU (highest limit) and they */
+/*                determine which of the actual k's and l's from the */
+/*                PRIMR and PRIMS lists have to be considered for each */
+/*                contraction index. */
+/*                The code also allows efficient contractions in case */
+/*                there is only one contraction coefficient present */
+/*                in a certain contraction and its value is equal to 1. */
+/*                In such cases we can save lots of multiplications by */
+/*                1 and since these cases are quite common for certain */
+/*                types of basis functions it is worth including some */
+/*                IF's inside the contraction loops to gain speed. */
+/*                  Input: */
+/*                    N            =  # of invariant indices */
+/*                    NPMAX(MIN)   =  the maximum (minimum) # of */
+/*                                    primitives between both primitive */
+/*                                    sets k,l */
+/*                    MKL          =  # of kl primitive products to */
+/*                                    be transformed */
+/*                    NTU          =  # of tu contractions to be done */
+/*                    NBLOCK       =  blocking size for invariant */
+/*                                    indices n */
+/*                    NCT(U)       =  # of contractions for the k -> T */
+/*                                    (l -> U) primitives */
+/*                    NPT(U)       =  # of k(l) primitives */
+/*                    CCT(U)       =  full set (including zeros) of */
+/*                                    contraction coefficients for */
+/*                                    T(U) contractions */
+/*                    CCBEGT(U)    =  lowest nonzero primitive k(l) */
+/*                                    index for T(U) contractions */
+/*                    CCENDT(U)    =  highest nonzero primitive k(l) */
+/*                                    index for T(U) contractions */
+/*                    PRIMT(U)     =  primitive k(l) indices */
+/*                    EQUALTU      =  is true, if only the lower */
+/*                                    triangle of kl primitive indices */
+/*                                    is present and consequently */
+/*                                    only the lower triangle of tu */
+/*                                    contractions needs to be evaluated */
+/*                    SWAPTU       =  if this is true, the 1st quarter */
+/*                                    transformation is over T followed */
+/*                                    by the 2nd over U. If false, the */
+/*                                    order is reversed: 1st over U then */
+/*                                    2nd over T */
+/*                    Pxxxx        =  intermediate storage arrays for */
+/*                                    primitive labels to bundle */
+/*                                    contraction steps in do loops */
+/*                                    (xxxx = USED,SAVE,PAIR) */
+/*                    X            =  array containing the half */
+/*                                    transformed integrals */
+/*                    W            =  intermediate storage array */
+/*                                    containing 3/4 transformed */
+/*                                    integrals */
+/*                    Y            =  original batch of fully contracted */
+/*                                    integrals */
+/*                  Output: */
+/*                    Y            =  updated batch of fully contracted */
+/*                                    integrals */
+/* ------------------------------------------------------------------------ */
 int erd__ctr_2nd_half_new (int n, int npmax, int npmin,
                            int mkl, int ntu, int nblock,
                            int nct, int ncu, int npt, int npu,
@@ -2052,121 +2147,3 @@ int erd__ctr_2nd_half_new (int n, int npmax, int npmin,
 
     return 0;
 }
-
-
-/* ------------------------------------------------------------------------ */
-/*  OPERATION   : ERD__CTR_2ND_HALF_NEW */
-/*  MODULE      : ELECTRON REPULSION INTEGRALS DIRECT */
-/*  MODULE-ID   : ERD */
-/*  SUBROUTINES : none */
-/*  DESCRIPTION : This operation performs the second half contraction */
-/*                step on the incomming half transformed integrals */
-/*                in blocked form over invariant indices n and generates */
-/*                new fully transformed contracted batch of integrals: */
-/*                   y (n,tu) = sum  cct (t,k) * ccu (u,l) * x (n,kl) */
-/*                               kl */
-/*                where cct and ccu are the arrays containing the */
-/*                contraction coefficients. The sum is over the k and */
-/*                l primitives which are transmitted in arrays PRIMT */
-/*                and PRIMU, respectively, and may constitute only */
-/*                a subset of the full range of primitives. */
-/*                The contraction is split into two quarter steps, */
-/*                the order of which is determined by the # of k and */
-/*                l primitives: */
-/*                   a) w (n,l/k) = sum cct/u (t/u,k/l) * x (n,kl) */
-/*                                  k/l */
-/*                   b) y (n,tu)  = sum ccu/t (u/t,l/k) * w (n,l/k) */
-/*                                  l/k */
-/*                Size of the intermediate w (n,k) or w (n,l) array */
-/*                has to be kept to a minimum and blocking over the */
-/*                invariant indices n has to be performed such that */
-/*                the intermediate w array does not get kicked out */
-/*                from the cache lines after the first quarter */
-/*                transformation. */
-/*                In case of csh equality (EQUALTU = .true), we only */
-/*                have to consider the lower triangle of the primitive */
-/*                integrals, which, with the exception of the diagonals, */
-/*                have to be used twice. */
-/*                        --- SEGMENTED CONTRACTIONS --- */
-/*                Segmented contractions are those defined to be */
-/*                within a certain consecutive k- and l-range of */
-/*                primitives. The segmented limits for each contraction */
-/*                are sitting respectively in CCBEGT and CCBEGU (lowest */
-/*                limit) and CCENDT and CCENDU (highest limit) and they */
-/*                determine which of the actual k's and l's from the */
-/*                PRIMR and PRIMS lists have to be considered for each */
-/*                contraction index. */
-/*                The code also allows efficient contractions in case */
-/*                there is only one contraction coefficient present */
-/*                in a certain contraction and its value is equal to 1. */
-/*                In such cases we can save lots of multiplications by */
-/*                1 and since these cases are quite common for certain */
-/*                types of basis functions it is worth including some */
-/*                IF's inside the contraction loops to gain speed. */
-/*                  Input: */
-/*                    N            =  # of invariant indices */
-/*                    NPMAX(MIN)   =  the maximum (minimum) # of */
-/*                                    primitives between both primitive */
-/*                                    sets k,l */
-/*                    MKL          =  # of kl primitive products to */
-/*                                    be transformed */
-/*                    NTU          =  # of tu contractions to be done */
-/*                    NBLOCK       =  blocking size for invariant */
-/*                                    indices n */
-/*                    NCT(U)       =  # of contractions for the k -> T */
-/*                                    (l -> U) primitives */
-/*                    NPT(U)       =  # of k(l) primitives */
-/*                    CCT(U)       =  full set (including zeros) of */
-/*                                    contraction coefficients for */
-/*                                    T(U) contractions */
-/*                    CCBEGT(U)    =  lowest nonzero primitive k(l) */
-/*                                    index for T(U) contractions */
-/*                    CCENDT(U)    =  highest nonzero primitive k(l) */
-/*                                    index for T(U) contractions */
-/*                    PRIMT(U)     =  primitive k(l) indices */
-/*                    EQUALTU      =  is true, if only the lower */
-/*                                    triangle of kl primitive indices */
-/*                                    is present and consequently */
-/*                                    only the lower triangle of tu */
-/*                                    contractions needs to be evaluated */
-/*                    SWAPTU       =  if this is true, the 1st quarter */
-/*                                    transformation is over T followed */
-/*                                    by the 2nd over U. If false, the */
-/*                                    order is reversed: 1st over U then */
-/*                                    2nd over T */
-/*                    Pxxxx        =  intermediate storage arrays for */
-/*                                    primitive labels to bundle */
-/*                                    contraction steps in do loops */
-/*                                    (xxxx = USED,SAVE,PAIR) */
-/*                    X            =  array containing the half */
-/*                                    transformed integrals */
-/*                    W            =  intermediate storage array */
-/*                                    containing 3/4 transformed */
-/*                                    integrals */
-/*                    Y            =  original batch of fully contracted */
-/*                                    integrals */
-/*                  Output: */
-/*                    Y            =  updated batch of fully contracted */
-/*                                    integrals */
-/* ------------------------------------------------------------------------ */
-int erd__ctr_2nd_half_new_ (int * n, int * npmax, int * npmin,
-                            int * mkl, int * ntu,
-                            int * nblock, int * nct, int * ncu,
-                            int * npt, int * npu, double * cct,
-                            double * ccu, int * ccbegt, int * ccbegu,
-                            int * ccendt, int * ccendu, int * primt,
-                            int * primu, int * equaltu, int * swaptu,
-                            int * pused, int * psave, int * ppair,
-                            double * x, double * w, double * y)
-{
-    erd__ctr_2nd_half_new (*n, *npmax, *npmin, *mkl,
-                           *ntu, *nblock, *nct, *ncu,
-                           *npt, *npu, cct, ccu,
-                           ccbegt, ccbegu, ccendt, ccendu,
-                           primt, primu, *equaltu, *swaptu,
-                           pused, psave, ppair,
-                           x, w, y);
-
-    return 0;
-}
-

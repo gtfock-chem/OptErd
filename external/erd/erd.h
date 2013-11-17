@@ -9,6 +9,31 @@
 #define MIN(a,b)    ((a) > (b) ? (b) : (a))
 #define PREFACT     9.027033336764101
 
+
+/*******************************************************************/
+// C functions
+
+int erd__move_ry (int nintgrl, int nindex,
+                  int notmove, int move, int nry,
+                  int index, double *x,
+                  int *ixoff, double *y);
+
+int erd__set_ij_kl_pairs(int npgtoa, int npgtob, int npgtoc, int npgtod,
+	int atomab, int atomcd, int equalab, int equalcd,
+	int swaprs, int swaptu,
+	double xa, double ya, double za,
+	double xb, double yb, double zb,
+	double xc, double yc, double zc,
+	double xd, double yd, double zd,
+	double rnabsq, double rncdsq, double prefact,
+	double *YEP_RESTRICT alphaa, double *YEP_RESTRICT alphab,
+	double *YEP_RESTRICT alphac, double *YEP_RESTRICT alphad,
+	double *YEP_RESTRICT ftable, int mgrid, int ngrid,
+	double tmax, double tstep,
+	double tvstep, int screen, int *YEP_RESTRICT empty,
+	int *YEP_RESTRICT nij_ptr, int *YEP_RESTRICT nkl_ptr, int *YEP_RESTRICT prima,
+	int *YEP_RESTRICT primb, int *YEP_RESTRICT primc, int *YEP_RESTRICT primd,
+	double *YEP_RESTRICT rho);
 	
 int erd__map_ijkl_to_ikjl (int ni, int nj, int nk, int nl,
                            double *x, double *y);
@@ -224,12 +249,6 @@ int erd__ctr_4index_block (int npsize, int ncsize, int nwsize,
                            int *ppair, double *pbatch,
                            double *work, double *cbatch);
 
-int erd__normalize_cartesian_ (int *, int *, int *, double *, double *);
-
-int erd__spherical_transform_ (int *, int *, int *,
-                               int *, int *, int *,
-                               double *, double *, double *);
-
 int erd__e0f0_def_blocks (int zmax, int npgtoa, int npgtob,
                           int npgtoc, int npgtod,
                           int shellp, int shellq,
@@ -256,56 +275,59 @@ int erd__e0f0_def_blocks (int zmax, int npgtoa, int npgtob,
                           int *zd00x, int *zd00y, int *zd00z,
                           int *zint2dx, int *zint2dy, int *zint2dz);
 
-int erd__set_abcd (int ncgto1, int ncgto2,
-                   int ncgto3, int ncgto4,
-                   int npgto1, int npgto2,
-                   int npgto3, int npgto4,
-                   int shell1, int shell2,
-                   int shell3, int shell4,
-                   double x1, double y1, double z1,
-                   double x2, double y2, double z2,
-                   double x3, double y3, double z3,
-                   double x4, double y4, double z4,
-                   double *exp1, double *exp2,
-                   double *exp3, double *exp4,
-                   double *cc1, double *cc2,
-                   double *cc3, double *cc4,
-                   int spheric, int *ncgtoa, int *ncgtob,
-                   int *ncgtoc, int *ncgtod,
-                   int *npgtoa, int *npgtob,
-                   int *npgtoc, int *npgtod,
-                   int *shella, int *shellb,
-                   int *shellc, int *shelld,
-                   int *shellp, int *shellq, int *shellt,
-                   int *mxshell,
-                   double *xa, double *ya, double *za,
-                   double *xb, double *yb, double *zb,
-                   double *xc, double *yc, double *zc,
-                   double *xd, double *yd, double *zd,
-                   int *atomic, int *atomab, int *atomcd,
-                   int *equalab, int *equalcd,
-                   double *abx, double *aby, double *abz,
-                   double *cdx, double *cdy, double *cdz,
-                   int *nabcoor, int *ncdcoor,
-                   double *rnabsq, double *rncdsq,
-                   double *spnorm, int *nxyza, int *nxyzb,
-                   int *nxyzc, int *nxyzd,
-                   int *nxyzet, int *nxyzft,
-                   int *nxyzp, int *nxyzq,
-                   int *nrya, int *nryb,
-                   int *nryc, int *nryd,
-                   int *indexa, int *indexb,
-                   int *indexc, int *indexd,
-                   int *swap12, int *swap34,
-                   int *swaprs, int *swaptu,
-                   int *tr1234, int *lexpa, int *lexpb,
-                   int *lexpc, int *lexpd,
-                   int *lcca, int *lccb, int *lccc, int *lccd,
-                   int *lccsega, int *lccsegb,
-                   int *lccsegc, int *lccsegd,
-                   int *nxyzhrr, int *ncolhrr, int *nrothrr, int *empty);
+int erd__hrr_transform (int m, int nrow,
+                        int nxyzet, int nxyzab,
+                        int nxyza, int nxyzb,
+                        int *lrow, int *row,
+                        double *rot, double *x, double *y);
+
+int erd__xyz_to_ry_abcd (int nxyza, int nxyzb,
+                         int nxyzc, int nxyzd,
+                         int nrya, int nryb,
+                         int nryc, int nryd,
+                         int shella, int shellb,
+                         int shellc, int shelld,
+                         int istart, int zstart,
+                         int *nrowa, int *nrowb,
+                         int *nrowc, int *nrowd,
+                         int *nrota, int *nrotb,
+                         int *nrotc, int *nrotd,
+                         int *z00a, int *z00b,
+                         int *z00c, int *z00d,
+                         int *i0a1, int *i0b1,
+                         int *i0c1, int *i0d1,
+                         int *i0a2, int *i0b2,
+                         int *i0c2, int *i0d2,
+                         int *iused, int *zused, 
+                         int *icore, double *zcore);
+
 
 /*******************************************************************/
+// Fortran functions
 
+double erd__dsqmin_line_segments_ (double *, double *,
+	double *, double *,
+	double *, double *,
+	double *, double *,
+	double *, double *,
+	double *, double *);
 
+int erd__normalize_cartesian_ (int *, int *, int *, double *, double *);
+
+int erd__spherical_transform_ (int *, int *, int *,
+                               int *, int *, int *,
+                               double *, double *, double *);
+
+int erd__xyz_to_ry_abcd__(int *, int *, 
+	    int *, int *, int *, int *, int *, int *, 
+	    int *, int *, int *, int *, int *, int *, 
+	    int *, int *, int *, int *, int *, int *, 
+	    int *, int *, int *, int *, int *, int *, 
+	    int *, int *, int *, int *, int *, int *, 
+	    int *, int *, int *, int *, int *, double*);
+
+int erd__normalize_cartesian__(int *, int *, 
+	    int *, double *, double *);
+
+    
 #endif /* __ERD_H__ */

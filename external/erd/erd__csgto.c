@@ -248,37 +248,6 @@ int erd__csgto (int imax, int zmax,
     lcc2 = lcc1 + npgto1 * ncgto1;
     lcc3 = lcc2 + npgto2 * ncgto2;
     lcc4 = lcc3 + npgto3 * ncgto3;
-    #if 0
-    erd__set_abcd (ncgto1, ncgto2, ncgto3, ncgto4,
-                   npgto1, npgto2, npgto3, npgto4,
-                   shell1, shell2, shell3, shell4,
-                   x1, y1, z1, x2, y2, z2,
-                   x3, y3, z3, x4, y4, z4,
-                   &alpha[lexp1], &alpha[lexp2],
-                   &alpha[lexp3], &alpha[lexp4],
-                   &cc[lcc1], &cc[lcc2],
-                   &cc[lcc3], &cc[lcc4],
-                   spheric, &ncgtoa, &ncgtob,
-                   &ncgtoc, &ncgtod,
-                   &npgtoa, &npgtob, &npgtoc, &npgtod,
-                   &shella, &shellb, &shellc, &shelld,
-                   &shellp, &shellq, &shellt, &mxshell,
-                   &xa, &ya, &za, &xb, &yb, &zb,
-                   &xc, &yc, &zc, &xd, &yd, &zd,
-                   &atomic, &atomab, &atomcd,
-                   &equalab, &equalcd,
-                   &abx, &aby, &abz, &cdx, &cdy, &cdz,
-                   &nabcoor, &ncdcoor, &rnabsq, &rncdsq,
-                   &spnorm, &nxyza, &nxyzb, &nxyzc, &nxyzd,
-                   &nxyzet, &nxyzft, &nxyzp, &nxyzq,
-                   &nrya, &nryb, &nryc, &nryd,
-                   &indexa, &indexb, &indexc, &indexd,
-                   &swap12, &swap34, &swaprs, &swaptu, &tr1234,
-                   &lexpa, &lexpb, &lexpc, &lexpd,
-                   &lcca, &lccb, &lccc, &lccd,
-                   &lccsega, &lccsegb, &lccsegc, &lccsegd,
-                   &nxyzhrr, &ncolhrr, &nrothrr, &empty);
-    #else
     erd__set_abcd_ (&ncgto1, &ncgto2, &ncgto3, &ncgto4,
                     &npgto1, &npgto2, &npgto3, &npgto4,
                     &shell1, &shell2, &shell3, &shell4,
@@ -307,8 +276,7 @@ int erd__csgto (int imax, int zmax,
                     &lexpa, &lexpb, &lexpc, &lexpd,
                     &lcca, &lccb, &lccc, &lccd,
                     &lccsega, &lccsegb, &lccsegc, &lccsegd,
-                    &nxyzhrr, &ncolhrr, &nrothrr, &empty);    
-    #endif
+                    &nxyzhrr, &ncolhrr, &nrothrr, &empty);
     if (empty)
     {
         *nbatch = 0;
@@ -344,7 +312,6 @@ int erd__csgto (int imax, int zmax,
     iprimb = iprima + npgtoab;
     iprimc = iprimb + npgtoab;
     iprimd = iprimc + npgtocd;
-    #if 0
     erd__set_ij_kl_pairs (npgtoa, npgtob, npgtoc, npgtod,
                           atomab, atomcd, equalab, equalcd,
                           swaprs, swaptu, xa, ya, za, xb, yb, zb,
@@ -357,23 +324,6 @@ int erd__csgto (int imax, int zmax,
                           screen, &empty, &nij, &nkl,
                           &icore[iprima], &icore[iprimb], &icore[iprimc],
                           &icore[iprimd], &zcore[1]);
-    #else
-    double aa = PREFACT;
-    erd__set_ij_kl_pairs_ (&npgtoa, &npgtob, &npgtoc, &npgtod,
-                           &npgtoab, &npgtocd,
-                           &atomab, &atomcd, &equalab, &equalcd,
-                           &swaprs, &swaptu,
-                           &xa, &ya, &za, &xb, &yb, &zb,
-                           &xc, &yc, &zc, &xd, &yd, &zd,
-                           &rnabsq, &rncdsq, &aa,
-                           &alpha[lexpa], &alpha[lexpb],
-                           &alpha[lexpc], &alpha[lexpd],
-                           &ftable[ftable_offset], &mgrid, &ngrid,
-                           &tmax, &tstep, &tvstep,
-                           &screen, &empty, &nij, &nkl,
-                           &icore[iprima], &icore[iprimb], &icore[iprimc],
-                           &icore[iprimd], &zcore[1]);
-    #endif
     if (empty)
     {
         *nbatch = 0;
@@ -700,18 +650,16 @@ int erd__csgto (int imax, int zmax,
     if (shelld != 0)
     {
         int i__1;
-        int i__2;
         erd__hrr_matrix_ (&nrothrr, &ncolhrr, &nxyzft, &nxyzc, &nxyzq,
                           &shellc, &shelld, &shellq, &ncdcoor, &cdx, &cdy,
                           &cdz, &icore[ihscr], &pos1, &pos2, &nrowhrr,
                           &icore[ihnrow], &icore[ihrow], &zcore[zhrot]);
-        i__1 = nctr * nxyzet;
-        i__2 = nxyzc * nxyzd;
-        erd__hrr_transform_ (&i__1, &nrowhrr, &nxyzft, &i__2, &nxyzc, &nxyzd,
-                             &icore[ihnrow + pos1 - 1],
-                             &icore[ihrow + pos2 - 1],
-                             &zcore[zhrot + pos2 - 1], &zcore[in],
-                             &zcore[out]);
+        erd__hrr_transform (nctr * nxyzet, nrowhrr, nxyzft,
+                            nxyzc * nxyzd, nxyzc, nxyzd,
+                            &icore[ihnrow + pos1 - 1],
+                            &icore[ihrow + pos2 - 1],
+                            &zcore[zhrot + pos2 - 1], &zcore[in],
+                            &zcore[out]);
         temp = in;
         in = out;
         out = temp;
@@ -743,9 +691,8 @@ int erd__csgto (int imax, int zmax,
         move = *nbatch / (notmove * nryd);
         if (move > 1)
         {
-            int c__4 = 4;
-            erd__move_ry_ (nbatch, &c__4, &notmove, &move, &nryd, &indexd,
-                           tile, &zcore[in], ixoff, &zcore[out]);
+            erd__move_ry (*nbatch, 4, notmove, move, nryd, indexd,
+                          &zcore[in], ixoff, &zcore[out]);
             temp = in;
             in = out;
             out = temp;
@@ -779,9 +726,8 @@ int erd__csgto (int imax, int zmax,
         move = *nbatch / (notmove * nryc);
         if (move > 1)
         {
-            int c__4 = 4;
-            erd__move_ry_ (nbatch, &c__4, &notmove, &move, &nryc, &indexc,
-                           tile, &zcore[in], ixoff, &zcore[out]);
+            erd__move_ry (*nbatch, 4, notmove, move, nryc, indexc,
+                           &zcore[in], ixoff, &zcore[out]);
             temp = in;
             in = out;
             out = temp;
@@ -797,18 +743,16 @@ int erd__csgto (int imax, int zmax,
     if (shellb != 0)
     {
         int i__1;
-        int i__2;
         erd__hrr_matrix_ (&nrothrr, &ncolhrr, &nxyzet, &nxyza, &nxyzp,
                           &shella, &shellb, &shellp, &nabcoor, &abx, &aby,
                           &abz, &icore[ihscr], &pos1, &pos2, &nrowhrr,
                           &icore[ihnrow], &icore[ihrow], &zcore[zhrot]);
-        i__1 = nctr * nryc * nryd;
-        i__2 = nxyza * nxyzb;
-        erd__hrr_transform_ (&i__1, &nrowhrr, &nxyzet, &i__2, &nxyza, &nxyzb,
-                             &icore[ihnrow + pos1 - 1],
-                             &icore[ihrow + pos2 - 1],
-                             &zcore[zhrot + pos2 - 1], &zcore[in],
-                             &zcore[out]);
+        erd__hrr_transform (nctr * nryc * nryd, nrowhrr, nxyzet,
+                            nxyza * nxyzb, nxyza, nxyzb,
+                            &icore[ihnrow + pos1 - 1],
+                            &icore[ihrow + pos2 - 1],
+                            &zcore[zhrot + pos2 - 1], &zcore[in],
+                            &zcore[out]);
         temp = in;
         in = out;
         out = temp;
@@ -840,9 +784,8 @@ int erd__csgto (int imax, int zmax,
         move = *nbatch / (notmove * nryb);
         if (move > 1)
         {
-            int c__4 = 4;
-            erd__move_ry_ (nbatch, &c__4, &notmove, &move, &nryb, &indexb,
-                           tile, &zcore[in], ixoff, &zcore[out]);
+            erd__move_ry (*nbatch, 4, notmove, move, nryb, indexb,
+                          &zcore[in], ixoff, &zcore[out]);
             temp = in;
             in = out;
             out = temp;
@@ -877,9 +820,8 @@ int erd__csgto (int imax, int zmax,
         move = *nbatch / (notmove * nrya);
         if (move > 1)
         {
-            int c__4 = 4;
-            erd__move_ry_ (nbatch, &c__4, &notmove, &move, &nrya, &indexa,
-                           tile, &zcore[in], ixoff, &zcore[out]);
+            erd__move_ry (*nbatch, 4, notmove, move, nrya, indexa,
+                          &zcore[in], ixoff, &zcore[out]);
             temp = in;
             in = out;
             out = temp;
