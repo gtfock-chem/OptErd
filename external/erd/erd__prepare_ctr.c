@@ -163,9 +163,7 @@ int erd__prepare_ctr (int ncsize, int nij, int nkl,
                 normd[n] = pow (alphad[n], power);
             }
         }
-    }
-    
-
+    }    
 
 /*             ...rescale one of the A,B,C,D norms, which has the */
 /*                least number of elements. */
@@ -201,7 +199,6 @@ int erd__prepare_ctr (int ncsize, int nij, int nkl,
             normd[n] = factor * normd[n];
         }
     }
-
 
 /*             ...initialize contraction batch (if necessary). */
     if (blocked)

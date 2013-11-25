@@ -305,23 +305,86 @@ int erd__spherical_transform (int m, int nrow, int nxyz, int nry,
                               int *lrow, int *row, double *rot,
                               double *x, double *y);
 
+int erd__hrr_step (int nab, int nabo, int mrowin,
+                   int mrowout, int nxyzx, int nxyzp,
+                   int nxyza, int nxyzb, int nxyzao,
+                   int shellx, int shellp, int shellb,
+                   double abx, double aby, double abz,
+                   int *cpair, int *nrowin, int *rowin, double *win,
+                   int *nrowout, int *rowout, double *wout);
+
+int erd__hrr_matrix (int nrothrr, int ncolhrr,
+                     int nxyzet, int nxyza, int nxyzp,
+                     int shella, int shellb, int shellp,
+                     int nabcoor, double abx, double aby, double abz,
+                     int *work, int *in1, int *in2,
+                     int *nrowout, int *nrow,
+                     int *row, double *t);
+
+double erd__dsqmin_line_segments (double xp0, double yp0,
+                                  double zp0, double xp1,
+                                  double yp1, double zp1,
+                                  double xq0, double yq0,
+                                  double zq0, double xq1,
+                                  double yq1, double zq1);
+
 
 /*******************************************************************/
 // Fortran functions
 
-double erd__dsqmin_line_segments_ (double *, double *,
-	double *, double *,
-	double *, double *,
-	double *, double *,
-	double *, double *,
-	double *, double *);
 
 int erd__normalize_cartesian_ (int *, int *, int *, double *, double *);
 
-int erd__normalize_cartesian__(int *, int *, 
-	    int *, double *, double *);
-
 int erd__cartesian_norms_ (int *, double *);
+
+int erd__set_abcd_ (int *, int *, 
+	    int *, int *, int *, int *, int *, int *, 
+	    int *, int *, int *, int *, double *, 
+	    double *, double *, double *, double *, 
+	    double *, double *, double *, double *, 
+	    double *, double *, double *, double *, 
+	    double *, double *, double *, double *, 
+	    double *, double *, double *, int *, int *, 
+	    int *, int *, int *, int *, int *, int *, 
+	    int *, int *, int *, int *, int *, int *, 
+	    int *, int *, int *, double *, double *, 
+	    double *, double *, double *, double *, 
+	    double *, double *, double *, double *, 
+	    double *, double *, int *, int *, int *, 
+	    int *, int *, double *, double *, double *, 
+	    double *, double *, double *, int *, int *, 
+	    double *, double *, double *, int *, int *, 
+	    int *, int *, int *, int *, int *, int *, 
+	    int *, int *, int *, int *, int *, int *, 
+	    int *, int *, int *, int *, int *, int *, 
+	    int *, int *, int *, int *, int *, int *, 
+	    int *, int *, int *, int *, int *, int *, 
+	    int *, int *, int *, int *, int *);
+
+int erd__e0f0_pcgto_block_ (int *, int *, 
+	    int *, int *, int *, int *, int *, int *, 
+	    int *, int *, int *, int *, int *, int *, 
+	    int *, int *, int *, int *, int *, int *, 
+	    int *, int *, int *, int *, int *, int *, 
+	    int *, int *, int *, int *, double *, 
+	    double *, double *, double *, double *, 
+	    double *, double *, double *, double *, 
+	    double *, double *, double *, double *, 
+	    double *, double *, double *, double *, 
+	    double *, double *, double *, double *, 
+	    double *, double *, int *, int *, double *, 
+	    double *, double *, int *, int *, int *, 
+	    int *, double *, double *, double *, double *,
+	     double *, double *, double *, double *, 
+	    double *, double *, double *, double *, 
+	    double *, double *, double *, double *, 
+	    double *, double *, double *, double *, 
+	    double *, double *, double *, double *, 
+	    double *, double *, double *, double *, 
+	    double *, double *, double *, double *, 
+	    double *, double *, double *, double *, 
+	    double *, double *, double *, double *, 
+	    double *, double *, double *);;
 
 
 #endif /* __ERD_H__ */

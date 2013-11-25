@@ -650,11 +650,11 @@ int erd__csgto (int imax, int zmax,
 /*                   batch (ijkl[d'],e0,c') --> batch (ijkl[c'd'],e0) */
     if (shelld != 0)
     {
-        int i__1;
-        erd__hrr_matrix_ (&nrothrr, &ncolhrr, &nxyzft, &nxyzc, &nxyzq,
-                          &shellc, &shelld, &shellq, &ncdcoor, &cdx, &cdy,
-                          &cdz, &icore[ihscr], &pos1, &pos2, &nrowhrr,
-                          &icore[ihnrow], &icore[ihrow], &zcore[zhrot]);
+        erd__hrr_matrix (nrothrr, ncolhrr, nxyzft, nxyzc, nxyzq,
+                         shellc, shelld, shellq,
+                         ncdcoor, cdx, cdy, cdz,
+                         &icore[ihscr], &pos1, &pos2, &nrowhrr,
+                         &icore[ihnrow], &icore[ihrow], &zcore[zhrot]);
         erd__hrr_transform (nctr * nxyzet, nrowhrr, nxyzft,
                             nxyzc * nxyzd, nxyzc, nxyzd,
                             &icore[ihnrow + pos1 - 1],
@@ -668,7 +668,6 @@ int erd__csgto (int imax, int zmax,
         {
             if (spheric)
             {
-                i__1 = nctr * nxyzet * nxyzc;
                 erd__spherical_transform (nctr * nxyzet * nxyzc,
                                           nrowd, nxyzd, nryd,
                                           &icore[isnrowd], &icore[isrowd],
@@ -680,6 +679,7 @@ int erd__csgto (int imax, int zmax,
             }
             else
             {
+                int i__1;
                 i__1 = nctr * nxyzet * nxyzc;
                 erd__normalize_cartesian_ (&i__1, &nxyzd, &shelld,
                                            &zcore[zcnorm], &zcore[in]);
@@ -702,7 +702,6 @@ int erd__csgto (int imax, int zmax,
     }
     if (shellc > 1)
     {
-        int i__1;
         if (spheric)
         {
             erd__spherical_transform (nctr * nxyzet * nryd,
@@ -716,6 +715,7 @@ int erd__csgto (int imax, int zmax,
         }
         else
         {
+            int i__1;
             i__1 = nctr * nxyzet * nryd;
             erd__normalize_cartesian_ (&i__1, &nxyzc, &shellc,
                                         &zcore[zcnorm], &zcore[in]);
@@ -744,11 +744,11 @@ int erd__csgto (int imax, int zmax,
 /*                   batch (ijkl[b'c'd'],a') --> batch (ijkl[a'b'c'd']) */
     if (shellb != 0)
     {
-        int i__1;
-        erd__hrr_matrix_ (&nrothrr, &ncolhrr, &nxyzet, &nxyza, &nxyzp,
-                          &shella, &shellb, &shellp, &nabcoor, &abx, &aby,
-                          &abz, &icore[ihscr], &pos1, &pos2, &nrowhrr,
-                          &icore[ihnrow], &icore[ihrow], &zcore[zhrot]);
+        erd__hrr_matrix (nrothrr, ncolhrr, nxyzet, nxyza, nxyzp,
+                         shella, shellb, shellp,
+                         nabcoor, abx, aby, abz,
+                         &icore[ihscr], &pos1, &pos2, &nrowhrr,
+                         &icore[ihnrow], &icore[ihrow], &zcore[zhrot]);
         erd__hrr_transform (nctr * nryc * nryd, nrowhrr, nxyzet,
                             nxyza * nxyzb, nxyza, nxyzb,
                             &icore[ihnrow + pos1 - 1],
@@ -762,7 +762,6 @@ int erd__csgto (int imax, int zmax,
         {
             if (spheric)
             {
-                i__1 = nctr * nryc * nryd * nxyza;
                 erd__spherical_transform (nctr * nryc * nryd * nxyza,
                                           nrowb, nxyzb, nryb,
                                           &icore[isnrowb], &icore[isrowb],
@@ -774,6 +773,7 @@ int erd__csgto (int imax, int zmax,
             }
             else
             {
+                int i__1;
                 i__1 = nctr * nryc * nryd * nxyza;
                 erd__normalize_cartesian_ (&i__1, &nxyzb, &shellb,
                                            &zcore[zcnorm], &zcore[in]);
@@ -798,8 +798,6 @@ int erd__csgto (int imax, int zmax,
     {
         if (spheric)
         {
-            int i__1;
-            i__1 = nctr * nryb * nryc * nryd;
             erd__spherical_transform (nctr * nryb * nryc * nryd,
                                       nrowa, nxyza, nrya,
                                       &icore[isnrowa], &icore[isrowa],

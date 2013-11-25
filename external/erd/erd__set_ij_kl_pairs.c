@@ -348,8 +348,8 @@ int erd__set_ij_kl_pairs (int npgtoa, int npgtob, int npgtoc, int npgtod,
 	}
 
 	// compute min
-	rminsq = erd__dsqmin_line_segments_ (&xa, &ya, &za, &xb, &yb, &zb,
-	                                     &xc, &yc, &zc, &xd, &yd, &zd);
+	rminsq = erd__dsqmin_line_segments (xa, ya, za, xb, yb, zb,
+	                                    xc, yc, zc, xd, yd, zd);
 
 	const double a = vector_min(alphaa, npgtoa);
 	const double b = vector_min(alphab, npgtob);
