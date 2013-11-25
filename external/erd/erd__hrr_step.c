@@ -429,20 +429,3 @@ int erd__hrr_step (int nab, int nabo, int mrowin,
 
     return 0;
 }
-
-
-int erd__hrr_step_ (int * nab, int * nabo, int *mrowin,
-                 int * mrowout, int * nxyzx, int * nxyzp,
-                 int * nxyza, int * nxyzb, int * nxyzao,
-                 int * shellx, int * shellp, int * shellb,
-                 double * abx, double * aby, double * abz,
-                 int * cpair, int * nrowin, int * rowin,
-                 double * win, int * nrowout, int * rowout,
-                 double * wout)
-{
-    erd__hrr_step (*nab, *nabo, *mrowin, *mrowout,
-                   *nxyzx, *nxyzp, *nxyza, *nxyzb,
-                   *nxyzao, *shellx, *shellp, *shellb,
-                   *abx, *aby, *abz,
-                   cpair, nrowin, rowin, win, nrowout, rowout, wout);
-}
