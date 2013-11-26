@@ -125,12 +125,10 @@
 /*                    CBATCH       =  the update batch of contracted */
 /*                                    integrals after contraction */
 /* ------------------------------------------------------------------------ */
-int erd__ctr_4index_block (int npsize, int ncsize, int nwsize,
-                           int nxyzt, int mijkl,
+int erd__ctr_4index_block (int nxyzt, int mijkl,
                            int mij, int mkl, int nrs, int ntu,
                            int npr, int nps, int npt, int npu,
                            int ncr, int ncs, int nct, int ncu,
-                           int mxprim, int mnprim,
                            double *ccr, double *ccs,
                            double *cct, double *ccu,
                            int *ccbegr, int *ccbegs,
@@ -139,58 +137,21 @@ int erd__ctr_4index_block (int npsize, int ncsize, int nwsize,
                            int *ccendt, int *ccendu,
                            int *primr, int *prims,
                            int *primt, int *primu,
-                           int l1cache, int tile, int nctrow,
                            int equalrs, int equaltu,
-                           int swaprs, int swaptu,
-                           int ptrans, int blocked,
+                           int swaprs, int swaptu, int ptrans,
                            int *pused, int *psave,
                            int *ppair, double *pbatch,
                            double *work, double *cbatch)
 {
-    int ccr_dim1, ccr_offset, ccs_dim1, ccs_offset, cct_dim1, cct_offset,
-        ccu_dim1, ccu_offset;
-
-    /* Local variables */
     int n;    
     int npmin;
     int npmax;
     int wused;
     int inwork;
 
-    --pbatch;
-    --cbatch;
-    --work;
-    --prims;
-    --primr;
-    --primu;
-    --primt;
-    --ccendr;
-    --ccbegr;
-    ccr_dim1 = npr;
-    ccr_offset = 1 + ccr_dim1 * 1;
-    ccr -= ccr_offset;
-    --ccends;
-    --ccbegs;
-    ccs_dim1 = nps;
-    ccs_offset = 1 + ccs_dim1 * 1;
-    ccs -= ccs_offset;
-    --ccendt;
-    --ccbegt;
-    cct_dim1 = npt;
-    cct_offset = 1 + cct_dim1 * 1;
-    cct -= cct_offset;
-    --ccendu;
-    --ccbegu;
-    ccu_dim1 = npu;
-    ccu_offset = 1 + ccu_dim1 * 1;
-    ccu -= ccu_offset;
-    --ppair;
-    --psave;
-    --pused;
-
     if (ptrans && mijkl > 1 && nxyzt > 1)
     {
-        erd__transpose_batch (mijkl, nxyzt, &(pbatch[1]), &(work[1]));
+        erd__transpose_batch (mijkl, nxyzt, pbatch, work);
         inwork = 1;
     }
     else
@@ -225,22 +186,22 @@ int erd__ctr_4index_block (int npsize, int ncsize, int nwsize,
     {
         wused = n * mij;
         erd__ctr_1st_half (n, npmax, npmin, mij, nrs, n, ncr, ncs,
-                           npr, nps, &(ccr[ccr_offset]), &(ccs[ccs_offset]),
-                           &ccbegr[1], &ccbegs[1], &ccendr[1], &(ccends[1]),
-                           &primr[1], &prims[1], equalrs, swaprs, &pused[1],
-                           &psave[1], &ppair[1], &work[1], &work[wused + 1],
-                           &pbatch[1]);
+                           npr, nps, ccr, ccs,
+                           ccbegr, ccbegs, ccendr, ccends,
+                           primr, prims, equalrs, swaprs,
+                           pused, psave, ppair,
+                           work, &(work[wused]), pbatch);
         inwork = 0;
     }
     else
     {
         wused = n * nrs;
         erd__ctr_1st_half (n, npmax, npmin, mij, nrs, n, ncr, ncs,
-                           npr, nps, &ccr[ccr_offset], &ccs[ccs_offset],
-                           &ccbegr[1], &ccbegs[1], &ccendr[1], &ccends[1],
-                           &primr[1], &prims[1], equalrs, swaprs, &pused[1],
-                           &psave[1], &ppair[1], &pbatch[1],
-                           &work[wused + 1], &work[1]);
+                           npr, nps, ccr, ccs,
+                           ccbegr, ccbegs, ccendr, ccends,
+                           primr, prims, equalrs, swaprs,
+                           pused, psave, ppair,
+                           pbatch, &(work[wused]), work);
         inwork = 1;
     }
 
@@ -251,13 +212,13 @@ int erd__ctr_4index_block (int npsize, int ncsize, int nwsize,
         if (inwork)
         {
             erd__map_ijkl_to_ikjl (nxyzt, mkl, nrs, 1,
-                                   &work[1], &pbatch[1]);
+                                   work, pbatch);
             inwork = 0;
         }
         else
         {
             erd__map_ijkl_to_ikjl (nxyzt, mkl, nrs, 1,
-                                   &pbatch[1], &work[1]);
+                                   pbatch, work);
             inwork = 1;
         }
     }
@@ -276,22 +237,21 @@ int erd__ctr_4index_block (int npsize, int ncsize, int nwsize,
     {
         wused = n * mkl;
         erd__ctr_2nd_half_new (n, npmax, npmin, mkl, ntu, n, nct,
-                               ncu, npt, npu, &cct[cct_offset],
-                               &ccu[ccu_offset], &ccbegt[1], &ccbegu[1],
-                               &ccendt[1], &ccendu[1], &primt[1], &primu[1],
-                               equaltu, swaptu, &pused[1], &psave[1],
-                               &ppair[1], &work[1], &work[wused + 1],
-                               &cbatch[1]);
+                               ncu, npt, npu, cct, ccu,
+                               ccbegt, ccbegu, ccendt, ccendu,
+                               primt, primu, equaltu, swaptu,
+                               pused, psave, ppair,
+                               work, &(work[wused]), cbatch);
     }
     else
     {
         wused = 0;
         erd__ctr_2nd_half_new (n, npmax, npmin, mkl, ntu, n, nct,
-                               ncu, npt, npu, &cct[cct_offset],
-                               &ccu[ccu_offset], &ccbegt[1], &ccbegu[1],
-                               &ccendt[1], &ccendu[1], &primt[1], &primu[1],
-                               equaltu, swaptu, &pused[1], &psave[1],
-                               &ppair[1], &pbatch[1], &work[1], &cbatch[1]);
+                               ncu, npt, npu, cct, ccu,
+                               ccbegt, ccbegu, ccendt, ccendu,
+                               primt, primu, equaltu, swaptu,
+                               pused, psave, ppair,
+                               pbatch, work, cbatch);
     }
 
     return 0;

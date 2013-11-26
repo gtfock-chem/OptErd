@@ -378,9 +378,9 @@ int erd__1111_csgto (int imax, int zmax,
                       npgto1, npgto2, npgto3, npgto4,
                       shell1, shell2, shell3, shell4,
                       &alpha[lexp1], &alpha[lexp2],
-                      &alpha[lexp3], &alpha[lexp4], PREFACT,
-                      spnorm, equal12, equal34, blocked,
-                      &zcore[1], &zcore[znorm1], &zcore[znorm2],
+                      &alpha[lexp3], &alpha[lexp4], spnorm,
+                      equal12, equal34, &zcore[1],
+                      &zcore[znorm1], &zcore[znorm2],
                       &zcore[znorm3], &zcore[znorm4],
                       &zcore[zrho12], &zcore[zrho34], &zcore[zcbatch]);
     ipused = iprim4 + npgto34;
@@ -536,12 +536,11 @@ int erd__1111_csgto (int imax, int zmax,
                                &zcore[zpbatch]);
     }
 
-    erd__ctr_4index_block (npsize, ncsize, nwsize, nxyzt, mijkl,
+    erd__ctr_4index_block (nxyzt, mijkl,
                            mij, mkl,
                            ncgto12, ncgto34,
                            npgto1, npgto2, npgto3, npgto4,
                            ncgto1, ncgto2, ncgto3, ncgto4,
-                           mxprim, mnprim,
                            &cc[lcc1], &cc[lcc2], &cc[lcc3], &cc[lcc4],
                            &ccbeg[lccseg1], &ccbeg[lccseg2],
                            &ccbeg[lccseg3], &ccbeg[lccseg4],
@@ -551,9 +550,8 @@ int erd__1111_csgto (int imax, int zmax,
                            &icore[iprim2 + nijbeg - 1],
                            &icore[iprim3 + nklbeg - 1],
                            &icore[iprim4 + nklbeg - 1],
-                           l1cache, tile, nctrow,
-                           equal12, equal34, swaprs, swaptu,
-                           reorder, blocked,
+                           equal12, equal34,
+                           swaprs, swaptu, reorder,
                            &icore[ipused], &icore[ipsave], &icore[ippair],
                            &zcore[zpbatch], &zcore[zwork], &zcore[zcbatch]);
 
@@ -570,6 +568,7 @@ int erd__1111_csgto (int imax, int zmax,
     *nbatch = nxyzt * nctr;
     in = zcbatch;
     out = zcbatch + *nbatch;
+
     #if 0
     if (equal12 && ncgto12 > 1)
     {
@@ -634,7 +633,7 @@ int erd__1111_csgto (int imax, int zmax,
         in = out;
         out = i;
     }
-    #endif
+    #endif    
 
 /*             ...reorder contracted (12|34) batch: */
 /*                      batch (nxyz1,nxyz2,nxyz3,nxyz4,rstu) --> */

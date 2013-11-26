@@ -3,13 +3,15 @@
 #include <string.h>
 #include <math.h>
 
+#include "erd.h"
+
 
 /* ------------------------------------------------------------------------ */
 /*  OPERATION   : ERD__PREPARE_CTR */
 /*  MODULE      : ELECTRON REPULSION INTEGRALS DIRECT */
 /*  MODULE-ID   : ERD */
 /*  SUBROUTINES : none */
-/*  DESCRIPTION : This routine prepares the for contracting the */
+/*  DESCRIPTION : This routine prepares for contracting the */
 /*                primitive batches. Everything that needs still to be */
 /*                done at the stage when calling this routine should be */
 /*                placed here. At the moment, we have the following: */
@@ -61,18 +63,16 @@
 /*                                    to zero (if needed) */
 /* ------------------------------------------------------------------------ */
 int erd__prepare_ctr (int ncsize, int nij, int nkl,
-                  int npgtoa, int npgtob,
-                  int npgtoc, int npgtod,
-                  int shella, int shellb,
-                  int shellc, int shelld,
-                  double *alphaa, double *alphab,
-                  double *alphac, double *alphad,
-                  double prefact, double spnorm,
-                  int equalab, int equalcd,
-                  int blocked, double *rho,
-                  double *norma, double *normb,
-                  double *normc, double *normd,
-                  double *rhoab, double *rhocd, double *cbatch)
+                      int npgtoa, int npgtob,
+                      int npgtoc, int npgtod,
+                      int shella, int shellb,
+                      int shellc, int shelld,
+                      double *alphaa, double *alphab,
+                      double *alphac, double *alphad, double spnorm,
+                      int equalab, int equalcd, double *rho,
+                      double *norma, double *normb,
+                      double *normc, double *normd,
+                      double *rhoab, double *rhocd, double *cbatch)
 {
     int n;
     int npmin;
@@ -167,7 +167,7 @@ int erd__prepare_ctr (int ncsize, int nij, int nkl,
 
 /*             ...rescale one of the A,B,C,D norms, which has the */
 /*                least number of elements. */
-    factor = prefact * spnorm;
+    factor = PREFACT * spnorm;
     npmin = npgtoa < npgtob ? npgtoa : npgtob;
     npmin = npmin < npgtoc ? npmin : npgtoc;
     npmin = npmin < npgtod ? npmin : npgtod;
@@ -198,12 +198,6 @@ int erd__prepare_ctr (int ncsize, int nij, int nkl,
         {
             normd[n] = factor * normd[n];
         }
-    }
-
-/*             ...initialize contraction batch (if necessary). */
-    if (blocked)
-    {
-        memset (cbatch, 0, sizeof(double) * ncsize);
     }
 
     return 0;

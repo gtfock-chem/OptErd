@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "erd.h"
+
 
 int erd__map_ijkl_to_ikjl (int ni, int nj, int nk, int nl,
                            double *x, double *y)
@@ -20,10 +22,9 @@ int erd__map_ijkl_to_ikjl (int ni, int nj, int nk, int nl,
                 {
                     // Y(I,K,J,L) = X(I,J,K,L)
                     y[l * nj * nk * ni + 
-                      j * nk * ni +
-                      k * ni + i] = x[l * nk * nj * ni + 
-                                      k * nj * ni +
-                                      j * ni + i];
+                      j * nk * ni + k * ni + i] =
+                    x[l * nk * nj * ni + 
+                      k * nj * ni + j * ni + i];
                 }
             }
         }
