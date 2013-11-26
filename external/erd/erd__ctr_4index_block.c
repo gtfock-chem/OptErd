@@ -185,7 +185,7 @@ int erd__ctr_4index_block (int nxyzt, int mijkl,
     if (inwork)
     {
         wused = n * mij;
-        erd__ctr_1st_half (n, npmax, npmin, mij, nrs, n, ncr, ncs,
+        erd__ctr_1st_half (n, mij, ncr, ncs,
                            npr, nps, ccr, ccs,
                            ccbegr, ccbegs, ccendr, ccends,
                            primr, prims, equalrs, swaprs,
@@ -196,7 +196,7 @@ int erd__ctr_4index_block (int nxyzt, int mijkl,
     else
     {
         wused = n * nrs;
-        erd__ctr_1st_half (n, npmax, npmin, mij, nrs, n, ncr, ncs,
+        erd__ctr_1st_half (n, mij, ncr, ncs,
                            npr, nps, ccr, ccs,
                            ccbegr, ccbegs, ccendr, ccends,
                            primr, prims, equalrs, swaprs,

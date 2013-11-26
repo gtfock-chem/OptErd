@@ -50,8 +50,7 @@ int erd__prepare_ctr (int ncsize, int nij, int nkl,
                       double *normc, double *normd,
                       double *rhoab, double *rhocd, double *cbatch);
 
-int erd__ctr_1st_half (int n, int npmax, int npmin,
-                       int mij, int nrs, int nblock,
+int erd__ctr_1st_half (int n, int mij,
                        int ncr, int ncs, int npr, int nps,
                        double *ccr, double *ccs,
                        int *ccbegr, int *ccbegs, int *ccendr,
