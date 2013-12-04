@@ -374,7 +374,7 @@ int erd__ssss_pcgto_block (int nbatch, int atomic, int atom12, int atom34,
             }
             else
             {
-                f0 = sqrt (3.141592653589793 / t) * .5;
+                f0 = sqrt (M_PI / t) * .5;
             }
             ++m;
             batch[m] = scale * f0;
@@ -414,7 +414,7 @@ int erd__ssss_pcgto_block (int nbatch, int atomic, int atom12, int atom34,
             }
             else
             {
-                f0 = sqrt (3.141592653589793 / t) * .5;
+                f0 = sqrt (M_PI / t) * .5;
             }
             ++m;
             batch[m] = scale * f0;
@@ -457,7 +457,7 @@ int erd__ssss_pcgto_block (int nbatch, int atomic, int atom12, int atom34,
             }
             else
             {
-                f0 = sqrt (3.141592653589793 / t) * .5;
+                f0 = sqrt (M_PI / t) * .5;
             }
             ++m;
             batch[m] = scale * f0;

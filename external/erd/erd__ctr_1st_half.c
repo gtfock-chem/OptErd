@@ -160,23 +160,37 @@ int erd__ctr_1st_half (int n, int mij,
 /*                primitives I and J for both R and S. The primitives */
 /*                I >= J are ordered such that J varies fastest. */
 /*                Outer contraction is over S, inner over R. */
-        rs = 0;
-        for (s = 1; s <= ncs; s++)
+         #if 0
+        for (ij = 1; ij <= mij; ij++)
         {
-            pmin = ccbegs[s];
-            pmax = ccends[s];
+            j = prims[ij];
+            i = primr[ij];
+            for (l = 1; l <= n; l++)
+            {
+                y[l + rs * n] = 0.0;
+            }
+            for (l = 1; l <= n; l++)
+            {
+                y[l + rs * n] +=
+                        ccr[i + r * npr] * 
+                        ccs[j + s * nps] *
+                        x[l + ij * n];
+            }
+        }
+       #else
+        {
             for (i = 1; i <= npr; i++)
             {
                 pused[i] = 0;
             }
-            if (pmin == pmax && ccs[pmin + s * nps] == 1.0)
+            if (nps == 1 && ccs[1 + 1 * nps] == 1.0)
             {
 /*             ...we reach this point, if only one S contraction */
 /*                coefficient equal to 1.0 is present. */
                 for (ij = 1; ij <= mij; ij++)
                 {
                     j = prims[ij];
-                    if (j == pmin)
+                    if (j == 1)
                     {
                         i = primr[ij];
                         for (l = 1; l <= n; l++)
@@ -198,7 +212,7 @@ int erd__ctr_1st_half (int n, int mij,
                 {
                     i = primr[ij];
                     j = prims[ij];
-                    jrange = ((j >= pmin) && (j <= pmax));
+                    jrange = ((j >= 1) && (j <= nps));
                     if (jrange)
                     {
                         nj++;
@@ -240,9 +254,9 @@ int erd__ctr_1st_half (int n, int mij,
 /*                prematurely which have J > I, which saves us */
 /*                from checking addressing of W columns during the */
 /*                above simultaneous J contractions for each I. */
-                        if (i >= pmin && i <= pmax)
+                        if (i >= 1 && i <= nps)
                         {
-                            c1 = ccs[i + s * nps];
+                            c1 = ccs[i + 1 * nps];
                             for (m = 1; m <= nj; ++m)
                             {
                                 j = psave[m];
@@ -273,20 +287,17 @@ int erd__ctr_1st_half (int n, int mij,
             } /* if (pmin == pmax && ccs[pmin + s * nps] == 1.0) */
             
 /*             ...inner contraction over all R >= S. */
-            for (r = s; r <= ncr; r++)
+        //    for (r = 1; r <= 1; r++)
             {
-                rs++;
-                pmin = ccbegr[r];
-                pmax = ccendr[r];
-                if (pmin == pmax &&
-                    ccr[pmin + r * npr] == 1.0 &&
-                    pused[pmin] == 1)
+                if (1 == npr &&
+                    ccr[1 + 1 * npr] == 1.0 &&
+                    pused[1] == 1)
                 {
 /*             ...we reach this point, if only one R contraction */
 /*                coefficient equal to 1.0 is present. */
                     for (l = 1; l <= n; l++)
                     {
-                        y[l + rs * n] = w[l + pmin * n];
+                        y[l + 1 * n] = w[l + 1 * n];
                     }
                 }
                 else
@@ -295,7 +306,7 @@ int erd__ctr_1st_half (int n, int mij,
 /*                Group all relevant I's together and perform the */
 /*                present R contraction over all I's simultaneously. */
                     ni = 0;
-                    for (i = pmin; i <= pmax; ++i)
+                    for (i = 1; i <= npr; ++i)
                     {
                         if (pused[i] == 1)
                         {
@@ -306,20 +317,21 @@ int erd__ctr_1st_half (int n, int mij,
 
                     for (l = 1; l <= n; l++)
                     {
-                        y[l + rs * n] = 0.0;
+                        y[l + 1 * n] = 0.0;
                     }
                     for (m = 1; m <= ni; ++m)
                     {
                         i1 = psave[m];
-                        c1 = ccr[i1 + r * npr];
+                        c1 = ccr[i1 + 1 * npr];
                         for (l = 1; l <= n; l++)
                         {
-                            y[l + rs * n] += c1 * w[l + i1 * n];
+                            y[l + 1 * n] += c1 * w[l + i1 * n];
                         }
                     }
                 }
             }
         }
+       #endif
     }
     else /* if (!equalrs) */
     {

@@ -148,7 +148,7 @@ int erd__ctr_4index_block (int nxyzt, int mijkl,
     int npmax;
     int wused;
     int inwork;
-
+    
     if (ptrans && mijkl > 1 && nxyzt > 1)
     {
         erd__transpose_batch (mijkl, nxyzt, pbatch, work);

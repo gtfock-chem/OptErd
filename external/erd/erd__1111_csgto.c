@@ -84,8 +84,6 @@
 /* ------------------------------------------------------------------------ */
 int erd__1111_csgto (int imax, int zmax,
                      int nalpha, int ncoeff, int ncsum,
-                     int ncgto1, int ncgto2,
-                     int ncgto3, int ncgto4,
                      int npgto1, int npgto2,
                      int npgto3, int npgto4,
                      int shell1, int shell2,
@@ -170,13 +168,13 @@ int erd__1111_csgto (int imax, int zmax,
     lexp3 = lexp2 + npgto2;
     lexp4 = lexp3 + npgto3;
     lcc1 = 1;
-    lcc2 = lcc1 + npgto1 * ncgto1;
-    lcc3 = lcc2 + npgto2 * ncgto2;
-    lcc4 = lcc3 + npgto3 * ncgto3;
+    lcc2 = lcc1 + npgto1;
+    lcc3 = lcc2 + npgto2;
+    lcc4 = lcc3 + npgto3;
     lccseg1 = 1;
-    lccseg2 = lccseg1 + ncgto1;
-    lccseg3 = lccseg2 + ncgto2;
-    lccseg4 = lccseg3 + ncgto3;
+    lccseg2 = lccseg1 + 1;
+    lccseg3 = lccseg2 + 1;
+    lccseg4 = lccseg3 + 1;
 
 
 /*             ...determine csh equality between center pairs 1,2 */
@@ -186,8 +184,7 @@ int erd__1111_csgto (int imax, int zmax,
     if (equal12)
     {
         equal12 = ((shell1 == shell2) &&
-                   (npgto1 == npgto2) &&
-                   (ncgto1 == ncgto2));
+                   (npgto1 == npgto2));
         if (equal12)
         {
             k = lexp1 - 1;
@@ -201,18 +198,10 @@ int erd__1111_csgto (int imax, int zmax,
             {
                 k = lcc1 - 1;
                 l = lcc2 - 1;
-                for (j = 1; j <= ncgto1; ++j)
+                for (i = 1; i <= npgto1; ++i)
                 {
-                    if (equal12)
-                    {
-                        for (i = 1; i <= npgto1; ++i)
-                        {
-                            equal12 = (equal12 &&
-                                       (cc[k + i] == cc[l + i]));
-                        }
-                        k += npgto1;
-                        l += npgto1;
-                    }
+                    equal12 = (equal12 && 
+                        (cc[k + i] == cc[l + i]));
                 }
             }
         }
@@ -221,8 +210,7 @@ int erd__1111_csgto (int imax, int zmax,
     if (equal34)
     {
         equal34 = ((shell3 == shell4) &&
-                   (npgto3 == npgto4) &&
-                   (ncgto3 == ncgto4));
+                   (npgto3 == npgto4));
         if (equal34)
         {
             k = lexp3 - 1;
@@ -236,18 +224,10 @@ int erd__1111_csgto (int imax, int zmax,
             {
                 k = lcc3 - 1;
                 l = lcc4 - 1;
-                for (j = 1; j <= ncgto3; ++j)
+                for (i = 1; i <= npgto3; ++i)
                 {
-                    if (equal34)
-                    {
-                        for (i = 1; i <= npgto3; ++i)
-                        {
-                            equal34 = (equal34 &&
-                                       (cc[k + i] == cc[l + i]));
-                        }
-                        k += npgto3;
-                        l += npgto3;
-                    }
+                    equal34 = (equal34 &&
+                        (cc[k + i] == cc[l + i]));
                 }
             }
         }
@@ -298,22 +278,22 @@ int erd__1111_csgto (int imax, int zmax,
     if (equal12)
     {
         npgto12 = npgto1 * (npgto1 + 1) / 2;
-        ncgto12 = ncgto1 * (ncgto1 + 1) / 2;
+        ncgto12 = 1;
     }
     else
     {
         npgto12 = npgto1 * npgto2;
-        ncgto12 = ncgto1 * ncgto2;
+        ncgto12 = 1;
     }
     if (equal34)
     {
         npgto34 = npgto3 * (npgto3 + 1) / 2;
-        ncgto34 = ncgto3 * (ncgto3 + 1) / 2;
+        ncgto34 = 1;
     }
     else
     {
         npgto34 = npgto3 * npgto4;
-        ncgto34 = ncgto3 * ncgto4;
+        ncgto34 = 1;
     }
     nctr = ncgto12 * ncgto34;
     iprim1 = 1;
@@ -322,7 +302,7 @@ int erd__1111_csgto (int imax, int zmax,
     iprim4 = iprim3 + npgto34;
     swaprs = (npgto1 > npgto2);
     swaptu = (npgto3 > npgto4);
-    spnorm = 1.;
+    spnorm = 1.0;
     if (shell1 == 1)
     {
         spnorm += spnorm;
@@ -535,12 +515,11 @@ int erd__1111_csgto (int imax, int zmax,
                                &zcore[zqy], &zcore[zqz], &zcore[zscqk2],
                                &zcore[zpbatch]);
     }
-
     erd__ctr_4index_block (nxyzt, mijkl,
                            mij, mkl,
                            ncgto12, ncgto34,
                            npgto1, npgto2, npgto3, npgto4,
-                           ncgto1, ncgto2, ncgto3, ncgto4,
+                           1, 1, 1, 1,
                            &cc[lcc1], &cc[lcc2], &cc[lcc3], &cc[lcc4],
                            &ccbeg[lccseg1], &ccbeg[lccseg2],
                            &ccbeg[lccseg3], &ccbeg[lccseg4],
@@ -564,76 +543,9 @@ int erd__1111_csgto (int imax, int zmax,
 /*                                    j --> 2 */
 /*                                    k --> 3 */
 /*                                    l --> 4 */
-    nctr = ncgto1 * ncgto2 * ncgto3 * ncgto4;
-    *nbatch = nxyzt * nctr;
+    *nbatch = nxyzt;
     in = zcbatch;
     out = zcbatch + *nbatch;
-
-    #if 0
-    if (equal12 && ncgto12 > 1)
-    {
-        erd__ctr_rs_expand_ (&nxyzt, &ncgto12, &ncgto34, ncgto1, ncgto2,
-                              &zcore[in], &zcore[out]);
-        i = in;
-        in = out;
-        out = i;
-    }
-    ncgto12 = ncgto1 * ncgto2;
-    if (equal34 && ncgto34 > 1)
-    {
-        int i1;
-        i1 = nxyzt * ncgto12;
-        erd__ctr_tu_expand_ (&i1, &ncgto34, ncgto3, ncgto4, &zcore[in],
-                              &zcore[out]);
-        i = in;
-        in = out;
-        out = i;
-    }
-    ncgto34 = ncgto3 * ncgto4;
-    if ((swaprs || swaptu) && nctr > 1)
-    {
-        ixoff[0] = 1;
-        ixoff[1] = ncgto1;
-        ixoff[2] = ncgto1 * ncgto2;
-        ixoff[3] = ncgto1 * ncgto2 * ncgto3;
-        if (swaprs)
-        {
-            indexr = 2;
-            indexs = 1;
-            ncgtor = ncgto2;
-            ncgtos = ncgto1;
-        }
-        else
-        {
-            indexr = 1;
-            indexs = 2;
-            ncgtor = ncgto1;
-            ncgtos = ncgto2;
-        }
-        if (swaptu)
-        {
-            indext = 4;
-            indexu = 3;
-            ncgtot = ncgto4;
-            ncgtou = ncgto3;
-        }
-        else
-        {
-            indext = 3;
-            indexu = 4;
-            ncgtot = ncgto3;
-            ncgtou = ncgto4;
-        }
-        erd__ctr_4index_reorder_ (&nxyzt, &nctr, &ncgtor, &ncgtos, &ncgtot,
-                                   &ncgtou, &ixoff[indexr - 1],
-                                   &ixoff[indexs - 1], &ixoff[indext - 1],
-                                   &ixoff[indexu - 1], &zcore[in],
-                                   &zcore[out]);
-        i = in;
-        in = out;
-        out = i;
-    }
-    #endif    
 
 /*             ...reorder contracted (12|34) batch: */
 /*                      batch (nxyz1,nxyz2,nxyz3,nxyz4,rstu) --> */
@@ -646,36 +558,10 @@ int erd__1111_csgto (int imax, int zmax,
 /*                 iii) batch (nxyz1,nxyz2,rs,nxyz3,t,nxyz4,u) --> */
 /*                               batch (nxyz1,r,nxyz2,s,nxyz3,t,nxyz4,u) */
     xtmove = nxyz2 * nxyz3 * nxyz4;
-    ctmove = ncgto12 * ncgto3;
-    if (xtmove > 1 || ctmove > 1)
+    if (xtmove > 1 && nxyz4 > 1)
     {
-        if (nxyz4 > 1)
-        {
-            erd__map_ijkl_to_ikjl (nxyz1 * nxyz2 * nxyz3,
-                                   nxyz4, ctmove, ncgto4,
-                                   &zcore[in], &zcore[out]);
-            i = in;
-            in = out;
-            out = i;
-        }
-        if (nxyz3 > 1 && ncgto12 > 1)
-        {
-            erd__map_ijkl_to_ikjl (nxyz1 * nxyz2, nxyz3,
-                                   ncgto12, nxyz4 * ncgto34,
-                                   &zcore[in], &zcore[out]);
-            i = in;
-            in = out;
-            out = i;
-        }
-        if (nxyz2 > 1 && ncgto1 > 1)
-        {
-            erd__map_ijkl_to_ikjl (nxyz1, nxyz2, ncgto1,
-                                   nxyz3 * nxyz4 * ncgto2 * ncgto34,
-                                   &zcore[in], &zcore[out]);
-            i = in;
-            in = out;
-            out = i;
-        }
+        erd__map_ijkl_to_ikjl (nxyz1 * nxyz2 * nxyz3, nxyz4, 1, 1,
+                               &zcore[in], &zcore[out]);        
     }
 /*             ...set final pointer to integrals in ZCORE array. */
     *nfirst = in;
@@ -703,8 +589,6 @@ int erd__1111_csgto_ (int *imax, int *zmax,
 {
     erd__1111_csgto (*imax, *zmax,
                      *nalpha, *ncoeff, *ncsum,
-                     *ncgto1, *ncgto2,
-                     *ncgto3, *ncgto4,
                      *npgto1, *npgto2,
                      *npgto3, *npgto4,
                      *shell1, *shell2,
