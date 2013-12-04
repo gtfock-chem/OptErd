@@ -62,8 +62,6 @@ SRC_OPT = erd__1111_csgto.c \
 	erd__atom_int2d_to_e0f0.f \
 	erd__cartesian_norms.f \
 	erd__csgto.c \
-	erd__ctr_1st_half.c \
-	erd__ctr_2nd_half_new.c \
 	erd__ctr_4index_block.c \
 	erd__ctr_4index_reorder.f \
 	erd__dsqmin_line_segments.c \

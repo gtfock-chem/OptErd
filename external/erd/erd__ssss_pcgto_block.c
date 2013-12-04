@@ -103,20 +103,14 @@
 /*                    BATCH        =  current batch of primitive */
 /*                                    cartesian ssss integrals */
 /* ------------------------------------------------------------------------ */
-int erd__ssss_pcgto_block (int nbatch, int atomic, int atom12, int atom34,
-                           int mij, int mkl,
-                           int nij, int nijbeg, int nijend,
-                           int nkl, int nklbeg, int nklend,
-                           int npgto1, int npgto2, int npgto3, int npgto4,
+int erd__ssss_pcgto_block (int nij, int nkl,
                            double x1, double y1, double z1,
                            double x2, double y2, double z2,
                            double x3, double y3, double z3,
                            double x4, double y4, double z4,
-                           double x12, double y12, double z12,
-                           double x34, double y34, double z34,
                            double *alpha1, double *alpha2,
                            double *alpha3, double *alpha4,
-                           double *ftable, int mgrid, int ngrid,
+                           double *ftable, int mgrid,
                            double tmax, double tstep, double tvstep,
                            int *prim1, int *prim2,
                            int *prim3, int *prim4,
@@ -130,7 +124,6 @@ int erd__ssss_pcgto_block (int nbatch, int atomic, int atom12, int atom34,
 {
     int ftable_dim1, ftable_offset;
 
-    /* Local variables */
     int i;
     int j;
     int k;
@@ -147,7 +140,6 @@ int erd__ssss_pcgto_block (int nbatch, int atomic, int atom12, int atom34,
     double exp2;
     double exp3;
     double exp4;
-    int tcase;
     double pval;
     double qval;
     double scale;
@@ -159,279 +151,62 @@ int erd__ssss_pcgto_block (int nbatch, int atomic, int atom12, int atom34,
     double pscale;
     double pqmult;
     double pqplus;
-    double rnpqsq;
+    double x12;
+    double y12;
+    double z12;
+    double x34;
+    double y34;
+    double z34;
 
-    --batch;
-    --scalep;
-    --pz;
-    --py;
-    --px;
-    --p;
-    --prim2;
-    --prim1;
-    --scaleq;
-    --qz;
-    --qy;
-    --qx;
-    --q;
-    --prim4;
-    --prim3;
-    --rho12;
-    --rho34;
-    --norm1;
-    --alpha1;
-    --norm2;
-    --alpha2;
-    --norm3;
-    --alpha3;
-    --norm4;
-    --alpha4;
     ftable_dim1 = mgrid + 1;
     ftable_offset = 0 + ftable_dim1 * 0;
     ftable -= ftable_offset;
-
-    /* Function Body */
-    tcase = 5;
-    if (atomic || atom12)
+    x12 = x1 - x2;
+    y12 = y1 - y2;
+    z12 = z1 - z2;
+    x34 = x3 - x4;
+    y34 = y3 - y4;
+    z34 = z3 - z4;
+    
+    for (ij = 0; ij < nij; ij++)
     {
-        m = 0;
-        for (ij = nijbeg; ij <= nijend; ij++)
-        {
-            m++;
-            i = prim1[m];
-            j = prim2[m];
-            p[m] = alpha1[i] + alpha2[j];
-            scalep[m] = norm1[i] * norm2[j];
-        }
-        tcase--;
-    }
-    else
-    {
-        m = 0;
-        for (ij = nijbeg; ij <= nijend; ij++)
-        {
-            m++;
-            i = prim1[m];
-            j = prim2[m];
-            exp1 = alpha1[i];
-            exp2 = alpha2[j];
-            pval = exp1 + exp2;
-            p[m] = pval;
-            pval = exp1 / pval;
-            px[m] = pval * x12 + x2;
-            py[m] = pval * y12 + y2;
-            pz[m] = pval * z12 + z2;
-            scalep[m] = norm1[i] * norm2[j] * rho12[ij];
-        }
-    }
-    if (atomic || atom34)
-    {
-        m = 0;
-        for (kl = nklbeg; kl <= nklend; ++kl)
-        {
-            m++;
-            k = prim3[m];
-            l = prim4[m];
-            q[m] = alpha3[k] + alpha4[l];
-            scaleq[m] = norm3[k] * norm4[l];
-        }
-        tcase += -2;
-    }
-    else
-    {
-        m = 0;
-        for (kl = nklbeg; kl <= nklend; ++kl)
-        {
-            m++;
-            k = prim3[m];
-            l = prim4[m];
-            exp3 = alpha3[k];
-            exp4 = alpha4[l];
-            qval = exp3 + exp4;
-            q[m] = qval;
-            qval = exp3 / qval;
-            qx[m] = qval * x34 + x4;
-            qy[m] = qval * y34 + y4;
-            qz[m] = qval * z34 + z4;
-            scaleq[m] = norm3[k] * norm4[l] * rho34[kl];
-        }
-    }
-    if (atomic)
-    {
-        tcase--;
+        i = prim1[ij];
+        j = prim2[ij];
+        exp1 = alpha1[i - 1];
+        exp2 = alpha2[j - 1];
+        pval = exp1 + exp2;
+        p[ij] = pval;
+        pval = exp1 / pval;
+        px[ij] = pval * x12 + x2;
+        py[ij] = pval * y12 + y2;
+        pz[ij] = pval * z12 + z2;
+        scalep[ij] = norm1[i - 1] * norm2[j - 1] * rho12[ij];
     }
 
-
-/*             ...jump according to type of 'K4' loop: */
-/*                       TCASE |  Integral center type */
-/*                     --------|----------------------- */
-/*                         1   |     (AA|AA)  atomic */
-/*                         2   |     (AA|CC)  2-center */
-/*                         3   |     (AB|CC)  3-center */
-/*                         4   |     (AA|CD)  3-center */
-/*                         5   |     (AB|CD)  4-center */
-    switch (tcase)
+    for (kl = 0; kl < nkl; ++kl)
     {
-    case 1:
-        goto L10;
-    case 2:
-        goto L20;
-    case 3:
-        goto L30;
-    case 4:
-        goto L40;
-    case 5:
-        goto L50;
+        k = prim3[kl];
+        l = prim4[kl];
+        exp3 = alpha3[k - 1];
+        exp4 = alpha4[l - 1];
+        qval = exp3 + exp4;
+        q[kl] = qval;
+        qval = exp3 / qval;
+        qx[kl] = qval * x34 + x4;
+        qy[kl] = qval * y34 + y4;
+        qz[kl] = qval * z34 + z4;
+        scaleq[kl] = norm3[k - 1] * norm4[l - 1] * rho34[kl];
     }
-
-
-  L10:
+    
     m = 0;
-    for (ij = 1; ij <= mij; ++ij)
-    {
-        pval = p[ij];
-        pscale = scalep[ij];
-        for (kl = 1; kl <= mkl; ++kl)
-        {
-            qval = q[kl];
-            ++m;
-            batch[m] =
-                pscale * scaleq[kl] / (pval * qval * sqrt (pval + qval));
-        }
-    }
-    return 0;
-
-  L20:
-    pqx = x1 - x3;
-    pqy = y1 - y3;
-    pqz = z1 - z3;
-    rnpqsq = pqx * pqx + pqy * pqy + pqz * pqz;
-    m = 0;
-    for (ij = 1; ij <= mij; ++ij)
-    {
-        pval = p[ij];
-        pscale = scalep[ij];
-        for (kl = 1; kl <= mkl; ++kl)
-        {
-            qval = q[kl];
-            pqmult = pval * qval;
-            pqplus = pval + qval;
-            t = rnpqsq * pqmult / pqplus;
-            scale = pscale * scaleq[kl] / (pqmult * sqrt (pqplus));
-            if (t <= tmax)
-            {
-                tgrid = (int) (t * tvstep + .5);
-                delta = tgrid * tstep - t;
-                f0 = (((((ftable[tgrid * ftable_dim1 + 6] * delta * 0.166666666666667 +
-                          ftable[tgrid * ftable_dim1 + 5]) * delta * 0.2 +
-                         ftable[tgrid * ftable_dim1 + 4]) * delta * 0.25 +
-                        ftable[tgrid * ftable_dim1 +
-                               3]) * delta * 0.333333333333333 +
-                       ftable[tgrid * ftable_dim1 + 2]) * delta * 0.5 +
-                      ftable[tgrid * ftable_dim1 + 1]) * delta +
-                    ftable[tgrid * ftable_dim1];
-            }
-            else
-            {
-                f0 = sqrt (M_PI / t) * 0.5;
-            }
-            ++m;
-            batch[m] = scale * f0;
-        }
-    }
-    return 0;
-
-  L30:
-    m = 0;
-    for (ij = 1; ij <= mij; ++ij)
-    {
-        pval = p[ij];
-        pqx = px[ij] - x3;
-        pqy = py[ij] - y3;
-        pqz = pz[ij] - z3;
-        rnpqsq = pqx * pqx + pqy * pqy + pqz * pqz;
-        pscale = scalep[ij];
-        for (kl = 1; kl <= mkl; ++kl)
-        {
-            qval = q[kl];
-            pqmult = pval * qval;
-            pqplus = pval + qval;
-            t = rnpqsq * pqmult / pqplus;
-            scale = pscale * scaleq[kl] / (pqmult * sqrt (pqplus));
-            if (t <= tmax)
-            {
-                tgrid = (int) (t * tvstep + .5);
-                delta = tgrid * tstep - t;
-                f0 = (((((ftable[tgrid * ftable_dim1 + 6] * delta *
-                          .166666666666667 + ftable[tgrid * ftable_dim1 +
-                                                    5]) * delta * .2 +
-                         ftable[tgrid * ftable_dim1 + 4]) * delta * .25 +
-                        ftable[tgrid * ftable_dim1 +
-                               3]) * delta * .333333333333333 +
-                       ftable[tgrid * ftable_dim1 + 2]) * delta * .5 +
-                      ftable[tgrid * ftable_dim1 + 1]) * delta +
-                    ftable[tgrid * ftable_dim1];
-            }
-            else
-            {
-                f0 = sqrt (M_PI / t) * .5;
-            }
-            ++m;
-            batch[m] = scale * f0;
-        }
-    }
-    return 0;
-
-  L40:
-    m = 0;
-    for (ij = 1; ij <= mij; ++ij)
-    {
-        pval = p[ij];
-        pscale = scalep[ij];
-        for (kl = 1; kl <= mkl; ++kl)
-        {
-            qval = q[kl];
-            pqmult = pval * qval;
-            pqplus = pval + qval;
-            pqx = x1 - qx[kl];
-            pqy = y1 - qy[kl];
-            pqz = z1 - qz[kl];
-            t = (pqx * pqx + pqy * pqy + pqz * pqz) * pqmult / pqplus;
-            scale = pscale * scaleq[kl] / (pqmult * sqrt (pqplus));
-            if (t <= tmax)
-            {
-                tgrid = (int) (t * tvstep + .5);
-                delta = tgrid * tstep - t;
-                f0 = (((((ftable[tgrid * ftable_dim1 + 6] * delta *
-                          .166666666666667 + ftable[tgrid * ftable_dim1 +
-                                                    5]) * delta * .2 +
-                         ftable[tgrid * ftable_dim1 + 4]) * delta * .25 +
-                        ftable[tgrid * ftable_dim1 +
-                               3]) * delta * .333333333333333 +
-                       ftable[tgrid * ftable_dim1 + 2]) * delta * .5 +
-                      ftable[tgrid * ftable_dim1 + 1]) * delta +
-                    ftable[tgrid * ftable_dim1];
-            }
-            else
-            {
-                f0 = sqrt (M_PI / t) * .5;
-            }
-            ++m;
-            batch[m] = scale * f0;
-        }
-    }
-    return 0;
-
-  L50:
-    m = 0;
-    for (ij = 1; ij <= mij; ++ij)
+    for (ij = 0; ij < nij; ++ij)
     {
         pval = p[ij];
         pxval = px[ij];
         pyval = py[ij];
         pzval = pz[ij];
         pscale = scalep[ij];
-        for (kl = 1; kl <= mkl; ++kl)
+        for (kl = 0; kl < nkl; ++kl)
         {
             qval = q[kl];
             pqmult = pval * qval;
@@ -459,8 +234,8 @@ int erd__ssss_pcgto_block (int nbatch, int atomic, int atom12, int atom34,
             {
                 f0 = sqrt (M_PI / t) * .5;
             }
-            ++m;
             batch[m] = scale * f0;
+            m++;
         }
     }
 

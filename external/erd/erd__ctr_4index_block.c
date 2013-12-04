@@ -6,6 +6,160 @@
 
 
 /* ------------------------------------------------------------------------ */
+/*  OPERATION   : ERD__CTR_HALF */
+/*  MODULE      : ELECTRON REPULSION INTEGRALS DIRECT */
+/*  MODULE-ID   : ERD */
+/*  SUBROUTINES : none */
+/*  DESCRIPTION : This operation performs the first half contraction */
+/*                step on the incomming integrals over primitives */
+/*                in blocked form over invariant indices n: */
+/*                    y (n,rs) = sum  ccr (r,i) * ccs (s,j) * x (n,ij) */
+/*                                ij */
+/*                where ccr and ccs are the arrays containing the */
+/*                contraction coefficients. The sum is over the i and */
+/*                j primitives which are transmitted in arrays PRIMR */
+/*                and PRIMS, respectively, and may constitute only */
+/*                a subset of the full range of primitives. */
+/*                The contraction is split into two quarter steps, */
+/*                the order of which is determined by the # of i and */
+/*                j primitives: */
+/*                   a) w (n,j/i) = sum ccr/s (r/s,i/j) * x (n,ij) */
+/*                                  i/j */
+/*                   b) y (n,rs)  = sum ccs/r (s/r,j/i) * w (n,j/i) */
+/*                                  j/i */
+/*                Size of the intermediate w (n,i) or w (n,j) array */
+/*                has to be kept to a minimum and blocking over the */
+/*                invariant indices n has to be performed such that */
+/*                the intermediate w array does not get kicked out */
+/*                from the cache lines after the first quarter */
+/*                transformation. */
+/*                In case of csh equality (EQUALRS = .true), we only */
+/*                have to consider the lower triangle of the primitive */
+/*                integrals, which, with the exception of the diagonals, */
+/*                have to be used twice. */
+/*                        --- SEGMENTED CONTRACTIONS --- */
+/*                Segmented contractions are those defined to be */
+/*                within a certain consecutive i- and j-range of */
+/*                primitives. The segmented limits for each contraction */
+/*                are sitting respectively in CCBEGR and CCBEGS (lowest */
+/*                limit) and CCENDR and CCENDS (highest limit) and they */
+/*                determine which of the actual i's and j's from the */
+/*                PRIMR and PRIMS lists have to be considered for each */
+/*                contraction index. */
+/*                The code also allows efficient contractions in case */
+/*                there is only one contraction coefficient present */
+/*                in a certain contraction and its value is equal to 1. */
+/*                In such cases we can save lots of multiplications by */
+/*                1 and since these cases are quite common for certain */
+/*                types of basis functions it is worth including some */
+/*                IF's inside the contraction loops to gain speed. */
+/*                  Input: */
+/*                    N            =  # of invariant indices */
+/*                    NPMAX(MIN)   =  the maximum (minimum) # of */
+/*                                    primitives between both primitive */
+/*                                    sets i,j */
+/*                    MIJ          =  # of ij primitive products to */
+/*                                    be transformed */
+/*                    NRS          =  # of rs contractions to be done */
+/*                    NBLOCK       =  blocking size for invariant */
+/*                                    indices n */
+/*                    NCR(S)       =  # of contractions for the i -> R */
+/*                                    (j -> S) primitives */
+/*                    NPR(S)       =  # of i(j) primitives */
+/*                    CCR(S)       =  full set (including zeros) of */
+/*                                    contraction coefficients for */
+/*                                    R(S) contractions */
+/*                    CCBEGR(S)    =  lowest nonzero primitive i(j) */
+/*                                    index for R(S) contractions */
+/*                    CCENDR(S)    =  highest nonzero primitive i(j) */
+/*                                    index for R(S) contractions */
+/*                    PRIMR(S)     =  primitive i(j) indices */
+/*                    EQUALRS      =  is true, if only the lower */
+/*                                    triangle of ij primitive indices */
+/*                                    is present and consequently */
+/*                                    only the lower triangle of rs */
+/*                                    contractions needs to be evaluated */
+/*                    SWAPRS       =  if this is true, the 1st quarter */
+/*                                    transformation is over R followed */
+/*                                    by the 2nd over S. If false, the */
+/*                                    order is reversed: 1st over S then */
+/*                                    2nd over R */
+/*                    Pxxxx        =  intermediate storage arrays for */
+/*                                    primitive labels to bundle */
+/*                                    contraction steps in do loops */
+/*                                    (xxxx = USED,SAVE,PAIR) */
+/*                    X            =  array containing the primitive */
+/*                                    integrals */
+/*                    W            =  intermediate storage array */
+/*                                    containing 1st quarter transformed */
+/*                                    primitive integrals */
+/*                  Output: */
+/*                    Y            =  contains the final half transformed */
+/*                                    integrals */
+/* ------------------------------------------------------------------------ */
+static int erd__ctr_half (int n, int mij, double *ccr, double *ccs,
+                          int *primr, int *prims,
+                          int equalrs, double *x, double *y)
+{
+    int i;
+    int j;
+    int l;  
+    double c1;
+    double c2;
+    int ij;
+
+    for (l = 0; l < n; l++)
+    {
+        y[l] = 0.0;
+    }
+    
+    if (equalrs)
+    {
+/*             ...the R >= S case. Here we always have equal # of */
+/*                primitives I and J for both R and S. The primitives */
+/*                I >= J are ordered such that J varies fastest. */
+/*                Outer contraction is over S, inner over R. */              
+        for (ij = 0; ij < mij; ij++)
+        {
+            j = prims[ij];
+            i = primr[ij];
+            c1 = ccr[i - 1];
+            c2 = ccs[j - 1];
+            if (i != j)
+            {
+                c1 = 2.0 * c1;
+            }
+            for (l = 0; l < n; l++)
+            {
+                y[l] += c1 * c2 * x[l + ij * n];
+            }
+        }
+    }
+    else
+    {
+/*             ...the full RS case. Check the order of the two quarter */
+/*                transformations and proceed accordingly. */
+/*                The case: # of I primitives R > # of J primitives S */
+/*                The primitives I and J are ordered such that I varies */
+/*                fastest. Outer contraction is over R, inner over S. */     
+        for (ij = 0; ij < mij; ij++)
+        {
+            j = prims[ij];
+            i = primr[ij];
+            c1 = ccr[i - 1];
+            c2 = ccs[j - 1];
+            for (l = 0; l < n; l++)
+            {
+                y[l] += c1 * c2 * x[l + ij * n];
+            }
+        }
+    }
+    
+    return 0;
+}
+
+
+/* ------------------------------------------------------------------------ */
 /*  OPERATION   : ERD__CTR_4INDEX_BLOCK */
 /*  MODULE      : ELECTRON REPULSION INTEGRALS DIRECT */
 /*  MODULE-ID   : ERD */
@@ -125,134 +279,35 @@
 /*                    CBATCH       =  the update batch of contracted */
 /*                                    integrals after contraction */
 /* ------------------------------------------------------------------------ */
-int erd__ctr_4index_block (int nxyzt, int mijkl,
-                           int mij, int mkl, int nrs, int ntu,
-                           int npr, int nps, int npt, int npu,
-                           int ncr, int ncs, int nct, int ncu,
+int erd__ctr_4index_block (int nxyzt, int mij, int mkl,
                            double *ccr, double *ccs,
                            double *cct, double *ccu,
-                           int *ccbegr, int *ccbegs,
-                           int *ccbegt, int *ccbegu,
-                           int *ccendr, int *ccends,
-                           int *ccendt, int *ccendu,
                            int *primr, int *prims,
                            int *primt, int *primu,
-                           int equalrs, int equaltu,
-                           int swaprs, int swaptu, int ptrans,
-                           int *pused, int *psave,
-                           int *ppair, double *pbatch,
-                           double *work, double *cbatch)
+                           int equalrs, int equaltu, int ptrans,
+                           double *pbatch, double *work, double *cbatch)
 {
-    int n;    
-    int npmin;
-    int npmax;
-    int wused;
-    int inwork;
+    int n;
+    int mijkl;
+
+    mijkl = mij * mkl;
+    n = nxyzt * mkl;
     
     if (ptrans && mijkl > 1 && nxyzt > 1)
     {
         erd__transpose_batch (mijkl, nxyzt, pbatch, work);
-        inwork = 1;
+        erd__ctr_half (n, mij, ccr, ccs, primr, prims,
+                       equalrs, work, pbatch);
+        erd__ctr_half (nxyzt, mkl, cct, ccu, primt, primu,
+                       equaltu, pbatch, cbatch);
     }
     else
     {
-        inwork = 0;
+        erd__ctr_half (n, mij, ccr, ccs, primr, prims,
+                       equalrs, pbatch, work);
+        erd__ctr_half (nxyzt, mkl, cct, ccu, primt, primu,
+                       equaltu, work, cbatch);
     }
-
-/*             ...prepare for contraction over ij. Logical variable */
-/*                INWORK controls where the actual significant data */
-/*                (i.e. the integrals to be contracted) is residing. */
-/*                If INWORK is true, then array WORK contains the */
-/*                integrals, if false, they are in array PBATCH. */
-/*                One of the key variables to be determined here */
-/*                is the blocking size of the invariant indices N */
-/*                such that the cache is used efficiently. The */
-/*                blocking size has to be adapted also to the size */
-/*                of the working space available. L1USED contains */
-/*                the amount of data that will occupy the cache */
-/*                besides the three main big arrays containing the */
-/*                initial, quarter transformed and halftransformed */
-/*                integrals. This extra data is the contraction */
-/*                coefficients, their segmentation limits and the */
-/*                primitive indices. L1FREE indicates the size of */
-/*                the level 1 cache that is finally available for */
-/*                the three big integral arrays. */
-    npmax = MAX (npr, nps);
-    npmin = MIN (npr, nps);
-
-/*             ...do contraction over ij. */
-    n = nxyzt * mkl;
-    if (inwork)
-    {
-        wused = n * mij;
-        erd__ctr_1st_half (n, mij, ncr, ncs,
-                           npr, nps, ccr, ccs,
-                           ccbegr, ccbegs, ccendr, ccends,
-                           primr, prims, equalrs, swaprs,
-                           pused, psave, ppair,
-                           work, &(work[wused]), pbatch);
-        inwork = 0;
-    }
-    else
-    {
-        wused = n * nrs;
-        erd__ctr_1st_half (n, mij, ncr, ncs,
-                           npr, nps, ccr, ccs,
-                           ccbegr, ccbegs, ccendr, ccends,
-                           primr, prims, equalrs, swaprs,
-                           pused, psave, ppair,
-                           pbatch, &(work[wused]), work);
-        inwork = 1;
-    }
-
-
-/*             ...reorder rs <-> kl , if needed. */
-    if (mkl > 1 && nrs > 1)
-    {
-        if (inwork)
-        {
-            erd__map_ijkl_to_ikjl (nxyzt, mkl, nrs, 1,
-                                   work, pbatch);
-            inwork = 0;
-        }
-        else
-        {
-            erd__map_ijkl_to_ikjl (nxyzt, mkl, nrs, 1,
-                                   pbatch, work);
-            inwork = 1;
-        }
-    }
-
-
-/*             ...prepare for contraction over kl. Same procedure */
-/*                as for ij (see comments above). The contracted */
-/*                result will be added (updated) directly to the */
-/*                final contracted CBATCH array. Do not perform a */
-/*                contracted batch update, if no contraction blocking */
-/*                is necessary. */
-
-/*             ...do contraction over kl. */
-    n = nxyzt * nrs;
-    if (inwork)
-    {
-        wused = n * mkl;
-        erd__ctr_2nd_half_new (n, npmax, npmin, mkl, ntu, n, nct,
-                               ncu, npt, npu, cct, ccu,
-                               ccbegt, ccbegu, ccendt, ccendu,
-                               primt, primu, equaltu, swaptu,
-                               pused, psave, ppair,
-                               work, &(work[wused]), cbatch);
-    }
-    else
-    {
-        wused = 0;
-        erd__ctr_2nd_half_new (n, npmax, npmin, mkl, ntu, n, nct,
-                               ncu, npt, npu, cct, ccu,
-                               ccbegt, ccbegu, ccendt, ccendu,
-                               primt, primu, equaltu, swaptu,
-                               pused, psave, ppair,
-                               pbatch, work, cbatch);
-    }
-
+   
     return 0;
 }

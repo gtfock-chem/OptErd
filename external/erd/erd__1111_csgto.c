@@ -106,7 +106,7 @@ int erd__1111_csgto (int imax, int zmax,
     double x12, y12, z12, x34, y34, z34;
 
     int zp, zq;
-    int mij, nij, mkl, nkl, out, zpx, lcc1, lcc2, lcc3, lcc4, zpy,
+    int nij, nkl, out, zpx, lcc1, lcc2, lcc3, lcc4, zpy,
         zpz, zqx, zqy, zqz, nctr;
     int lexp1, lexp2, lexp3, lexp4, nxyz1, nxyz2, nxyz3, nxyz4;
     int atom12, atom23;
@@ -137,7 +137,6 @@ int erd__1111_csgto (int imax, int zmax,
     int lccseg2, lccseg3, lccseg4;
     int blocked;
     int zcbatch, zpbatch;
-    int reorder;
 
     --icore;
     --zcore;
@@ -372,33 +371,22 @@ int erd__1111_csgto (int imax, int zmax,
 /*                contracted index ranges r,s,t,u. The keyword REORDER */
 /*                indicates, if the primitive [12|34] blocks needs to */
 /*                be transposed before being contracted. */
-    reorder = 0;
-    nijbeg = 1;
-    nijend = nij;
-    mij = nij;
-    nklbeg = 1;
-    nklend = nkl;
-    mkl = nkl;
-    mijkl = mij * mkl;
-    npsize = nxyzt * mijkl;
+
+    npsize = nxyzt * nij * nkl;
 
     if (shellt == 0)
     {
-        erd__ssss_pcgto_block (npsize, atomic, atom12, atom34,
-                               mij, mkl, nij, nijbeg, nijend,
-                               nkl, nklbeg, nklend,
-                               npgto1, npgto2, npgto3, npgto4,
+        erd__ssss_pcgto_block (nij, nkl,
                                x1, y1, z1, x2, y2, z2,
                                x3, y3, z3, x4, y4, z4,
-                               x12, y12, z12, x34, y34, z34,
                                &alpha[lexp1], &alpha[lexp2],
                                &alpha[lexp3], &alpha[lexp4],
-                               &ftable[ftable_offset], mgrid, ngrid,
+                               &ftable[ftable_offset], mgrid,
                                tmax, tstep, tvstep,
-                               &icore[iprim1 + nijbeg - 1],
-                               &icore[iprim2 + nijbeg - 1],
-                               &icore[iprim3 + nklbeg - 1],
-                               &icore[iprim4 + nklbeg - 1],
+                               &icore[iprim1 + 1 - 1],
+                               &icore[iprim2 + 1 - 1],
+                               &icore[iprim3 + 1 - 1],
+                               &icore[iprim4 + 1 - 1],
                                &zcore[znorm1], &zcore[znorm2],
                                &zcore[znorm3], &zcore[znorm4],
                                &zcore[zrho12], &zcore[zrho34],
@@ -410,22 +398,18 @@ int erd__1111_csgto (int imax, int zmax,
     }
     else if (shellt == 1)
     {
-        erd__sssp_pcgto_block (npsize, atomic, atom12, atom34,
-                               mij, mkl, nij, nijbeg, nijend,
-                               nkl, nklbeg, nklend,
-                               npgto1, npgto2, npgto3, npgto4,
+        erd__sssp_pcgto_block (atomic, nij, nkl,
                                shell1, shell3, shellp, 
                                x1, y1, z1, x2, y2, z2,
                                x3, y3, z3, x4, y4, z4,
-                               x12, y12, z12, x34, y34, z34,
                                &alpha[lexp1], &alpha[lexp2],
                                &alpha[lexp3], &alpha[lexp4],
-                               &ftable[ftable_offset], mgrid, ngrid,
+                               &ftable[ftable_offset], mgrid,
                                tmax, tstep, tvstep,
-                               &icore[iprim1 + nijbeg - 1],
-                               &icore[iprim2 + nijbeg - 1],
-                               &icore[iprim3 + nklbeg - 1],
-                               &icore[iprim4 + nklbeg - 1],
+                               &icore[iprim1 + 1 - 1],
+                               &icore[iprim2 + 1 - 1],
+                               &icore[iprim3 + 1 - 1],
+                               &icore[iprim4 + 1 - 1],
                                &zcore[znorm1], &zcore[znorm2],
                                &zcore[znorm3], &zcore[znorm4],
                                &zcore[zrho12], &zcore[zrho34],
@@ -438,8 +422,8 @@ int erd__1111_csgto (int imax, int zmax,
     else if (shellt == 2)
     {
         erd__sspp_pcgto_block (npsize, atomic, atom12, atom34,
-                               mij, mkl, nij, nijbeg, nijend,
-                               nkl, nklbeg, nklend,
+                               nij, nkl, nij, 1, nij,
+                               nkl, 1, nkl,
                                npgto1, npgto2, npgto3, npgto4,
                                shell1, shell3, shellp, 
                                x1, y1, z1, x2, y2, z2,
@@ -449,10 +433,10 @@ int erd__1111_csgto (int imax, int zmax,
                                &alpha[lexp3], &alpha[lexp4],
                                &ftable[ftable_offset], mgrid, ngrid,
                                tmax, tstep, tvstep,
-                               &icore[iprim1 + nijbeg - 1],
-                               &icore[iprim2 + nijbeg - 1],
-                               &icore[iprim3 + nklbeg - 1],
-                               &icore[iprim4 + nklbeg - 1],
+                               &icore[iprim1 + 1 - 1],
+                               &icore[iprim2 + 1 - 1],
+                               &icore[iprim3 + 1 - 1],
+                               &icore[iprim4 + 1 - 1],
                                &zcore[znorm1], &zcore[znorm2],
                                &zcore[znorm3], &zcore[znorm4],
                                &zcore[zrho12], &zcore[zrho34],
@@ -465,8 +449,8 @@ int erd__1111_csgto (int imax, int zmax,
     else if (shellt == 3)
     {
         erd__sppp_pcgto_block (npsize, atomic, atom12, atom34,
-                               mij, mkl, nij, nijbeg, nijend,
-                               nkl, nklbeg, nklend,
+                               nij, nkl, nij, 1, nij,
+                               nkl, 1, nkl,
                                npgto1, npgto2, npgto3, npgto4,
                                shell1, shell3, shellp, 
                                x1, y1, z1, x2, y2, z2,
@@ -476,10 +460,10 @@ int erd__1111_csgto (int imax, int zmax,
                                &alpha[lexp3], &alpha[lexp4],
                                &ftable[ftable_offset], mgrid, ngrid,
                                tmax, tstep, tvstep,
-                               &icore[iprim1 + nijbeg - 1],
-                               &icore[iprim2 + nijbeg - 1],
-                               &icore[iprim3 + nklbeg - 1],
-                               &icore[iprim4 + nklbeg - 1],
+                               &icore[iprim1 + 1 - 1],
+                               &icore[iprim2 + 1 - 1],
+                               &icore[iprim3 + 1 - 1],
+                               &icore[iprim4 + 1 - 1],
                                &zcore[znorm1], &zcore[znorm2],
                                &zcore[znorm3], &zcore[znorm4],
                                &zcore[zrho12], &zcore[zrho34],
@@ -492,8 +476,8 @@ int erd__1111_csgto (int imax, int zmax,
     else
     {
         erd__pppp_pcgto_block (npsize, atomic, atom12, atom34,
-                               mij, mkl, nij, nijbeg, nijend,
-                               nkl, nklbeg, nklend,
+                               nij, nkl, nij, 1, nij,
+                               nkl, 1, nkl,
                                npgto1, npgto2, npgto3, npgto4,
                                x1, y1, z1, x2, y2, z2,
                                x3, y3, z3, x4, y4, z4,
@@ -502,10 +486,10 @@ int erd__1111_csgto (int imax, int zmax,
                                &alpha[lexp3], &alpha[lexp4],
                                &ftable[ftable_offset], mgrid, ngrid,
                                tmax, tstep, tvstep,
-                               &icore[iprim1 + nijbeg - 1],
-                               &icore[iprim2 + nijbeg - 1],
-                               &icore[iprim3 + nklbeg - 1],
-                               &icore[iprim4 + nklbeg - 1],
+                               &icore[iprim1 + 1 - 1],
+                               &icore[iprim2 + 1 - 1],
+                               &icore[iprim3 + 1 - 1],
+                               &icore[iprim4 + 1 - 1],
                                &zcore[znorm1], &zcore[znorm2],
                                &zcore[znorm3], &zcore[znorm4],
                                &zcore[zrho12], &zcore[zrho34],
@@ -515,23 +499,13 @@ int erd__1111_csgto (int imax, int zmax,
                                &zcore[zqy], &zcore[zqz], &zcore[zscqk2],
                                &zcore[zpbatch]);
     }
-    erd__ctr_4index_block (nxyzt, mijkl,
-                           mij, mkl,
-                           ncgto12, ncgto34,
-                           npgto1, npgto2, npgto3, npgto4,
-                           1, 1, 1, 1,
+    erd__ctr_4index_block (nxyzt, nij, nkl,
                            &cc[lcc1], &cc[lcc2], &cc[lcc3], &cc[lcc4],
-                           &ccbeg[lccseg1], &ccbeg[lccseg2],
-                           &ccbeg[lccseg3], &ccbeg[lccseg4],
-                           &ccend[lccseg1], &ccend[lccseg2],
-                           &ccend[lccseg3], &ccend[lccseg4],
-                           &icore[iprim1 + nijbeg - 1],
-                           &icore[iprim2 + nijbeg - 1],
-                           &icore[iprim3 + nklbeg - 1],
-                           &icore[iprim4 + nklbeg - 1],
-                           equal12, equal34,
-                           swaprs, swaptu, reorder,
-                           &icore[ipused], &icore[ipsave], &icore[ippair],
+                           &icore[iprim1 + 1 - 1],
+                           &icore[iprim2 + 1 - 1],
+                           &icore[iprim3 + 1 - 1],
+                           &icore[iprim4 + 1 - 1],
+                           equal12, equal34, 0,
                            &zcore[zpbatch], &zcore[zwork], &zcore[zcbatch]);
 
 /*             ...expand the contraction indices (if necessary): */
@@ -563,6 +537,7 @@ int erd__1111_csgto (int imax, int zmax,
         erd__map_ijkl_to_ikjl (nxyz1 * nxyz2 * nxyz3, nxyz4, 1, 1,
                                &zcore[in], &zcore[out]);        
     }
+    
 /*             ...set final pointer to integrals in ZCORE array. */
     *nfirst = in;
 

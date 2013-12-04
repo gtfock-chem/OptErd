@@ -414,24 +414,14 @@ int erd__csgto (int imax, int zmax,
                             &zcore[zint2dy], &zcore[zint2dz],
                             &zcore[zpbatch]);
 
-    erd__ctr_4index_block (nxyzt, mijkl,
-                           mij, mkl, ncgtoab, ncgtocd,
-                           npgtoa, npgtob, npgtoc, npgtod,
-                           ncgtoa, ncgtob, ncgtoc, ncgtod,
-                           &cc[lcca], &cc[lccb], &cc[lccc],&cc[lccd], 
-                           &ccbeg[lccsega], &ccbeg[lccsegb],
-                           &ccbeg[lccsegc], &ccbeg[lccsegd],
-                           &ccend[lccsega], &ccend[lccsegb],
-                           &ccend[lccsegc], &ccend[lccsegd],
+    erd__ctr_4index_block (nxyzt, mij, mkl,
+                           &cc[lcca], &cc[lccb], &cc[lccc],&cc[lccd],
                            &icore[iprima + nijbeg - 1],
                            &icore[iprimb + nijbeg - 1],
                            &icore[iprimc + nklbeg - 1],
                            &icore[iprimd + nklbeg - 1],
-                           equalab, equalcd,
-                           swaprs, swaptu, reorder,
-                           &icore[ipused], &icore[ipsave],
-                           &icore[ippair], &zcore[zpbatch],
-                           &zcore[zwork], &zcore[zcbatch]);
+                           equalab, equalcd, reorder,
+                           &zcore[zpbatch], &zcore[zwork], &zcore[zcbatch]);
 
 /*             ...the unnormalized cartesian (e0|f0) contracted batch is */
 /*                ready. Expand the contraction indices (if necessary): */
