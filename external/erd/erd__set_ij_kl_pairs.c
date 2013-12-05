@@ -2,10 +2,9 @@
 #include <stdlib.h>
 #include <math.h>
 #include <stdint.h>
-
-
+#include "boys.h"
 #include "erd.h"
-
+#define ERD_TABLE_FREE_BOYS_FUNCTIONS
 
 #define TOL 1e-14
 
@@ -28,12 +27,8 @@ static YEP_NOINLINE void set_pairs(int npgtoa, int npgtob,
 	int atomab, int equalab,
 	int swaprs, double rnabsq,
 	double *YEP_RESTRICT alphaa, double *YEP_RESTRICT alphab,
-	double *YEP_RESTRICT ftable, int mgrid,
-	double tmax, double tstep,
-	double tvstep,
 	uint32_t *YEP_RESTRICT nij_ptr, int *YEP_RESTRICT prima, int *YEP_RESTRICT primb,
-	double *YEP_RESTRICT rho, double qmin, double smaxcd, double rminsq,
-	double *YEP_RESTRICT mytable)
+	double *YEP_RESTRICT rho, double qmin, double smaxcd, double rminsq)
 {
 	YEP_ALIGN(128) double ssss1[128];
 	YEP_ALIGN(128) double ssss2[128];
@@ -51,19 +46,7 @@ static YEP_NOINLINE void set_pairs(int npgtoa, int npgtob,
 				const double t = rminsq * p * qmin * pqpinv;
 				const double ssssmx = pow3o4(ab) * smaxcd * pinv * sqrt (pqpinv);
 
-				double f0 = (t == 0.0) ? 1.0 : sqrt (M_PI / t) * 0.5;
-				if (t <= tmax) {
-					const int tgrid = __builtin_lround(t * tvstep);
-					//   f0 = mytable[tgrid];
-					const double delta = tgrid * tstep - t;
-					f0 = (((((  ftable[(mgrid + 1) * tgrid + 6] * delta * 0.166666666666667
-						+ ftable[(mgrid + 1) * tgrid + 5]) * delta * 0.2
-						+ ftable[(mgrid + 1) * tgrid + 4]) * delta * 0.25
-						+ ftable[(mgrid + 1) * tgrid + 3]) * delta * 0.333333333333333
-						+ ftable[(mgrid + 1) * tgrid + 2]) * delta * 0.5
-						+ ftable[(mgrid + 1) * tgrid + 1]) * delta
-						+ ftable[(mgrid + 1) * tgrid + 0];
-				}
+				const double f0 = boys0(t);
 				if (ssssmx * f0 >= TOL) {
 					rho[nij] = 1.0;
 					prima[nij] = i + 1;
@@ -73,9 +56,9 @@ static YEP_NOINLINE void set_pairs(int npgtoa, int npgtob,
 			}
 		}
 	} else {
-		double *alphai, *alphaj;
-		int *primi, *primj;
-		int endi, endj;
+		double *alphai = alphaa, *alphaj = alphab;
+		int *primi = prima, *primj = primb;
+		int endi = npgtoa, endj = npgtob;
 		if (swaprs) {
 			endi = npgtob;
 			endj = npgtoa;
@@ -83,13 +66,6 @@ static YEP_NOINLINE void set_pairs(int npgtoa, int npgtob,
 			alphaj = alphaa;
 			primi = primb;
 			primj = prima;
-		} else {
-			endi = npgtoa;
-			endj = npgtob;
-			alphai = alphaa;
-			alphaj = alphab;
-			primi = prima;
-			primj = primb;
 		}
 
 		if (atomab) {
@@ -106,19 +82,7 @@ static YEP_NOINLINE void set_pairs(int npgtoa, int npgtob,
 					const double t = rminsq * p * qmin * pqpinv;
 					const double ssssmx = pow3o4(ab) * smaxcd * pinv * sqrt (pqpinv);
 
-					double f0 = (t == 0.0) ? 1.0 : sqrt (M_PI / t) * 0.5;
-					if (t <= tmax) {
-						const int tgrid = __builtin_lround(t * tvstep);
-						// f0 = mytable[tgrid];
-						const double delta = tgrid * tstep - t;
-						f0 = (((((ftable[(mgrid + 1) * tgrid + 6] * delta * 0.166666666666667
-							+ ftable[(mgrid + 1) * tgrid + 5]) * delta * 0.2
-							+ ftable[(mgrid + 1) * tgrid + 4]) * delta * 0.25
-							+ ftable[(mgrid + 1) * tgrid + 3]) * delta * 0.333333333333333
-							+ ftable[(mgrid + 1) * tgrid + 2]) * delta * 0.5
-							+ ftable[(mgrid + 1) * tgrid + 1]) * delta
-							+ ftable[(mgrid + 1) * tgrid];
-					}
+					const double f0 = boys0(t);
 					ssss1[j] = ssssmx * f0;
 				}
 				for (int j = 0; j < endj; j++) {                
@@ -145,19 +109,7 @@ static YEP_NOINLINE void set_pairs(int npgtoa, int npgtob,
 					const double t = rminsq * p * qmin * pqpinv;
 					const double ssssmx = pow3o4(ab) * rhoab * smaxcd * pinv * sqrt (pqpinv);
 
-					double f0 = (t == 0.0) ? 1.0 : sqrt (M_PI / t) * 0.5;
-					if (t <= tmax) {
-						const int tgrid = __builtin_lround(t * tvstep);
-						f0 = mytable[tgrid];
-						const double delta = tgrid * tstep - t;
-						f0 = (((((ftable[(mgrid + 1) * tgrid + 6] * delta * 0.166666666666667
-							  + ftable[(mgrid + 1) * tgrid + 5]) * delta * 0.2
-							  + ftable[(mgrid + 1) * tgrid + 4]) * delta * 0.25
-							  + ftable[(mgrid + 1) * tgrid + 3]) * delta * 0.333333333333333
-							  + ftable[(mgrid + 1) * tgrid + 2]) * delta * 0.5
-							  + ftable[(mgrid + 1) * tgrid + 1]) * delta
-							  + ftable[(mgrid + 1) * tgrid];
-					}
+					const double f0 = boys0(t);
 					ssss1[j] = ssssmx * f0;
 					ssss2[j] = rhoab;
 				}
@@ -202,29 +154,9 @@ int erd__set_ij_kl_pairs (int npgtoa, int npgtob, int npgtoc, int npgtod,
 	double smaxab;
 	double smaxcd;
 	double rminsq;
-	double mytable[64];
 
 	const uint64_t ticks_start = __rdtsc();
 	*empty = 0;
-#if 0
-	for (i = 0; i <= 46; i++) {
-		double delta;
-		int tgrid;
-		double f0;
-		 tgrid = (int) (i * tvstep + .5);
-		 delta = tgrid * tstep - i;
-		 f0 = (((((  ftable[(mgrid + 1) * tgrid + 6] * delta *
-					 0.166666666666667
-				   + ftable[(mgrid + 1) * tgrid + 5]) * delta * 0.2
-				   + ftable[(mgrid + 1) * tgrid + 4]) * delta * 0.25
-				   + ftable[(mgrid + 1) * tgrid + 3]) * delta *
-				   0.333333333333333
-				   + ftable[(mgrid + 1) * tgrid + 2]) * delta * 0.5
-				   + ftable[(mgrid + 1) * tgrid + 1]) * delta
-				   + ftable[(mgrid + 1) * tgrid + 0];
-		 mytable[i] = f0;
-	}
-#endif
 
 	uint32_t nij = 0;
 	uint32_t nkl = 0;
@@ -367,8 +299,7 @@ int erd__set_ij_kl_pairs (int npgtoa, int npgtob, int npgtoc, int npgtod,
 
 	/* ...perform K2 primitive screening on A,B part. */
 	set_pairs(npgtoa, npgtob, atomab, equalab, swaprs, rnabsq,
-		alphaa, alphab, ftable, mgrid, tmax, tstep, tvstep,
-		&nij, prima, primb, rho, qmin, smaxcd, rminsq, mytable);
+		alphaa, alphab, &nij, prima, primb, rho, qmin, smaxcd, rminsq);
 	if (nij == 0) {
 		*empty = 1;
 		const uint64_t ticks_elapsed = __rdtsc() - ticks_start;
@@ -380,8 +311,7 @@ int erd__set_ij_kl_pairs (int npgtoa, int npgtob, int npgtoc, int npgtod,
 	}
 
 	set_pairs(npgtoc, npgtod, atomcd, equalcd, swaptu, rncdsq,
-		alphac, alphad, ftable, mgrid, tmax, tstep, tvstep,
-		&nkl, primc, primd, &(rho[nij]), pmin, smaxab, rminsq, mytable);
+		alphac, alphad, &nkl, primc, primd, &rho[nij], pmin, smaxab, rminsq);
 	if (nkl == 0) {
 		*empty = 1;
 		const uint64_t ticks_elapsed = __rdtsc() - ticks_start;
