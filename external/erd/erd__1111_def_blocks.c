@@ -105,12 +105,8 @@
 /* ------------------------------------------------------------------------ */
 int erd__1111_def_blocks (int zmax, int npgto1, int npgto2,
                           int npgto3, int npgto4,
-                          int nij, int nkl, int nrs, int ntu,
-                          int nrstu, int nxyzt,
-                          int l1cache, int nctrow, int memory,
-                          int *nijblk, int *nklblk,
-                          int *npsize, int *ncsize, int *nwsize,
-                          int *mxprim, int *mnprim,
+                          int nij, int nkl, int nxyzt,
+                          int memory, int *ncsize,
                           int *zcbatch, int *zpbatch, int *zwork, 
                           int *znorm1, int *znorm2,
                           int *znorm3, int *znorm4,
@@ -121,7 +117,6 @@ int erd__1111_def_blocks (int zmax, int npgto1, int npgto2,
 {
     int mij;
     int mkl;
-    int wcol;
     int zone3;
     int zone4;
     int mijkl;
@@ -129,19 +124,11 @@ int erd__1111_def_blocks (int zmax, int npgto1, int npgto2,
     int mrskl;
     int zone4b;
     int zone4c;
-    double npminrs;
-    double npmintu;
-
-    *ncsize = nxyzt * nrstu;
-    *mxprim = npgto1 > npgto2 ? npgto1 : npgto2;
-    *mxprim = *mxprim > npgto3 ? *mxprim : npgto3;
-    *mxprim = *mxprim > npgto4 ? *mxprim : npgto4;
-
-    npminrs = npgto1 < npgto2 ? npgto1 : npgto2;
-    npmintu = npgto3 < npgto4 ? npgto3 : npgto4;         
-    *mnprim = npminrs > npmintu ? npminrs : npmintu;
+    int npsize;
+    int nwsize;
    
     zone3 = npgto1 + npgto2 + npgto3 + npgto4 + nij + nkl;
+    *ncsize = nxyzt;
     
 /*             ...if the MEMORY keyword is activated, the routine */
 /*                will only determine the optimum and minimum flp */
@@ -152,50 +139,32 @@ int erd__1111_def_blocks (int zmax, int npgto1, int npgto2,
     if (memory)
     {
         mijkl = mij * mkl;
-        mrskl = nrs * mkl;
-        *npsize = nxyzt * (mijkl > mrskl ? mijkl : mrskl);
-        *nwsize = *npsize;
-        zone12 = *npsize + *ncsize;
+        mrskl = mkl;
+        npsize = nxyzt * (mijkl > mrskl ? mijkl : mrskl);
+        nwsize = npsize;
+        zone12 = npsize + *ncsize;
         zone4b = (mij + mkl) * 5;
-        wcol = *mnprim;
-        zone4c = *nwsize + nctrow * wcol;
+        zone4c = nwsize;
         zone4 = zone4b > zone4c ? zone4b : zone4c;
-        *nklblk = zone12 + zone3 + zone4;
-        
-        mij = 1;
-        mkl = 1;
-        mijkl = mij * mkl;
-        mrskl = nrs * mkl;
-        *npsize = nxyzt * (mijkl > mrskl ? mijkl : mrskl);
-        *nwsize = *npsize;
-        zone12 = *npsize + *ncsize;
-        zone4b = (mij + mkl) * 5;
-        wcol = *mnprim;
-        zone4c = *nwsize + nctrow * wcol;
-        zone4 = zone4b > zone4c ? zone4b : zone4c;
-        *nijblk = zone12 + zone3 + zone4;
+        *ncsize = zone12 + zone3 + zone4;
     }
     else
     {
 /*             ...the actual fitting into the maximum memory given. */            
         mijkl = mij * mkl;
-        mrskl = nrs * mkl;
-        *npsize = nxyzt * (mijkl > mrskl ? mijkl : mrskl);
-        *nwsize = *npsize;
-        zone12 = *npsize + *ncsize;
+        mrskl = mkl;
+        npsize = nxyzt * (mijkl > mrskl ? mijkl : mrskl);
+        nwsize = npsize;
+        zone12 = npsize + *ncsize;
         zone4b = (mij + mkl) * 5;
-        wcol = *mnprim;
-        zone4c = *nwsize + nctrow * wcol;
+        zone4c = nwsize;
         zone4 = zone4b > zone4c ? zone4b : zone4c;
         assert (zone12 + zone3 + zone4 <= zmax);
-        
-        *nijblk = mij;
-        *nklblk = mkl;
-        *nwsize = zmax - zone12 - zone3;               
+                     
 /*             ...generate the memory allocation pointers. */
-        *zcbatch = 1;
-        *zpbatch = *ncsize + 1;
-        *znorm1 = *zpbatch + *npsize;
+        *zcbatch = 0;
+        *zpbatch = *ncsize;
+        *znorm1 = *zpbatch + npsize;
         *znorm2 = *znorm1 + npgto1;
         *znorm3 = *znorm2 + npgto2;
         *znorm4 = *znorm3 + npgto3;
@@ -214,35 +183,5 @@ int erd__1111_def_blocks (int zmax, int npgto1, int npgto2,
         *zwork = *zp;
     }
 
-    return 0;
-}
-
-
-int erd__1111_def_blocks_ (int *zmax, int *npgto1,
-                           int *npgto2, int *npgto3, int *npgto4,
-                           int *nij, int *nkl, int *nrs,
-                           int *ntu, int *nrstu, int *nxyzt,
-                           int *l1cache, int *nctrow, int *memory,
-                           int *nijblk, int *nklblk, int *npsize,
-                           int *ncsize, int *nwsize, int *mxprim,
-                           int *mnprim, int *zcbatch,
-                           int *zpbatch, int *zwork, int *znorm1,
-                           int *znorm2, int *znorm3, int *znorm4,
-                           int *zrho12, int *zrho34, int *zp,
-                           int *zpx, int *zpy, int *zpz,
-                           int *zscpk2, int *zq, int *zqx,
-                           int *zqy, int *zqz, int *zscqk2)
-{
-    erd__1111_def_blocks (*zmax, *npgto1, *npgto2, *npgto3, *npgto4,
-                          *nij, *nkl, *nrs, *ntu,
-                          *nrstu, *nxyzt,
-                          *l1cache, *nctrow, *memory,
-                          nijblk, nklblk, npsize, ncsize, nwsize,
-                          mxprim, mnprim,
-                          zcbatch, zpbatch, zwork,
-                          znorm1, znorm2, znorm3, znorm4,
-                          zrho12, zrho34, zp, zpx, zpy, zpz,
-                          zscpk2, zq, zqx, zqy, zqz, zscqk2);
-    
     return 0;
 }

@@ -82,9 +82,7 @@
 /*                                    integrals over spherical gaussians */
 /*                                    starting at ZCORE (NFIRST) */
 /* ------------------------------------------------------------------------ */
-int erd__1111_csgto (int imax, int zmax,
-                     int nalpha, int ncoeff, int ncsum,
-                     int npgto1, int npgto2,
+int erd__1111_csgto (int zmax, int npgto1, int npgto2,
                      int npgto3, int npgto4,
                      int shell1, int shell2,
                      int shell3, int shell4,
@@ -94,24 +92,22 @@ int erd__1111_csgto (int imax, int zmax,
                      double x4, double y4, double z4,
                      double *alpha, double *cc,
                      double *ftable, int mgrid, int ngrid,
-                     double tmax, double tstep, double tvstep,
-                     int l1cache, int tile, int nctrow,int screen,
+                     double tmax, double tstep, double tvstep, int screen,
                      int *icore, int *nbatch, int *nfirst, double *zcore)
 {
     int ftable_dim1;
     int ftable_offset;
     
-    int i, j, k, l, in;
+    int i, in;
     double x12, y12, z12, x34, y34, z34;
 
     int zp, zq;
     int nij, nkl, out, zpx, lcc1, lcc2, lcc3, lcc4, zpy,
-        zpz, zqx, zqy, zqz, nctr;
+        zpz, zqx, zqy, zqz;
     int lexp1, lexp2, lexp3, lexp4, nxyz1, nxyz2, nxyz3, nxyz4;
     int atom12, atom23;
-    int mijkl;
     int atom34;
-    int ixoff[4], zrho12;
+    int zrho12;
     double rn12sq;
     int zrho34;
     double rn34sq;
@@ -119,22 +115,15 @@ int erd__1111_csgto (int imax, int zmax,
     int zwork;
     int nxyzt, iprim1, iprim2, iprim3, iprim4, zscpk2, zscqk2;
     int znorm1, znorm2, znorm3, znorm4;
-    int nijblk;
     int equal12;
     int atomic;
-    int ncgto12;
     int equal34;
-    int nklblk, ncgto34, ippair, ipsave, shellp, indexr, indexs,
-        indext, indexu, ctmove, ipused, ncgtor, ncgtos, mnprim, ncgtot,
-        ncgtou, npgto12, npgto34;
-    int npsize, ncsize, shellt, mxprim;
+    int shellp, npgto12, npgto34;
+    int ncsize, shellt;
     double spnorm;
-    int swaprs;
-    int nwsize, xtmove;
-    int swaptu;
+    int xtmove;
     int zcbatch, zpbatch;
 
-    --zcore;
     ftable_dim1 = mgrid - 0 + 1;
     ftable_offset = 0 + ftable_dim1 * 0;
     ftable -= ftable_offset;
@@ -150,7 +139,12 @@ int erd__1111_csgto (int imax, int zmax,
         *nbatch = 0;
         return 0;
     }
-
+    #if 0
+    atom12 = 0;
+    atom34 = 0;
+    atom23 = 0;
+    atomic = 0;
+    #endif
 /*             ...set the pointers to the alpha exponents, contraction */
 /*                coefficients and segmented contraction boundaries. */
     lexp1 = 0;
@@ -253,6 +247,7 @@ int erd__1111_csgto (int imax, int zmax,
         z34 = 0.0;
         rn34sq = 0.0;
     }
+    
     if (equal12)
     {
         npgto12 = npgto1 * (npgto1 + 1) / 2;
@@ -301,7 +296,7 @@ int erd__1111_csgto (int imax, int zmax,
                            tmax, tstep, tvstep, screen,
                            &empty, &nij, &nkl,
                            &icore[iprim1], &icore[iprim2],
-                           &icore[iprim3], &icore[iprim4], &zcore[1]);
+                           &icore[iprim3], &icore[iprim4], &zcore[0]);
     if (empty)
     {
         *nbatch = 0;
@@ -313,11 +308,8 @@ int erd__1111_csgto (int imax, int zmax,
 /*                [12|34] generation. Perform also some preparation */
 /*                steps for contraction. */
     erd__1111_def_blocks (zmax, npgto1, npgto2, npgto3, npgto4,
-                          nij, nkl, 1, 1, 1, nxyzt,
-                          l1cache, nctrow, 0,
-                          &nijblk, &nklblk, &npsize, &ncsize, &nwsize,
-                          &mxprim, &mnprim,
-                          &zcbatch, &zpbatch, &zwork,
+                          nij, nkl, nxyzt, 0,
+                          &ncsize, &zcbatch, &zpbatch, &zwork,
                           &znorm1, &znorm2, &znorm3, &znorm4,
                           &zrho12, &zrho34,
                           &zp, &zpx, &zpy, &zpz, &zscpk2,
@@ -328,7 +320,7 @@ int erd__1111_csgto (int imax, int zmax,
                       shell1, shell2, shell3, shell4,
                       &alpha[lexp1], &alpha[lexp2],
                       &alpha[lexp3], &alpha[lexp4], spnorm,
-                      equal12, equal34, &zcore[1],
+                      equal12, equal34, &zcore[0],
                       &zcore[znorm1], &zcore[znorm2],
                       &zcore[znorm3], &zcore[znorm4],
                       &zcore[zrho12], &zcore[zrho34], &zcore[zcbatch]);
@@ -338,8 +330,6 @@ int erd__1111_csgto (int imax, int zmax,
 /*                contracted index ranges r,s,t,u. The keyword REORDER */
 /*                indicates, if the primitive [12|34] blocks needs to */
 /*                be transposed before being contracted. */
-
-    npsize = nxyzt * nij * nkl;
     if (shellt == 0)
     {
         erd__ssss_pcgto_block (nij, nkl,
@@ -492,7 +482,7 @@ int erd__1111_csgto (int imax, int zmax,
     }
     
 /*             ...set final pointer to integrals in ZCORE array. */
-    *nfirst = in;
+    *nfirst = in + 1;
 
     return 0;
 }
@@ -515,9 +505,7 @@ int erd__1111_csgto_ (int *imax, int *zmax,
                       int * nctrow, int * screen, int * icore,
                       int * nbatch, int * nfirst, double * zcore)
 {
-    erd__1111_csgto (*imax, *zmax,
-                     *nalpha, *ncoeff, *ncsum,
-                     *npgto1, *npgto2,
+    erd__1111_csgto (*zmax, *npgto1, *npgto2,
                      *npgto3, *npgto4,
                      *shell1, *shell2,
                      *shell3, *shell4,
@@ -527,8 +515,7 @@ int erd__1111_csgto_ (int *imax, int *zmax,
                      *x4, *y4, *z4,
                      alpha, cc,
                      ftable, *mgrid, *ngrid,
-                     *tmax, *tstep, *tvstep,
-                     *l1cache, *tile, *nctrow, *screen,
+                     *tmax, *tstep, *tvstep, *screen,
                      icore, nbatch, nfirst, zcore);
     
     return 0;

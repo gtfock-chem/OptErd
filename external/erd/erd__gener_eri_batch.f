@@ -132,7 +132,6 @@ C                are requested.
 C
 C
          IF (MAX (SHELL1,SHELL2,SHELL3,SHELL4).LT.2) THEN
-
              CALL  ERD__1111_CSGTO
      +
      +                  ( IMAX,ZMAX,

@@ -75,7 +75,7 @@ SRC_OPT = erd__1111_csgto.c \
 	erd__int2d_to_e0f0.f \
 	erd__map_ijkl_to_ikjl.c \
 	erd__memory_1111_csgto.c \
-	erd__memory_csgto.f \
+	erd__memory_csgto.c \
 	erd__memory_eri_batch.c \
 	erd__move_ry.c \
 	erd__normalize_cartesian.f \

@@ -1,87 +1,8 @@
-/* erd__memory_1111_csgto.f -- translated by f2c (version 20100827).
-   You must link the resulting object file with libf2c:
-	on Microsoft Windows system, link with libf2c.lib;
-	on Linux or Unix systems, link with .../path/to/libf2c.a -lm
-	or, if you install libf2c.a in a standard place, with -lf2c -lm
-	-- in that order, at the end of the command line, as in
-		cc *.o -lf2c -lm
-	Source for libf2c is in /netlib/f2c/libf2c.zip, e.g.,
+#include <stdio.h>
+#include <stdlib.h>
 
-		http://www.netlib.org/f2c/libf2c.zip
-*/
+#include "erd.h"
 
-#include "f2c.h"
-
-/* Table of constant values */
-
-static integer c__0 = 0;
-
-/*  Copyright (c) 2003-2010 University of Florida */
-
-/*  This program is free software; you can redistribute it and/or modify */
-/*  it under the terms of the GNU General Public License as published by */
-/*  the Free Software Foundation; either version 2 of the License, or */
-/*  (at your option) any later version. */
-/*  This program is distributed in the hope that it will be useful, */
-/*  but WITHOUT ANY WARRANTY; without even the implied warranty of */
-/*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the */
-/*  GNU General Public License for more details. */
-/*  The GNU General Public License is included in this distribution */
-/*  in the file COPYRIGHT. */
-/* Subroutine */ int
-erd__memory_1111_csgto_ (integer * nalpha, integer *
-                          ncoeff, integer * ncgto1, integer * ncgto2,
-                          integer * ncgto3, integer * ncgto4,
-                          integer * npgto1, integer * npgto2,
-                          integer * npgto3, integer * npgto4,
-                          integer * shell1, integer * shell2,
-                          integer * shell3, integer * shell4, doublereal * x1,
-                          doublereal * y1, doublereal * z1, doublereal * x2,
-                          doublereal * y2, doublereal * z2, doublereal * x3,
-                          doublereal * y3, doublereal * z3, doublereal * x4,
-                          doublereal * y4, doublereal * z4,
-                          doublereal * alpha, doublereal * cc,
-                          integer * l1cache, integer * nctrow, integer * imin,
-                          integer * iopt, integer * zmin, integer * zopt)
-{
-    /* System generated locals */
-    integer i__1, i__2;
-
-    /* Local variables */
-    static integer i__, j, k, l;
-    extern /* Subroutine */ int erd__1111_def_blocks_ (integer *, integer *,
-                                                        integer *, integer *,
-                                                        integer *, integer *,
-                                                        integer *, integer *,
-                                                        integer *, integer *,
-                                                        integer *, integer *,
-                                                        integer *, logical *,
-                                                        integer *, integer *,
-                                                        integer *, integer *,
-                                                        integer *, integer *,
-                                                        integer *, integer *,
-                                                        integer *, integer *,
-                                                        integer *, integer *,
-                                                        integer *, integer *,
-                                                        integer *, integer *,
-                                                        integer *, integer *,
-                                                        integer *, integer *,
-                                                        integer *, integer *,
-                                                        integer *, integer *,
-                                                        integer *, integer *);
-    static integer nij, nkl, lcc1, lcc2, lcc3, lcc4, nctr, lexp1, lexp2,
-        lexp3, lexp4, zout1, zout2, ineed, nxyz1, nxyz2, nxyz3, nxyz4;
-    static logical atom12, atom23;
-    static integer zneed;
-    static logical atom34;
-    static integer nxyzt;
-    static logical equal12, atomic;
-    static integer ncgto12;
-    static logical equal34;
-    static integer ncgto34, shellp, npgto12, shellt, npgto34, mnprim,
-        dummyi[22];
-    static logical memory;
-    static integer mxprim;
 
 /* ------------------------------------------------------------------------ */
 /*  OPERATION   : ERD__MEMORY_1111_CSGTO */
@@ -89,14 +10,11 @@ erd__memory_1111_csgto_ (integer * nalpha, integer *
 /*  MODULE-ID   : ERD */
 /*  SUBROUTINES : ERD__MEMORY_1111_BLOCKS */
 /*  DESCRIPTION : This operation calculates the minimum and optimum */
-/*                integer/flp memory needed for evaluating a batch */
+/*                int/flp memory needed for evaluating a batch */
 /*                of contracted electron repulsion integrals on up to */
 /*                four different centers involving s- and p-type shells */
 /*                only! */
-
-
 /*                  Input (x = 1,2,3 and 4): */
-
 /*                    NALPHA       =  total # of exponents */
 /*                    NCOEFF       =  total # of contraction coeffs */
 /*                    NCGTOx       =  # of contractions for csh x */
@@ -116,103 +34,80 @@ erd__memory_1111_csgto_ (integer * nalpha, integer *
 /*                                    8 Byte */
 /*                    NCTROW       =  minimum # of rows that are */
 /*                                    accepted for blocked contractions */
-
 /*                  Output: */
-
-/*                    IMIN,IOPT    =  minimum/optimum integer memory */
+/*                    IMIN,IOPT    =  minimum/optimum int memory */
 /*                    ZMIN,ZOPT    =  minimum/optimum flp memory */
-
-
-/*  AUTHOR      : Norbert Flocke */
 /* ------------------------------------------------------------------------ */
-
-
-/*             ...include files and declare variables. */
-
-
-
-
-/* ------------------------------------------------------------------------ */
-
-
-/*             ...set initial memory values. */
-
-
-    /* Parameter adjustments */
-    --alpha;
-    --cc;
-
-    /* Function Body */
-    *imin = 0;
+int erd__memory_1111_csgto (int npgto1, int npgto2,
+                            int npgto3, int npgto4,
+                            int shell1, int shell2,
+                            int shell3, int shell4,
+                            double x1, double y1, double z1,
+                            double x2, double y2, double z2,
+                            double x3, double y3, double z3,
+                            double x4, double y4, double z4,
+                            double *alpha, double *cc,
+                            int *imin, int *iopt, int *zmin, int *zopt)
+{
+    int i;
+    int lcc1, lcc2, lcc3, lcc4, lexp1, lexp2,
+        lexp3, lexp4, zout2, ineed, nxyz1, nxyz2, nxyz3, nxyz4;
+    int atom12, atom23;
+    int zneed;
+    int atom34;
+    int nxyzt;
+    int equal12, atomic;
+    int equal34;
+    int shellp, npgto12, shellt, npgto34;
+    int mxprim;
+    int mnprim;
+    int npminrs;
+    int npmintu;
+    
     *iopt = 0;
-    *zmin = 0;
     *zopt = 0;
-
-
-/*             ...simulate the cartesian contracted (12|34) batch */
-/*                generation. */
-
-
-    shellp = *shell1 + *shell2;
-    shellt = shellp + *shell3 + *shell4;
-    atom12 = *x1 == *x2 && *y1 == *y2 && *z1 == *z2;
-    atom23 = *x2 == *x3 && *y2 == *y3 && *z2 == *z3;
-    atom34 = *x3 == *x4 && *y3 == *y4 && *z3 == *z4;
+   
+    shellp = shell1 + shell2;
+    shellt = shellp + shell3 + shell4;
+    atom12 = ((x1 == x2) && (y1 == y2) && (z1 == z2));
+    atom23 = ((x2 == x3) && (y2 == y3) && (z2 == z3));
+    atom34 = ((x3 == x4) && (y3 == y4) && (z3 == z4));
     atomic = atom12 && atom34 && atom23;
     if (atomic && shellt % 2 == 1)
     {
         return 0;
     }
-    lexp1 = 1;
-    lexp2 = lexp1 + *npgto1;
-    lexp3 = lexp2 + *npgto2;
-    lexp4 = lexp3 + *npgto3;
-    lcc1 = 1;
-    lcc2 = lcc1 + *npgto1 * *ncgto1;
-    lcc3 = lcc2 + *npgto2 * *ncgto2;
-    lcc4 = lcc3 + *npgto3 * *ncgto3;
-
+    
+    lexp1 = 0;
+    lexp2 = lexp1 + npgto1;
+    lexp3 = lexp2 + npgto2;
+    lexp4 = lexp3 + npgto3;
+    lcc1 = 0;
+    lcc2 = lcc1 + npgto1;
+    lcc3 = lcc2 + npgto2;
+    lcc4 = lcc3 + npgto3;
 
 /*             ...determine csh equality between center pairs 1,2 */
 /*                and 3,4 in increasing order of complexity: */
-
 /*                 centers -> shells -> exponents -> ctr coefficients */
-
-
     equal12 = atom12;
     if (equal12)
     {
-        equal12 = *shell1 == *shell2 && *npgto1 == *npgto2
-            && *ncgto1 == *ncgto2;
+        equal12 = ((shell1 == shell2) &&
+                   (npgto1 == npgto2));
         if (equal12)
         {
-            k = lexp1 - 1;
-            l = lexp2 - 1;
-            i__1 = *npgto1;
-            for (i__ = 1; i__ <= i__1; ++i__)
+            for (i = 0; i < npgto1; ++i)
             {
-                equal12 = equal12 && alpha[k + i__] == alpha[l + i__];
-/* L100: */
+                equal12 = (equal12 &&
+                           (alpha[lexp1 + i] == alpha[lexp2 + i]));
             }
             if (equal12)
             {
-                k = lcc1 - 1;
-                l = lcc2 - 1;
-                i__1 = *ncgto1;
-                for (j = 1; j <= i__1; ++j)
+                for (i = 0; i < npgto1; ++i)
                 {
-                    if (equal12)
-                    {
-                        i__2 = *npgto1;
-                        for (i__ = 1; i__ <= i__2; ++i__)
-                        {
-                            equal12 = equal12 && cc[k + i__] == cc[l + i__];
-/* L120: */
-                        }
-                        k += *npgto1;
-                        l += *npgto1;
-                    }
-/* L110: */
+                    equal12 = (equal12 && 
+                        (cc[lcc1 + i] == cc[lcc2 + i]));
                 }
             }
         }
@@ -220,37 +115,21 @@ erd__memory_1111_csgto_ (integer * nalpha, integer *
     equal34 = atom34;
     if (equal34)
     {
-        equal34 = *shell3 == *shell4 && *npgto3 == *npgto4
-            && *ncgto3 == *ncgto4;
+        equal34 = ((shell3 == shell4) &&
+                   (npgto3 == npgto4));
         if (equal34)
         {
-            k = lexp3 - 1;
-            l = lexp4 - 1;
-            i__1 = *npgto3;
-            for (i__ = 1; i__ <= i__1; ++i__)
+            for (i = 0; i < npgto3; ++i)
             {
-                equal34 = equal34 && alpha[k + i__] == alpha[l + i__];
-/* L130: */
+                equal34 = (equal34 &&
+                           (alpha[lexp3 + i] == alpha[lexp4 + i]));
             }
             if (equal34)
             {
-                k = lcc3 - 1;
-                l = lcc4 - 1;
-                i__1 = *ncgto3;
-                for (j = 1; j <= i__1; ++j)
+                for (i = 0; i < npgto3; ++i)
                 {
-                    if (equal34)
-                    {
-                        i__2 = *npgto3;
-                        for (i__ = 1; i__ <= i__2; ++i__)
-                        {
-                            equal34 = equal34 && cc[k + i__] == cc[l + i__];
-/* L150: */
-                        }
-                        k += *npgto3;
-                        l += *npgto3;
-                    }
-/* L140: */
+                    equal34 = (equal34 &&
+                        (cc[lcc3 + i] == cc[lcc4 + i]));
                 }
             }
         }
@@ -260,35 +139,27 @@ erd__memory_1111_csgto_ (integer * nalpha, integer *
 /*             ...calculate relevant data for the [12|34] batch of */
 /*                integrals, such as dimensions, total # of integrals */
 /*                to be expected, etc... */
-
-
-    nxyz1 = *shell1 + *shell1 + 1;
-    nxyz2 = *shell2 + *shell2 + 1;
-    nxyz3 = *shell3 + *shell3 + 1;
-    nxyz4 = *shell4 + *shell4 + 1;
+    nxyz1 = shell1 + shell1 + 1;
+    nxyz2 = shell2 + shell2 + 1;
+    nxyz3 = shell3 + shell3 + 1;
+    nxyz4 = shell4 + shell4 + 1;
     nxyzt = nxyz1 * nxyz2 * nxyz3 * nxyz4;
     if (equal12)
     {
-        npgto12 = *npgto1 * (*npgto1 + 1) / 2;
-        ncgto12 = *ncgto1 * (*ncgto1 + 1) / 2;
+        npgto12 = npgto1 * (npgto1 + 1) / 2;
     }
     else
     {
-        npgto12 = *npgto1 * *npgto2;
-        ncgto12 = *ncgto1 * *ncgto2;
+        npgto12 = npgto1 * npgto2;
     }
     if (equal34)
     {
-        npgto34 = *npgto3 * (*npgto3 + 1) / 2;
-        ncgto34 = *ncgto3 * (*ncgto3 + 1) / 2;
+        npgto34 = npgto3 * (npgto3 + 1) / 2;
     }
     else
     {
-        npgto34 = *npgto3 * *npgto4;
-        ncgto34 = *ncgto3 * *ncgto4;
+        npgto34 = npgto3 * npgto4;
     }
-    nctr = ncgto12 * ncgto34;
-
 
 /*             ...at this point we would determine the IJ and KL */
 /*                exponent pairs necessay to evaluate the cartesian */
@@ -299,65 +170,48 @@ erd__memory_1111_csgto_ (integer * nalpha, integer *
 /*                will be changed in the future, this is where a memory */
 /*                routine handling the IJ and KL pair determination */
 /*                should be placed. */
-
-
-    nij = npgto12;
-    nkl = npgto34;
     zneed = npgto12 + npgto34;
-    ineed = zneed << 1;
-    *imin = max (*imin, ineed);
-    *iopt = max (*iopt, ineed);
-    *zmin = max (*zmin, zneed);
-    *zopt = max (*zopt, zneed);
+    ineed = 2 * zneed;
+    *iopt = MAX(*iopt, ineed);
+    *zopt = MAX(*zopt, zneed);
 
 
 /*             ...determine minimum and optimum flp needs for the */
 /*                unnormalized cartesian (12|34) contracted batch */
 /*                generation. */
+    erd__1111_def_blocks (0, npgto1, npgto2, npgto3, npgto4,
+                          npgto12, npgto34, nxyzt, 1,
+                          &zout2, NULL, NULL, NULL, NULL,
+                          NULL, NULL, NULL, NULL, NULL,
+                          NULL, NULL, NULL, NULL, NULL,
+                          NULL, NULL, NULL, NULL, NULL);
+
+    mxprim = MAX(npgto1, npgto2);
+    mxprim = MAX(mxprim, npgto3);
+    mxprim = MAX(mxprim, npgto4);
+
+    npminrs = MIN(npgto1, npgto2);
+    npmintu = MIN(npgto1, npgto2);         
+    mnprim = MAX(npminrs, npmintu);
+    
+    ineed = ineed + 2 * mxprim + mnprim;
+    *iopt = MAX(*iopt, ineed);
+    *zopt = MAX(*zopt, zout2);
 
 
-    memory = TRUE_;
-    erd__1111_def_blocks_ (&c__0, npgto1, npgto2, npgto3, npgto4, &nij, &nkl,
-                            &ncgto12, &ncgto34, &nctr, &nxyzt, l1cache,
-                            nctrow, &memory, &zout1, &zout2, dummyi,
-                            &dummyi[1], &dummyi[2], &mxprim, &mnprim,
-                            &dummyi[3], &dummyi[4], &dummyi[5], &dummyi[6],
-                            &dummyi[7], &dummyi[8], &dummyi[9], &dummyi[10],
-                            &dummyi[11], &dummyi[12], &dummyi[13],
-                            &dummyi[14], &dummyi[15], &dummyi[16],
-                            &dummyi[17], &dummyi[18], &dummyi[19],
-                            &dummyi[20], &dummyi[21]);
-    ineed = ineed + (mxprim << 1) + mnprim;
-    *imin = max (*imin, ineed);
-    *iopt = max (*iopt, ineed);
-    *zmin = max (*zmin, zout1);
-    *zopt = max (*zopt, zout2);
-
-
-/*             ...determine the integer/flp memory needs for the next */
+/*             ...determine the int/flp memory needs for the next */
 /*                steps: */
-
 /*                1) expanding the contraction indices (if any) */
 /*                2) reordering the contraction indices (if any) */
-
 /*                The space partitioning of the flp array will be */
 /*                as follows: */
-
-
 /*                         |  Zone 1  |  Zone 2  | */
-
-
 /*                 Zone 1 and 2:  2 batches of final (12|34) size */
+    zneed = 2 * nxyzt;
+    *zopt = MAX(*zopt, zneed);
 
-
-    nctr = *ncgto1 * *ncgto2 * *ncgto3 * *ncgto4;
-    zneed = (nctr << 1) * nxyzt;
-    *zmin = max (*zmin, zneed);
-    *zopt = max (*zopt, zneed);
-
-
-/*             ...ready! */
-
+    *zmin = *zopt;
+    *imin = *iopt;
 
     return 0;
-}                               /* erd__memory_1111_csgto__ */
+}
