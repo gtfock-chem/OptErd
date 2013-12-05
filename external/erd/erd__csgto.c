@@ -245,9 +245,9 @@ int erd__csgto (int imax, int zmax,
     lexp3 = lexp2 + npgto2;
     lexp4 = lexp3 + npgto3;
     lcc1 = 1;
-    lcc2 = lcc1 + npgto1 * ncgto1;
-    lcc3 = lcc2 + npgto2 * ncgto2;
-    lcc4 = lcc3 + npgto3 * ncgto3;
+    lcc2 = lcc1 + npgto1;
+    lcc3 = lcc2 + npgto2;
+    lcc4 = lcc3 + npgto3;
     erd__set_abcd_ (&ncgto1, &ncgto2, &ncgto3, &ncgto4,
                     &npgto1, &npgto2, &npgto3, &npgto4,
                     &shell1, &shell2, &shell3, &shell4,
@@ -289,24 +289,20 @@ int erd__csgto (int imax, int zmax,
     if (equalab)
     {
         npgtoab = npgtoa * (npgtoa + 1) / 2;
-        ncgtoab = ncgtoa * (ncgtoa + 1) / 2;
     }
     else
     {
         npgtoab = npgtoa * npgtob;
-        ncgtoab = ncgtoa * ncgtob;
     }
     if (equalcd)
     {
         npgtocd = npgtoc * (npgtoc + 1) / 2;
-        ncgtocd = ncgtoc * (ncgtoc + 1) / 2;
     }
     else
     {
         npgtocd = npgtoc * npgtod;
-        ncgtocd = ncgtoc * ncgtod;
     }
-    nctr = ncgtoab * ncgtocd;
+    nctr = 1;
     nxyzt = nxyzet * nxyzft;
     iprima = 1;
     iprimb = iprima + npgtoab;
@@ -340,7 +336,7 @@ int erd__csgto (int imax, int zmax,
     memory = 0;
     erd__e0f0_def_blocks (zmax, npgtoa, npgtob, npgtoc, npgtod,
                           shellp, shellq, nij, nkl,
-                          ncgtoab, ncgtocd, nctr, ngqp, ngqscr,
+                          1, 1, 1, ngqp, ngqscr,
                           nxyzt, l1cache, nctrow, memory,
                           &nijblk, &nklblk, &npsize, &ncsize, &nwsize,
                           &nint2d, &mxprim, &mnprim, &zcbatch, &zpbatch,
@@ -446,11 +442,10 @@ int erd__csgto (int imax, int zmax,
 /*                              NXYZT =< NXYZHRR */
 
     ixoff[0] = 1;
-    ixoff[1] = ncgto1;
-    ixoff[2] = ncgto1 * ncgto2;
-    ixoff[3] = ixoff[2] * ncgto3;
-    nctr = ixoff[3] * ncgto4;
-    mxsize = nctr * nxyzhrr;
+    ixoff[1] = 1;
+    ixoff[2] = 1;
+    ixoff[3] = 1;
+    mxsize = nxyzhrr;
     in = zcbatch;
     out = in + mxsize;
    
