@@ -2,7 +2,8 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <math.h>
-
+#include "boys.h"
+#define ERD_TABLE_FREE_BOYS_FUNCTIONS
 
 /* ------------------------------------------------------------------------ */
 /*  OPERATION   : ERD__SPPP_PCGTO_BLOCK */
@@ -206,7 +207,9 @@ int erd__sppp_pcgto_block (int nbatch, int atomic, int atom12, int atom34,
     double gzzx;
     double gzzy;
     double gzzz;
+#ifndef ERD_TABLE_FREE_BOYS_FUNCTIONS
     double t2inv;
+#endif
     double xppp1;
     double xppp2;
     double xppp3;
@@ -235,7 +238,9 @@ int erd__sppp_pcgto_block (int nbatch, int atomic, int atom12, int atom34,
     double ypss2;
     double yspp1;
     double ypsp1;
+#ifndef ERD_TABLE_FREE_BOYS_FUNCTIONS
     int tgrid;
+#endif
     double ypps1;
     double yspp2;
     double ypsp2;
@@ -263,12 +268,14 @@ int erd__sppp_pcgto_block (int nbatch, int atomic, int atom12, int atom34,
     double pzsub;
     double qxsub;
     double qysub;
+#ifndef ERD_TABLE_FREE_BOYS_FUNCTIONS
     double delta1;
     double delta2;
     double delta3;
     double delta4;
     double delta5;
     double delta6;
+#endif
     double qzsub;
     double zpss2;
     double zspp1;
@@ -424,6 +431,12 @@ int erd__sppp_pcgto_block (int nbatch, int atomic, int atom12, int atom34,
             pqz = pzval - qzval;
             t = (pqx * pqx + pqy * pqy + pqz * pqz) * pqmult * pqpinv;
             scale = pscale * scaleq[kl] / (pqmult * sqrt (pqplus));
+#ifdef ERD_TABLE_FREE_BOYS_FUNCTIONS
+            f0 = scale * boys0(t);
+            f1 = scale * boys1(t);
+            f2 = scale * boys2(t);
+            f3 = scale * boys3(t);
+#else
             if (t <= tmax)
             {
                 tgrid = (int) (t * tvstep + .5);
@@ -475,6 +488,7 @@ int erd__sppp_pcgto_block (int nbatch, int atomic, int atom12, int atom34,
                 f2 = t2inv * 3. * f1;
                 f3 = t2inv * 5. * f2;
             }
+#endif
             u0 = pval * pqpinv;
             u1 = -qval * pqpinv;
             u2 = pqpinv * .5;
@@ -688,6 +702,12 @@ int erd__sppp_pcgto_block (int nbatch, int atomic, int atom12, int atom34,
             pqz = pzval - qzval;
             t = (pqx * pqx + pqy * pqy + pqz * pqz) * pqmult * pqpinv;
             scale = pscale * scaleq[kl] / (pqmult * sqrt (pqplus));
+#ifdef ERD_TABLE_FREE_BOYS_FUNCTIONS
+            f0 = scale * boys0(t);
+            f1 = scale * boys1(t);
+            f2 = scale * boys2(t);
+            f3 = scale * boys3(t);
+#else
             if (t <= tmax)
             {
                 tgrid = (int) (t * tvstep + .5);
@@ -739,6 +759,7 @@ int erd__sppp_pcgto_block (int nbatch, int atomic, int atom12, int atom34,
                 f2 = t2inv * 3. * f1;
                 f3 = t2inv * 5. * f2;
             }
+#endif
             u0 = pval * pqpinv;
             u1 = -qval * pqpinv;
             u2 = pqpinv * .5;

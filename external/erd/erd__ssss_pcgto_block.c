@@ -2,7 +2,8 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <math.h>
-
+#include "boys.h"
+#define ERD_TABLE_FREE_BOYS_FUNCTIONS
 
 /* ------------------------------------------------------------------------ */
 /*  OPERATION   : ERD__SSSS_PCGTO_BLOCK */
@@ -216,6 +217,9 @@ int erd__ssss_pcgto_block (int nij, int nkl,
             pqz = pzval - qz[kl];
             t = (pqx * pqx + pqy * pqy + pqz * pqz) * pqmult / pqplus;
             scale = pscale * scaleq[kl] / (pqmult * sqrt (pqplus));
+#ifdef ERD_TABLE_FREE_BOYS_FUNCTIONS
+            f0 = boys0(t);
+#else
             if (t <= tmax)
             {
                 tgrid = (int) (t * tvstep + .5);
@@ -234,6 +238,7 @@ int erd__ssss_pcgto_block (int nij, int nkl,
             {
                 f0 = sqrt (M_PI / t) * .5;
             }
+#endif
             batch[m] = scale * f0;
             m++;
         }

@@ -2,7 +2,8 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <math.h>
-
+#include "boys.h"
+#define ERD_TABLE_FREE_BOYS_FUNCTIONS
 
 /* ------------------------------------------------------------------------ */
 /*  OPERATION   : ERD__SSSP_PCGTO_BLOCK */
@@ -263,6 +264,10 @@ int erd__sssp_pcgto_block (int atomic, int nij, int nkl,
                 pqz = pzval - qzval;
                 t = (pqx * pqx + pqy * pqy + pqz * pqz) * pqmult * pqpinv;
                 scale = pscale * scaleq[kl] / (pqmult * sqrt (pqplus));
+#ifdef ERD_TABLE_FREE_BOYS_FUNCTIONS
+                f0 = scale * boys0(t);
+                f1 = scale * boys1(t);
+#else
                 if (t <= tmax)
                 {
                     tgrid = (int) (t * tvstep + .5);
@@ -295,6 +300,7 @@ int erd__sssp_pcgto_block (int atomic, int nij, int nkl,
                     f0 = scale * .5 * sqrt (tinv * 3.141592653589793);
                     f1 = tinv * .5 * f0;
                 }
+#endif
                 f1 = f1 * pval * pqpinv;
                 batch[m] = (qxval - qxsub) * f0 + pqx * f1;
                 batch[m + 1] = (qyval - qysub) * f0 + pqy * f1;
@@ -340,6 +346,10 @@ int erd__sssp_pcgto_block (int atomic, int nij, int nkl,
                 pqz = pzval - qz[kl];
                 t = (pqx * pqx + pqy * pqy + pqz * pqz) * pqmult * pqpinv;
                 scale = pscale * scaleq[kl] / (pqmult * sqrt (pqplus));
+#ifdef ERD_TABLE_FREE_BOYS_FUNCTIONS
+                f0 = scale * boys0(t);
+                f1 = scale * boys1(t);
+#else
                 if (t <= tmax)
                 {
                     tgrid = (int) (t * tvstep + .5);
@@ -372,6 +382,7 @@ int erd__sssp_pcgto_block (int atomic, int nij, int nkl,
                     f0 = scale * .5 * sqrt (tinv * 3.141592653589793);
                     f1 = tinv * .5 * f0;
                 }
+#endif
                 f1 = -f1 * qval * pqpinv;
                 batch[m] = xp * f0 + pqx * f1;
                 batch[m + 1] = yp * f0 + pqy * f1;

@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <math.h>
+#include "boys.h"
+#define ERD_TABLE_FREE_BOYS_FUNCTIONS
 
 
 /* ------------------------------------------------------------------------ */
@@ -196,12 +198,14 @@ int erd__pppp_pcgto_block (int nbatch, int atomic, int atom12, int atom34,
     double qxval;
     double qyval;
     double qzval;
+#ifndef ERD_TABLE_FREE_BOYS_FUNCTIONS
     double delta1;
     double delta2;
     double delta3;
     double delta4;
     double delta5;
     double delta6;
+#endif
     double gxxxx;
     double gxxxy;
     double gxxxz;
@@ -504,6 +508,13 @@ int erd__pppp_pcgto_block (int nbatch, int atomic, int atom12, int atom34,
             pqz = pzval - qzval;
             t = (pqx * pqx + pqy * pqy + pqz * pqz) * pqmult * pqpinv;
             scale = pscale * scaleq[kl] / (pqmult * sqrt (pqplus));
+#ifdef ERD_TABLE_FREE_BOYS_FUNCTIONS
+            f0 = scale * boys0(t);
+            f1 = scale * boys1(t);
+            f2 = scale * boys2(t);
+            f3 = scale * boys3(t);
+            f4 = scale * boys4(t);
+#else
             if (t <= tmax)
             {
                 tgrid = (int) (t * tvstep + .5);
@@ -564,6 +575,7 @@ int erd__pppp_pcgto_block (int nbatch, int atomic, int atom12, int atom34,
                 f3 = t2inv * 5. * f2;
                 f4 = t2inv * 7. * f3;
             }
+#endif
             u0 = pval * pqpinv;
             u1 = -qval * pqpinv;
             u2 = pqpinv * .5;
