@@ -314,7 +314,7 @@ int erd__csgto (int imax, int zmax,
     iprimd = iprimc + npgtocd;
     erd__set_ij_kl_pairs (npgtoa, npgtob, npgtoc, npgtod,
                           atomab, atomcd, equalab, equalcd,
-                          swaprs, swaptu, xa, ya, za, xb, yb, zb,
+                          xa, ya, za, xb, yb, zb,
                           xc, yc, zc, xd, yd, zd,
                           rnabsq, rncdsq, PREFACT,
                           &alpha[lexpa], &alpha[lexpb],

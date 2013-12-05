@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <math.h>
+#include "boys.h"
+//#define ERD_TABLE_FREE_BOYS_FUNCTIONS
 
 
 /* ------------------------------------------------------------------------ */

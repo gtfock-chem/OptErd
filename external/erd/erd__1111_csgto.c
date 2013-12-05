@@ -292,7 +292,6 @@ int erd__1111_csgto (int imax, int zmax,
     }
     erd__set_ij_kl_pairs  (npgto1, npgto2, npgto3, npgto4,
                            atom12, atom34, equal12, equal34,
-                           0, 0,
                            x1, y1, z1, x2, y2, z2,
                            x3, y3, z3, x4, y4, z4,
                            rn12sq, rn34sq, PREFACT,

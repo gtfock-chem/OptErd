@@ -10,322 +10,317 @@
 
 uint64_t erd__set_ij_kl_pairs_ticks = 0;
 
-static YEP_INLINE double pow3o4(double x) {
-	return __builtin_sqrt(x * __builtin_sqrt(x));
-}
-
-static YEP_INLINE double vector_min(const double *YEP_RESTRICT vector, size_t length) {
-	double result = vector[0];
-	for (size_t i = 1; i < length; i++) {
-		const double element = vector[i];
-		result = (element < result) ? element : result;
-	}
-	return result;
-}
-
-static YEP_NOINLINE void set_pairs(int npgtoa, int npgtob,
-	int atomab, int equalab,
-	int swaprs, double rnabsq,
-	double *YEP_RESTRICT alphaa, double *YEP_RESTRICT alphab,
-	uint32_t *YEP_RESTRICT nij_ptr, int *YEP_RESTRICT prima, int *YEP_RESTRICT primb,
-	double *YEP_RESTRICT rho, double qmin, double smaxcd, double rminsq)
+static YEP_INLINE double
+pow3o4 (double x)
 {
-	YEP_ALIGN(128) double ssss1[128];
-	YEP_ALIGN(128) double ssss2[128];
+    return __builtin_sqrt (x * __builtin_sqrt (x));
+}
 
-	uint32_t nij = 0;
-	if (equalab) {
-		for (int i = 0; i < npgtoa; i++) {
-			const double a = alphaa[i];
-			for (int j = 0; j <= i; j++) {
-				const double b = alphab[j];
-				const double p = a + b;
-				const double ab = a * b;
-				const double pinv = 1.0 / p;
-				const double pqpinv = 1.0 / (p + qmin);
-				const double t = rminsq * p * qmin * pqpinv;
-				const double ssssmx = pow3o4(ab) * smaxcd * pinv * sqrt (pqpinv);
+static YEP_INLINE double
+vector_min (const double *YEP_RESTRICT vector, size_t length)
+{
+    double result = vector[0];
+    for (size_t i = 1; i < length; i++)
+    {
+        const double element = vector[i];
+        result = (element < result) ? element : result;
+    }
+    return result;
+}
 
-				const double f0 = boys0(t);
-				if (ssssmx * f0 >= TOL) {
-					rho[nij] = 1.0;
-					prima[nij] = i + 1;
-					primb[nij] = j + 1;
-					nij += 1;
-				}
-			}
-		}
-	} else {
-		double *alphai = alphaa, *alphaj = alphab;
-		int *primi = prima, *primj = primb;
-		int endi = npgtoa, endj = npgtob;
-		if (swaprs) {
-			endi = npgtob;
-			endj = npgtoa;
-			alphai = alphab;
-			alphaj = alphaa;
-			primi = primb;
-			primj = prima;
-		}
+static YEP_NOINLINE void
+set_pairs (int npgtoa, int npgtob,
+           int atomab, int equalab, double rnabsq,
+           double *YEP_RESTRICT alphaa, double *YEP_RESTRICT alphab,
+           uint32_t * YEP_RESTRICT nij_ptr, int *YEP_RESTRICT prima,
+           int *YEP_RESTRICT primb, double *YEP_RESTRICT rho, double qmin,
+           double smaxcd, double rminsq)
+{
+    YEP_ALIGN (128) double ssss1[128];
+    YEP_ALIGN (128) double ssss2[128];
 
-		if (atomab) {
-			for (int i = 0; i < endi; i++) {
-				const double a = alphai[i];
-				#pragma simd
-				for (int j = 0; j < endj; j++) {
-					__assume_aligned(alphaj, 64);
-					const double b = alphaj[j];
-					const double p = a + b;
-					const double ab = a * b;
-					const double pinv = 1.0 / p;
-					const double pqpinv = 1.0 / (p + qmin);
-					const double t = rminsq * p * qmin * pqpinv;
-					const double ssssmx = pow3o4(ab) * smaxcd * pinv * sqrt (pqpinv);
-
-					const double f0 = boys0(t);
-					ssss1[j] = ssssmx * f0;
-				}
-				for (int j = 0; j < endj; j++) {                
-					if (ssss1[j] >= TOL) {
-						rho[nij] = 1.0;
-						primi[nij] = i + 1;
-						primj[nij] = j + 1;
-						nij += 1;
-					}
-				}
-			}
-		} else {
-			for (int i = 0; i < endi; i++) {
-				const double a = alphai[i];
-				#pragma simd
-				for (int j = 0; j < endj; j++) {
-					__assume_aligned(alphaj, 64);
-					const double b = alphaj[j];
-					const double p = a + b;
-					const double ab = a * b;
-					const double pinv = 1.0 / p;
-					const double pqpinv = 1.0 / (p + qmin);
-					const double rhoab = exp (-ab * rnabsq * pinv);
-					const double t = rminsq * p * qmin * pqpinv;
-					const double ssssmx = pow3o4(ab) * rhoab * smaxcd * pinv * sqrt (pqpinv);
-
-					const double f0 = boys0(t);
-					ssss1[j] = ssssmx * f0;
-					ssss2[j] = rhoab;
-				}
-				for (int j = 0; j < endj; j++) {                 
-					if (ssss1[j] >= TOL) {
-						rho[nij] = ssss2[j];
-						primi[nij] = i + 1;
-						primj[nij] = j + 1;
-						nij += 1;
-					}
-				}
-			}
-		}
-	}
-	*nij_ptr = nij;
+    uint32_t nij = 0;
+    if (equalab)
+    {
+        for (int i = 0; i < npgtoa; i++)
+        {
+            const double a = alphaa[i];
+            for (int j = 0; j <= i; j++)
+            {
+                const double b = alphab[j];
+                const double p = a + b;
+                const double ab = a * b;
+                const double pinv = 1.0 / p;
+                const double pqpinv = 1.0 / (p + qmin);
+                const double t = rminsq * p * qmin * pqpinv;
+                const double ssssmx =
+                    pow3o4 (ab) * smaxcd * pinv * sqrt (pqpinv);
+                const double f0 = boys0 (t);
+                if (ssssmx * f0 >= TOL)
+                {
+                    rho[nij] = 1.0;
+                    prima[nij] = i + 1;
+                    primb[nij] = j + 1;
+                    nij += 1;
+                }
+            }
+        }
+    }
+    else
+    {
+        if (atomab)
+        {
+            for (int i = 0; i < npgtoa; i++)
+            {
+                const double a = alphaa[i];
+                #pragma simd
+                for (int j = 0; j < npgtob; j++)
+                {
+                    __assume_aligned (alphab, 64);
+                    const double b = alphab[j];
+                    const double p = a + b;
+                    const double ab = a * b;
+                    const double pinv = 1.0 / p;
+                    const double pqpinv = 1.0 / (p + qmin);
+                    const double t = rminsq * p * qmin * pqpinv;
+                    const double ssssmx =
+                        pow3o4 (ab) * smaxcd * pinv * sqrt (pqpinv);
+                    const double f0 = boys0 (t);
+                    ssss1[j] = ssssmx * f0;
+                }
+                for (int j = 0; j < npgtob; j++)
+                {
+                    if (ssss1[j] >= TOL)
+                    {
+                        rho[nij] = 1.0;
+                        prima[nij] = i + 1;
+                        primb[nij] = j + 1;
+                        nij += 1;
+                    }
+                }
+            }
+        }
+        else
+        {
+            for (int i = 0; i < npgtoa; i++)
+            {
+                const double a = alphaa[i];
+                #pragma simd
+                for (int j = 0; j < npgtob; j++)
+                {
+                    __assume_aligned (alphab, 64);
+                    const double b = alphab[j];
+                    const double p = a + b;
+                    const double ab = a * b;
+                    const double pinv = 1.0 / p;
+                    const double pqpinv = 1.0 / (p + qmin);
+                    const double rhoab = exp (-ab * rnabsq * pinv);
+                    const double t = rminsq * p * qmin * pqpinv;
+                    const double ssssmx =
+                        pow3o4 (ab) * rhoab * smaxcd * pinv * sqrt (pqpinv);
+                    const double f0 = boys0 (t);
+                    ssss1[j] = ssssmx * f0;
+                    ssss2[j] = rhoab;
+                }
+                for (int j = 0; j < npgtob; j++)
+                {
+                    if (ssss1[j] >= TOL)
+                    {
+                        rho[nij] = ssss2[j];
+                        prima[nij] = i + 1;
+                        primb[nij] = j + 1;
+                        nij += 1;
+                    }
+                }
+            }
+        }
+    }
+    *nij_ptr = nij;
 }
 
 int erd__set_ij_kl_pairs (int npgtoa, int npgtob, int npgtoc, int npgtod,
-	int atomab, int atomcd, int equalab, int equalcd,
-	int swaprs, int swaptu,
-	double xa, double ya, double za,
-	double xb, double yb, double zb,
-	double xc, double yc, double zc,
-	double xd, double yd, double zd,
-	double rnabsq, double rncdsq, double prefact,
-	double *YEP_RESTRICT alphaa, double *YEP_RESTRICT alphab,
-	double *YEP_RESTRICT alphac, double *YEP_RESTRICT alphad,
-	double *YEP_RESTRICT ftable, int mgrid, int ngrid,
-	double tmax, double tstep,
-	double tvstep, int screen, int *YEP_RESTRICT empty,
-	int *YEP_RESTRICT nij_ptr, int *YEP_RESTRICT nkl_ptr, int *YEP_RESTRICT prima,
-	int *YEP_RESTRICT primb, int *YEP_RESTRICT primc, int *YEP_RESTRICT primd,
-	double *YEP_RESTRICT rho)
+                          int atomab, int atomcd, int equalab, int equalcd,
+                          double xa, double ya, double za,
+                          double xb, double yb, double zb,
+                          double xc, double yc, double zc,
+                          double xd, double yd, double zd,
+                          double rnabsq, double rncdsq, double prefact,
+                          double *YEP_RESTRICT alphaa,
+                          double *YEP_RESTRICT alphab,
+                          double *YEP_RESTRICT alphac,
+                          double *YEP_RESTRICT alphad,
+                          double *YEP_RESTRICT ftable, int mgrid, int ngrid,
+                          double tmax, double tstep, double tvstep, int screen,
+                          int *YEP_RESTRICT empty, int *YEP_RESTRICT nij_ptr,
+                          int *YEP_RESTRICT nkl_ptr, int *YEP_RESTRICT prima,
+                          int *YEP_RESTRICT primb, int *YEP_RESTRICT primc,
+                          int *YEP_RESTRICT primd, double *YEP_RESTRICT rho)
 {
-	/* System generated locals */
-	double pmin;
-	double qmin;
-	double pinv;
-	double qinv;
-	double abmin;
-	double cdmin;   
-	double smaxab;
-	double smaxcd;
-	double rminsq;
+    double pmin;
+    double qmin;
+    double pinv;
+    double qinv;
+    double abmin;
+    double cdmin;
+    double smaxab;
+    double smaxcd;
+    double rminsq;
 
-	const uint64_t ticks_start = __rdtsc();
-	*empty = 0;
+    const uint64_t ticks_start = __rdtsc ();
+    *empty = 0;
 
-	uint32_t nij = 0;
-	uint32_t nkl = 0;
+    uint32_t nij = 0;
+    uint32_t nkl = 0;
 
-	// if not screening
-	if (!(screen)) {
-		if (equalab) {
-			for (int i = 0; i < npgtoa; i++) {
-				for (int j = 0; j <= i; j++) {
-					rho[nij] = 1.00;
-					prima[nij] = i + 1;
-					primb[nij] = j + 1;
-					nij += 1;
-				}
-			}
-		} else {
-			if (swaprs) {
-				if (atomab) {
-					for (int j = 0; j < npgtob; j++) {
-						for (int i = 0; i < npgtoa; i++) {
-							rho[nij] = 1.0;
-							prima[nij] = i + 1;
-							primb[nij] = j + 1;
-							nij += 1;
-						}
-					}
-				} else {
-					for (int j = 0; j < npgtob; j++) {
-						const double b = alphab[j];
-						for (int i = 0; i < npgtoa; i++) {
-							const double a = alphaa[i];
-							rho[nij] = exp (-a * b * rnabsq / (a + b));
-							prima[nij] = i + 1;
-							primb[nij] = j + 1;
-							nij += 1;
-						}
-					}
-				}
-			} else {
-				if (atomab) {
-					for (int i = 0; i < npgtoa; i++) {
-						for (int j = 0; j < npgtob; j++) {
-							rho[nij] = 1.0;
-							prima[nij] = i + 1;
-							primb[nij] = j + 1;
-							nij += 1;
-						}
-					}
-				} else {
-					for (int i = 0; i < npgtoa; i++) {
-						const double a = alphaa[i];
-						for (int j = 0; j < npgtob; j++) {
-							const double b = alphab[j];
-							rho[nij] = exp(-a * b * rnabsq / (a + b));
-							prima[nij] = i + 1;
-							primb[nij] = j + 1;
-							nij += 1;
-						}
-					}
-				}
-			}
-		}
+    // if not screening
+    if (!(screen))
+    {
+        if (equalab)
+        {
+            for (int i = 0; i < npgtoa; i++)
+            {
+                for (int j = 0; j <= i; j++)
+                {
+                    rho[nij] = 1.00;
+                    prima[nij] = i + 1;
+                    primb[nij] = j + 1;
+                    nij += 1;
+                }
+            }
+        }
+        else
+        {
+            {
+                if (atomab)
+                {
+                    for (int i = 0; i < npgtoa; i++)
+                    {
+                        for (int j = 0; j < npgtob; j++)
+                        {
+                            rho[nij] = 1.0;
+                            prima[nij] = i + 1;
+                            primb[nij] = j + 1;
+                            nij += 1;
+                        }
+                    }
+                }
+                else
+                {
+                    for (int i = 0; i < npgtoa; i++)
+                    {
+                        const double a = alphaa[i];
+                        for (int j = 0; j < npgtob; j++)
+                        {
+                            const double b = alphab[j];
+                            rho[nij] = exp (-a * b * rnabsq / (a + b));
+                            prima[nij] = i + 1;
+                            primb[nij] = j + 1;
+                            nij += 1;
+                        }
+                    }
+                }
+            }
+        }
 
-		nkl = 0;
-		if (equalcd) {
-			for (int k = 0; k < npgtoc; k++) {
-				for (int l = 0; l <= k; l++) {
-					rho[nij + nkl] = 1.0;
-					primc[nkl] = k + 1;
-					primd[nkl] = l + 1;
-					nkl += 1;
-				}
-			}
-		} else {
-			if (swaptu) {
-				if (atomcd) {
-					for (int l = 0; l < npgtod; l++) {
-						for (int k = 0; k < npgtoc; k++) {
-							rho[nij + nkl] = 1.0;
-							primc[nkl] = k + 1;
-							primd[nkl] = l + 1;
-							nkl += 1;
-						}
-					}
-				} else {
-					for (int l = 0; l < npgtod; l++) {
-						const double d = alphad[l];
-						for (int k = 0; k < npgtoc; k++) {
-							const double c = alphac[k];
-							rho[nij + nkl] = exp (-c * d * rncdsq / (c + d));
-							primc[nkl] = k + 1;
-							primd[nkl] = l + 1;
-							nkl += 1;
-						}
-					}
-				}
-			} else {
-				if (atomcd) {
-					for (int k = 0; k < npgtoc; k++) {
-						for (int l = 0; l < npgtod; l++) {
-							rho[nij + nkl] = 1.0;
-							primc[nkl] = k + 1;
-							primd[nkl] = l + 1;
-							nkl += 1;
-						}
-					}
-				} else {
-					for (int k = 0; k < npgtoc; k++) {
-						const double c = alphac[k];
-						for (int l = 0; l < npgtod; l++) {
-							const double d = alphad[l];
-							rho[nij + nkl] = exp (-c * d * rncdsq / (c + d));
-							primc[nkl] = k + 1;
-							primd[nkl] = l + 1;
-							nkl += 1;
-						}
-					}
-				}
-			}
-		}
-	}
+        nkl = 0;
+        if (equalcd)
+        {
+            for (int k = 0; k < npgtoc; k++)
+            {
+                for (int l = 0; l <= k; l++)
+                {
+                    rho[nij + nkl] = 1.0;
+                    primc[nkl] = k + 1;
+                    primd[nkl] = l + 1;
+                    nkl += 1;
+                }
+            }
+        }
+        else
+        {
+            {
+                if (atomcd)
+                {
+                    for (int k = 0; k < npgtoc; k++)
+                    {
+                        for (int l = 0; l < npgtod; l++)
+                        {
+                            rho[nij + nkl] = 1.0;
+                            primc[nkl] = k + 1;
+                            primd[nkl] = l + 1;
+                            nkl += 1;
+                        }
+                    }
+                }
+                else
+                {
+                    for (int k = 0; k < npgtoc; k++)
+                    {
+                        const double c = alphac[k];
+                        for (int l = 0; l < npgtod; l++)
+                        {
+                            const double d = alphad[l];
+                            rho[nij + nkl] = exp (-c * d * rncdsq / (c + d));
+                            primc[nkl] = k + 1;
+                            primd[nkl] = l + 1;
+                            nkl += 1;
+                        }
+                    }
+                }
+            }
+        }
+    }
 
-	// compute min
-	rminsq = erd__dsqmin_line_segments (xa, ya, za, xb, yb, zb,
-	                                    xc, yc, zc, xd, yd, zd);
+    // compute min
+    rminsq = erd__dsqmin_line_segments (xa, ya, za, xb, yb, zb,
+                                        xc, yc, zc, xd, yd, zd);
 
-	const double a = vector_min(alphaa, npgtoa);
-	const double b = vector_min(alphab, npgtob);
-	const double c = vector_min(alphac, npgtoc);
-	const double d = vector_min(alphad, npgtod);
+    const double a = vector_min (alphaa, npgtoa);
+    const double b = vector_min (alphab, npgtob);
+    const double c = vector_min (alphac, npgtoc);
+    const double d = vector_min (alphad, npgtod);
 
-	pmin = a + b;
-	qmin = c + d;
-	abmin = a * b;
-	cdmin = c * d;
-	pinv = 1.0 / pmin;
-	qinv = 1.0 / qmin;   
-	smaxab = prefact * pow3o4(abmin) * exp (-abmin * rnabsq * pinv) * pinv;
-	smaxcd = prefact * pow3o4(cdmin) * exp (-cdmin * rncdsq * qinv) * qinv;
+    pmin = a + b;
+    qmin = c + d;
+    abmin = a * b;
+    cdmin = c * d;
+    pinv = 1.0 / pmin;
+    qinv = 1.0 / qmin;
+    smaxab = prefact * pow3o4 (abmin) * exp (-abmin * rnabsq * pinv) * pinv;
+    smaxcd = prefact * pow3o4 (cdmin) * exp (-cdmin * rncdsq * qinv) * qinv;
 
-	/* ...perform K2 primitive screening on A,B part. */
-	set_pairs(npgtoa, npgtob, atomab, equalab, swaprs, rnabsq,
-		alphaa, alphab, &nij, prima, primb, rho, qmin, smaxcd, rminsq);
-	if (nij == 0) {
-		*empty = 1;
-		const uint64_t ticks_elapsed = __rdtsc() - ticks_start;
-		erd__set_ij_kl_pairs_ticks += ticks_elapsed;
+    /* ...perform K2 primitive screening on A,B part. */
+    set_pairs (npgtoa, npgtob, atomab, equalab, rnabsq,
+               alphaa, alphab, &nij, prima, primb, rho, qmin, smaxcd, rminsq);
+    if (nij == 0)
+    {
+        *empty = 1;
+        const uint64_t ticks_elapsed = __rdtsc () - ticks_start;
+        erd__set_ij_kl_pairs_ticks += ticks_elapsed;
 
-		*nij_ptr = nij;
-		*nkl_ptr = nkl;
-		return 0;
-	}
+        *nij_ptr = nij;
+        *nkl_ptr = nkl;
+        return 0;
+    }
 
-	set_pairs(npgtoc, npgtod, atomcd, equalcd, swaptu, rncdsq,
-		alphac, alphad, &nkl, primc, primd, &rho[nij], pmin, smaxab, rminsq);
-	if (nkl == 0) {
-		*empty = 1;
-		const uint64_t ticks_elapsed = __rdtsc() - ticks_start;
-		erd__set_ij_kl_pairs_ticks += ticks_elapsed;
+    set_pairs (npgtoc, npgtod, atomcd, equalcd, rncdsq,
+               alphac, alphad, &nkl, primc, primd, &rho[nij], pmin, smaxab,
+               rminsq);
+    if (nkl == 0)
+    {
+        *empty = 1;
+        const uint64_t ticks_elapsed = __rdtsc () - ticks_start;
+        erd__set_ij_kl_pairs_ticks += ticks_elapsed;
 
-		*nij_ptr = nij;
-		*nkl_ptr = nkl;
-		return 0;
-	}
+        *nij_ptr = nij;
+        *nkl_ptr = nkl;
+        return 0;
+    }
 
-	const uint64_t ticks_elapsed = __rdtsc() - ticks_start;
-	erd__set_ij_kl_pairs_ticks += ticks_elapsed;
+    const uint64_t ticks_elapsed = __rdtsc () - ticks_start;
+    erd__set_ij_kl_pairs_ticks += ticks_elapsed;
 
-	*nij_ptr = nij;
-	*nkl_ptr = nkl;
-	return 0;
+    *nij_ptr = nij;
+    *nkl_ptr = nkl;
+    return 0;
 }
