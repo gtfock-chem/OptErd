@@ -365,10 +365,6 @@ int erd__csgto (int imax, int zmax,
                       &zcore[znorma], &zcore[znormb],
                       &zcore[znormc], &zcore[znormd],
                       &zcore[zrhoab], &zcore[zrhocd], &zcore[zcbatch]);
-    ipused = iprimd + npgtocd;
-    ipsave = ipused + mnprim;
-    ippair = ipsave + mxprim;
-
 
 /*             ...evaluate unnormalized rescaled [e0|f0] in blocks */
 /*                over ij and kl pairs and add to final contracted */
@@ -457,75 +453,7 @@ int erd__csgto (int imax, int zmax,
     mxsize = nctr * nxyzhrr;
     in = zcbatch;
     out = in + mxsize;
-#if 0    
-    if (equalab && ncgtoab > 1)
-    {
-        erd__ctr_rs_expand__ (&nxyzt, &ncgtoab, &ncgtocd, &ncgtoa, &ncgtob,
-                              &zcore[in], &zcore[out]);
-        temp = in;
-        in = out;
-        out = temp;
-    }
-    if (equalcd && ncgtocd > 1)
-    {
-        int ii;
-        ii = nxyzt * ncgtoa * ncgtob;
-        erd__ctr_tu_expand__ (&ii, &ncgtocd, &ncgtoc, &ncgtod, &zcore[in],
-                              &zcore[out]);
-        temp = in;
-        in = out;
-        out = temp;
-    }
-    reorder = tr1234 || swap12 != swaprs || swap34 != swaptu;
-    if (reorder && nctr > 1)
-    {
-        if (swaprs)
-        {
-            indexr = indexb;
-            indexs = indexa;
-            ncgtor = ncgtob;
-            ncgtos = ncgtoa;
-        }
-        else
-        {
-            indexr = indexa;
-            indexs = indexb;
-            ncgtor = ncgtoa;
-            ncgtos = ncgtob;
-        }
-        if (swaptu)
-        {
-            indext = indexd;
-            indexu = indexc;
-            ncgtot = ncgtod;
-            ncgtou = ncgtoc;
-        }
-        else
-        {
-            indext = indexc;
-            indexu = indexd;
-            ncgtot = ncgtoc;
-            ncgtou = ncgtod;
-        }
-        erd__ctr_4index_reorder__ (&nxyzt, &nctr, &ncgtor, &ncgtos, &ncgtot,
-                                   &ncgtou, &ixoff[indexr - 1],
-                                   &ixoff[indexs - 1], &ixoff[indext - 1],
-                                   &ixoff[indexu - 1], &zcore[in],
-                                   &zcore[out]);
-        temp = in;
-        in = out;
-        out = temp;
-    }
-#endif
-    
-    if (nxyzt > 1 && nctr > 1)
-    {
-        erd__transpose_batch (nxyzt, nctr, &zcore[in], &zcore[out]);
-        temp = in;
-        in = out;
-        out = temp;
-    }
-    
+   
 /*             ...enter the HRR contraction and cartesian -> spherical */
 /*                transformation / cartesian normalization section. */
 /*                The sequence of events is to apply the HRR followed */
@@ -681,7 +609,7 @@ int erd__csgto (int imax, int zmax,
         move = *nbatch / (notmove * nryd);
         if (move > 1)
         {
-            erd__move_ry (*nbatch, 4, notmove, move, nryd, indexd,
+            erd__move_ry (4, notmove, move, nryd, indexd - 1,
                           &zcore[in], ixoff, &zcore[out]);
             temp = in;
             in = out;
@@ -716,8 +644,8 @@ int erd__csgto (int imax, int zmax,
         move = *nbatch / (notmove * nryc);
         if (move > 1)
         {
-            erd__move_ry (*nbatch, 4, notmove, move, nryc, indexc,
-                           &zcore[in], ixoff, &zcore[out]);
+            erd__move_ry (4, notmove, move, nryc, indexc - 1,
+                          &zcore[in], ixoff, &zcore[out]);
             temp = in;
             in = out;
             out = temp;
@@ -775,7 +703,7 @@ int erd__csgto (int imax, int zmax,
         move = *nbatch / (notmove * nryb);
         if (move > 1)
         {
-            erd__move_ry (*nbatch, 4, notmove, move, nryb, indexb,
+            erd__move_ry (4, notmove, move, nryb, indexb - 1,
                           &zcore[in], ixoff, &zcore[out]);
             temp = in;
             in = out;
@@ -810,7 +738,7 @@ int erd__csgto (int imax, int zmax,
         move = *nbatch / (notmove * nrya);
         if (move > 1)
         {
-            erd__move_ry (*nbatch, 4, notmove, move, nrya, indexa,
+            erd__move_ry (4, notmove, move, nrya, indexa - 1,
                           &zcore[in], ixoff, &zcore[out]);
             temp = in;
             in = out;

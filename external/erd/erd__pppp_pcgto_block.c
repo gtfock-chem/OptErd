@@ -2,8 +2,6 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <math.h>
-#include "boys.h"
-//#define ERD_TABLE_FREE_BOYS_FUNCTIONS
 
 
 /* ------------------------------------------------------------------------ */
@@ -105,21 +103,14 @@
 /*                    BATCH        =  current batch of primitive */
 /*                                    cartesian pppp integrals */
 /* ------------------------------------------------------------------------ */
-int erd__pppp_pcgto_block (int nbatch, int atomic, int atom12, int atom34,
-                           int mij, int mkl,
-                           int nij, int nijbeg, int nijend,
-                           int nkl, int nklbeg, int nklend,
-                           int npgto1, int npgto2,
-                           int npgto3, int npgto4,
+int erd__pppp_pcgto_block (int nij, int nkl,
                            double x1, double y1, double z1,
                            double x2, double y2, double z2,
                            double x3, double y3, double z3,
                            double x4, double y4, double z4,
-                           double x12, double y12, double z12,
-                           double x34, double y34, double z34,
                            double *alpha1, double *alpha2,
                            double *alpha3, double *alpha4,
-                           double *ftable, int mgrid, int ngrid,
+                           double *ftable, int mgrid,
                            double tmax, double tstep, double tvstep,
                            int *prim1, int *prim2,
                            int *prim3, int *prim4,
@@ -165,7 +156,6 @@ int erd__pppp_pcgto_block (int nbatch, int atomic, int atom12, int atom34,
     double u6;
     double u7;
     double u8;
-    double u9;
     double aa;
     double bb;
     double cc;
@@ -175,7 +165,6 @@ int erd__pppp_pcgto_block (int nbatch, int atomic, int atom12, int atom34,
     double gg;
     double hh;
     int ij;
-    double u10;
     int kl;
     double rr;
     double pqx;
@@ -185,7 +174,6 @@ int erd__pppp_pcgto_block (int nbatch, int atomic, int atom12, int atom34,
     double exp2;
     double exp3;
     double exp4;
-    int tcase;
     double pval;
     double qval;
     double tinv;
@@ -198,14 +186,12 @@ int erd__pppp_pcgto_block (int nbatch, int atomic, int atom12, int atom34,
     double qxval;
     double qyval;
     double qzval;
-#ifndef ERD_TABLE_FREE_BOYS_FUNCTIONS
     double delta1;
     double delta2;
     double delta3;
     double delta4;
     double delta5;
     double delta6;
-#endif
     double gxxxx;
     double gxxxy;
     double gxxxz;
@@ -291,7 +277,6 @@ int erd__pppp_pcgto_block (int nbatch, int atomic, int atom12, int atom34,
     double pqmult;
     double pqpinv;
     double pscale;
-    double rnpqsq;
     double xsssp1;
     double xssps1;
     double xspss1;
@@ -410,77 +395,55 @@ int erd__pppp_pcgto_block (int nbatch, int atomic, int atom12, int atom34,
     double zpppp3;
     double zsppp4;
     double zppsp4;
-
-    --batch;
-    --scalep;
-    --pz;
-    --py;
-    --px;
-    --p;
-    --prim2;
-    --prim1;
-    --scaleq;
-    --qz;
-    --qy;
-    --qx;
-    --q;
-    --prim4;
-    --prim3;
-    --rho12;
-    --rho34;
-    --norm1;
-    --alpha1;
-    --norm2;
-    --alpha2;
-    --norm3;
-    --alpha3;
-    --norm4;
-    --alpha4;
+    double x12;
+    double y12;
+    double z12;
+    double x34;
+    double y34;
+    double z34;
+    
     ftable_dim1 = mgrid - 0 + 1;
     ftable_offset = 0 + ftable_dim1 * 0;
     ftable -= ftable_offset;
-
+    x12 = x1 - x2;
+    y12 = y1 - y2;
+    z12 = z1 - z2;
+    x34 = x3 - x4;
+    y34 = y3 - y4;
+    z34 = z3 - z4;
+    
+    for (ij = 0; ij < nij; ++ij)
     {
-        m = 0;
-        for (ij = nijbeg; ij <= nijend; ++ij)
-        {
-            ++m;
-            i = prim1[m];
-            j = prim2[m];
-            exp1 = alpha1[i];
-            exp2 = alpha2[j];
-            pval = exp1 + exp2;
-            p[m] = pval;
-            pval = exp1 / pval;
-            px[m] = pval * x12 + x2;
-            py[m] = pval * y12 + y2;
-            pz[m] = pval * z12 + z2;
-            scalep[m] = norm1[i] * norm2[j] * rho12[ij];
-        }
+        i = prim1[ij];
+        j = prim2[ij];
+        exp1 = alpha1[i - 1];
+        exp2 = alpha2[j - 1];
+        pval = exp1 + exp2;
+        p[ij] = pval;
+        pval = exp1 / pval;
+        px[ij] = pval * x12 + x2;
+        py[ij] = pval * y12 + y2;
+        pz[ij] = pval * z12 + z2;
+        scalep[ij] = norm1[i - 1] * norm2[j - 1] * rho12[ij];
     }
 
+    for (kl = 0; kl < nkl; ++kl)
     {
-        m = 0;
-        for (kl = nklbeg; kl <= nklend; ++kl)
-        {
-            ++m;
-            k = prim3[m];
-            l = prim4[m];
-            exp3 = alpha3[k];
-            exp4 = alpha4[l];
-            qval = exp3 + exp4;
-            q[m] = qval;
-            qval = exp3 / qval;
-            qx[m] = qval * x34 + x4;
-            qy[m] = qval * y34 + y4;
-            qz[m] = qval * z34 + z4;
-            scaleq[m] = norm3[k] * norm4[l] * rho34[kl];
-        }
+        k = prim3[kl];
+        l = prim4[kl];
+        exp3 = alpha3[k - 1];
+        exp4 = alpha4[l - 1];
+        qval = exp3 + exp4;
+        q[kl] = qval;
+        qval = exp3 / qval;
+        qx[kl] = qval * x34 + x4;
+        qy[kl] = qval * y34 + y4;
+        qz[kl] = qval * z34 + z4;
+        scaleq[kl] = norm3[k - 1] * norm4[l - 1] * rho34[kl];
     }
 
-  L50:
     m = 0;
-    for (ij = 1; ij <= mij; ++ij)
+    for (ij = 0; ij < nij; ++ij)
     {
         pval = p[ij];
         pxval = px[ij];
@@ -494,7 +457,7 @@ int erd__pppp_pcgto_block (int nbatch, int atomic, int atom12, int atom34,
         ypsss1 = pyval - y1;
         zspss1 = pzval - z2;
         zpsss1 = pzval - z1;
-        for (kl = 1; kl <= mkl; ++kl)
+        for (kl = 0; kl < nkl; ++kl)
         {
             qval = q[kl];
             qxval = qx[kl];
@@ -961,93 +924,91 @@ int erd__pppp_pcgto_block (int nbatch, int atomic, int atom12, int atom34,
             gzxyy = (d * zpsss1 + e * zspss2) * xspss1 + (e * zpsss1 + f *
                                                             zspss2) * xspss2;
             gxyzz = (g * xpsss1 + h * xspss2) * yspss1 + (h * xpsss1 +
-                                                            r * xspss2) *
-                yspss2;
+                                                            r * xspss2) *yspss2;
             gyxzz =
                 (g * ypsss1 + h * yspss2) * xspss1 + (h * ypsss1 +
-                                                        r * yspss2) *
-                xspss2;
-            batch[m + 1] = gxxxx;
-            batch[m + 2] = gyxxx;
-            batch[m + 3] = gzxxx;
-            batch[m + 4] = gxyxx;
-            batch[m + 5] = gyyxx;
-            batch[m + 6] = gzyxx;
-            batch[m + 7] = gxzxx;
-            batch[m + 8] = gyzxx;
-            batch[m + 9] = gzzxx;
-            batch[m + 10] = gxxyx;
-            batch[m + 11] = gyxyx;
-            batch[m + 12] = gzxyx;
-            batch[m + 13] = gxyyx;
-            batch[m + 14] = gyyyx;
-            batch[m + 15] = gzyyx;
-            batch[m + 16] = gxzyx;
-            batch[m + 17] = gyzyx;
-            batch[m + 18] = gzzyx;
-            batch[m + 19] = gxxzx;
-            batch[m + 20] = gyxzx;
-            batch[m + 21] = gzxzx;
-            batch[m + 22] = gxyzx;
-            batch[m + 23] = gyyzx;
-            batch[m + 24] = gzyzx;
-            batch[m + 25] = gxzzx;
-            batch[m + 26] = gyzzx;
-            batch[m + 27] = gzzzx;
-            batch[m + 28] = gxxxy;
-            batch[m + 29] = gyxxy;
-            batch[m + 30] = gzxxy;
-            batch[m + 31] = gxyxy;
-            batch[m + 32] = gyyxy;
-            batch[m + 33] = gzyxy;
-            batch[m + 34] = gxzxy;
-            batch[m + 35] = gyzxy;
-            batch[m + 36] = gzzxy;
-            batch[m + 37] = gxxyy;
-            batch[m + 38] = gyxyy;
-            batch[m + 39] = gzxyy;
-            batch[m + 40] = gxyyy;
-            batch[m + 41] = gyyyy;
-            batch[m + 42] = gzyyy;
-            batch[m + 43] = gxzyy;
-            batch[m + 44] = gyzyy;
-            batch[m + 45] = gzzyy;
-            batch[m + 46] = gxxzy;
-            batch[m + 47] = gyxzy;
-            batch[m + 48] = gzxzy;
-            batch[m + 49] = gxyzy;
-            batch[m + 50] = gyyzy;
-            batch[m + 51] = gzyzy;
-            batch[m + 52] = gxzzy;
-            batch[m + 53] = gyzzy;
-            batch[m + 54] = gzzzy;
-            batch[m + 55] = gxxxz;
-            batch[m + 56] = gyxxz;
-            batch[m + 57] = gzxxz;
-            batch[m + 58] = gxyxz;
-            batch[m + 59] = gyyxz;
-            batch[m + 60] = gzyxz;
-            batch[m + 61] = gxzxz;
-            batch[m + 62] = gyzxz;
-            batch[m + 63] = gzzxz;
-            batch[m + 64] = gxxyz;
-            batch[m + 65] = gyxyz;
-            batch[m + 66] = gzxyz;
-            batch[m + 67] = gxyyz;
-            batch[m + 68] = gyyyz;
-            batch[m + 69] = gzyyz;
-            batch[m + 70] = gxzyz;
-            batch[m + 71] = gyzyz;
-            batch[m + 72] = gzzyz;
-            batch[m + 73] = gxxzz;
-            batch[m + 74] = gyxzz;
-            batch[m + 75] = gzxzz;
-            batch[m + 76] = gxyzz;
-            batch[m + 77] = gyyzz;
-            batch[m + 78] = gzyzz;
-            batch[m + 79] = gxzzz;
-            batch[m + 80] = gyzzz;
-            batch[m + 81] = gzzzz;
+                                                        r * yspss2) * xspss2;
+            batch[m + 0] = gxxxx;
+            batch[m + 1] = gyxxx;
+            batch[m + 2] = gzxxx;
+            batch[m + 3] = gxyxx;
+            batch[m + 4] = gyyxx;
+            batch[m + 5] = gzyxx;
+            batch[m + 6] = gxzxx;
+            batch[m + 7] = gyzxx;
+            batch[m + 8] = gzzxx;
+            batch[m + 9] = gxxyx;
+            batch[m + 10] = gyxyx;
+            batch[m + 11] = gzxyx;
+            batch[m + 12] = gxyyx;
+            batch[m + 13] = gyyyx;
+            batch[m + 14] = gzyyx;
+            batch[m + 15] = gxzyx;
+            batch[m + 16] = gyzyx;
+            batch[m + 17] = gzzyx;
+            batch[m + 18] = gxxzx;
+            batch[m + 19] = gyxzx;
+            batch[m + 20] = gzxzx;
+            batch[m + 21] = gxyzx;
+            batch[m + 22] = gyyzx;
+            batch[m + 23] = gzyzx;
+            batch[m + 24] = gxzzx;
+            batch[m + 25] = gyzzx;
+            batch[m + 26] = gzzzx;
+            batch[m + 27] = gxxxy;
+            batch[m + 28] = gyxxy;
+            batch[m + 29] = gzxxy;
+            batch[m + 30] = gxyxy;
+            batch[m + 31] = gyyxy;
+            batch[m + 32] = gzyxy;
+            batch[m + 33] = gxzxy;
+            batch[m + 34] = gyzxy;
+            batch[m + 35] = gzzxy;
+            batch[m + 36] = gxxyy;
+            batch[m + 37] = gyxyy;
+            batch[m + 38] = gzxyy;
+            batch[m + 39] = gxyyy;
+            batch[m + 40] = gyyyy;
+            batch[m + 41] = gzyyy;
+            batch[m + 42] = gxzyy;
+            batch[m + 43] = gyzyy;
+            batch[m + 44] = gzzyy;
+            batch[m + 45] = gxxzy;
+            batch[m + 46] = gyxzy;
+            batch[m + 47] = gzxzy;
+            batch[m + 48] = gxyzy;
+            batch[m + 49] = gyyzy;
+            batch[m + 50] = gzyzy;
+            batch[m + 51] = gxzzy;
+            batch[m + 52] = gyzzy;
+            batch[m + 53] = gzzzy;
+            batch[m + 54] = gxxxz;
+            batch[m + 55] = gyxxz;
+            batch[m + 56] = gzxxz;
+            batch[m + 57] = gxyxz;
+            batch[m + 58] = gyyxz;
+            batch[m + 59] = gzyxz;
+            batch[m + 60] = gxzxz;
+            batch[m + 61] = gyzxz;
+            batch[m + 62] = gzzxz;
+            batch[m + 63] = gxxyz;
+            batch[m + 64] = gyxyz;
+            batch[m + 65] = gzxyz;
+            batch[m + 66] = gxyyz;
+            batch[m + 67] = gyyyz;
+            batch[m + 68] = gzyyz;
+            batch[m + 69] = gxzyz;
+            batch[m + 70] = gyzyz;
+            batch[m + 71] = gzzyz;
+            batch[m + 72] = gxxzz;
+            batch[m + 73] = gyxzz;
+            batch[m + 74] = gzxzz;
+            batch[m + 75] = gxyzz;
+            batch[m + 76] = gyyzz;
+            batch[m + 77] = gzyzz;
+            batch[m + 78] = gxzzz;
+            batch[m + 79] = gyzzz;
+            batch[m + 80] = gzzzz;
             m += 81;
         }
     }

@@ -1,0 +1,456 @@
+/* erd__memory_csgto.f -- translated by f2c (version 20100827).
+   You must link the resulting object file with libf2c:
+	on Microsoft Windows system, link with libf2c.lib;
+	on Linux or Unix systems, link with .../path/to/libf2c.a -lm
+	or, if you install libf2c.a in a standard place, with -lf2c -lm
+	-- in that order, at the end of the command line, as in
+		cc *.o -lf2c -lm
+	Source for libf2c is in /netlib/f2c/libf2c.zip, e.g.,
+
+		http://www.netlib.org/f2c/libf2c.zip
+*/
+
+#include "f2c.h"
+
+/* Table of constant values */
+
+static integer c__0 = 0;
+
+/*  Copyright (c) 2003-2010 University of Florida */
+
+/*  This program is free software; you can redistribute it and/or modify */
+/*  it under the terms of the GNU General Public License as published by */
+/*  the Free Software Foundation; either version 2 of the License, or */
+/*  (at your option) any later version. */
+/*  This program is distributed in the hope that it will be useful, */
+/*  but WITHOUT ANY WARRANTY; without even the implied warranty of */
+/*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the */
+/*  GNU General Public License for more details. */
+/*  The GNU General Public License is included in this distribution */
+/*  in the file COPYRIGHT. */
+/* Subroutine */ int
+erd__memory_csgto__ (integer * nalpha, integer * ncoeff,
+                     integer * ncgto1, integer * ncgto2, integer * ncgto3,
+                     integer * ncgto4, integer * npgto1, integer * npgto2,
+                     integer * npgto3, integer * npgto4, integer * shell1,
+                     integer * shell2, integer * shell3, integer * shell4,
+                     doublereal * x1, doublereal * y1, doublereal * z1,
+                     doublereal * x2, doublereal * y2, doublereal * z2,
+                     doublereal * x3, doublereal * y3, doublereal * z3,
+                     doublereal * x4, doublereal * y4, doublereal * z4,
+                     doublereal * alpha, doublereal * cc, integer * l1cache,
+                     integer * nctrow, logical * spheric, integer * imin,
+                     integer * iopt, integer * zmin, integer * zopt)
+{
+    static integer nxyzhrr, nij, nkl;
+    extern /* Subroutine */ int erd__e0f0_def_blocks__ (integer *, integer *,
+                                                        integer *, integer *,
+                                                        integer *, integer *,
+                                                        integer *, integer *,
+                                                        integer *, integer *,
+                                                        integer *, integer *,
+                                                        integer *, integer *,
+                                                        integer *, integer *,
+                                                        integer *, logical *,
+                                                        integer *, integer *,
+                                                        integer *, integer *,
+                                                        integer *, integer *,
+                                                        integer *, integer *,
+                                                        integer *, integer *,
+                                                        integer *, integer *,
+                                                        integer *, integer *,
+                                                        integer *, integer *,
+                                                        integer *, integer *,
+                                                        integer *, integer *,
+                                                        integer *, integer *,
+                                                        integer *, integer *,
+                                                        integer *, integer *,
+                                                        integer *, integer *,
+                                                        integer *, integer *,
+                                                        integer *, integer *,
+                                                        integer *, integer *,
+                                                        integer *, integer *,
+                                                        integer *, integer *,
+                                                        integer *, integer *,
+                                                        integer *, integer *,
+                                                        integer *, integer *,
+                                                        integer *, integer *,
+                                                        integer *, integer *,
+                                                        integer *, integer *,
+                                                        integer *, integer *,
+                                                        integer *);
+    static integer lcc1, lcc2, lcc3, lcc4, ngqp, nctr, nmom, nrya, nryb, nryc,
+        nryd, lexp1, lexp2, lexp3, lexp4, zout1, zout2, ineed;
+    extern /* Subroutine */ int erd__set_abcd__ (integer *, integer *, integer
+                                                 *, integer *, integer *,
+                                                 integer *, integer *,
+                                                 integer *, integer *,
+                                                 integer *, integer *,
+                                                 integer *, doublereal *,
+                                                 doublereal *, doublereal *,
+                                                 doublereal *, doublereal *,
+                                                 doublereal *, doublereal *,
+                                                 doublereal *, doublereal *,
+                                                 doublereal *, doublereal *,
+                                                 doublereal *, doublereal *,
+                                                 doublereal *, doublereal *,
+                                                 doublereal *, doublereal *,
+                                                 doublereal *, doublereal *,
+                                                 doublereal *, logical *,
+                                                 integer *, integer *,
+                                                 integer *, integer *,
+                                                 integer *, integer *,
+                                                 integer *, integer *,
+                                                 integer *, integer *,
+                                                 integer *, integer *,
+                                                 integer *, integer *,
+                                                 integer *, integer *,
+                                                 doublereal *, doublereal *,
+                                                 doublereal *, doublereal *,
+                                                 doublereal *, doublereal *,
+                                                 doublereal *, doublereal *,
+                                                 doublereal *, doublereal *,
+                                                 doublereal *, doublereal *,
+                                                 logical *, logical *,
+                                                 logical *, logical *,
+                                                 logical *, doublereal *,
+                                                 doublereal *, doublereal *,
+                                                 doublereal *, doublereal *,
+                                                 doublereal *, integer *,
+                                                 integer *, doublereal *,
+                                                 doublereal *, doublereal *,
+                                                 integer *, integer *,
+                                                 integer *, integer *,
+                                                 integer *, integer *,
+                                                 integer *, integer *,
+                                                 integer *, integer *,
+                                                 integer *, integer *,
+                                                 integer *, integer *,
+                                                 integer *, integer *,
+                                                 logical *, logical *,
+                                                 logical *, logical *,
+                                                 logical *, integer *,
+                                                 integer *, integer *,
+                                                 integer *, integer *,
+                                                 integer *, integer *,
+                                                 integer *, integer *,
+                                                 integer *, integer *,
+                                                 integer *, integer *,
+                                                 integer *, integer *,
+                                                 logical *);
+    static integer zneed, nrota, nrotb, nrotc, nrotd, nrowa, nrowb, nrowc,
+        nrowd;
+    static logical empty;
+    static integer nxyza, nxyzb, nxyzc, nxyzd, nxyzt, shella, shellb, shellc,
+        ncgtoa, ncgtob, ncgtoc, ncgtod, shelld, shellp, npgtoa, npgtob,
+        npgtoc, npgtod, shellq, ngqscr, shellt, mnprim, dummyi[49];
+    static logical dummyl[8], memory;
+    static integer mxprim;
+    static doublereal dummyr[21];
+    static integer mxsize, nxyzet, nxyzft;
+    static logical equalab;
+    static integer ncgtoab;
+    static logical equalcd;
+    static integer ncgtocd, npgtoab, npgtocd, ncolhrr, mxshell, nrothrr;
+
+/* ------------------------------------------------------------------------ */
+/*  OPERATION   : ERD__MEMORY_CSGTO */
+/*  MODULE      : ELECTRON REPULSION INTEGRALS DIRECT */
+/*  MODULE-ID   : ERD */
+/*  SUBROUTINES : ERD__SET_ABCD */
+/*                ERD__E0F0_DEF_BLOCKS */
+/*  DESCRIPTION : This operation calculates the minimum and optimum */
+/*                integer/flp memory needed for evaluating a batch */
+/*                of contracted electron repulsion integrals on up to */
+/*                four different centers between cartesian or spherical */
+/*                gaussian type shells. */
+
+
+/*                  Input (x = 1,2,3 and 4): */
+
+/*                    NALPHA       =  total # of exponents */
+/*                    NCOEFF       =  total # of contraction coeffs */
+/*                    NCGTOx       =  # of contractions for csh x */
+/*                    NPGTOx       =  # of primitives per contraction */
+/*                                    for csh x */
+/*                    SHELLx       =  the shell type for csh x */
+/*                    Xy,Yy,Zy     =  the x,y,z-coordinates for centers */
+/*                                    y = 1,2,3 and 4 */
+/*                    ALPHA        =  primitive exponents for csh */
+/*                                    1,2,3,4 in that order */
+/*                    CC           =  contraction coefficient for csh */
+/*                                    1,2,3,4 in that order, for each */
+/*                                    csh individually such that an */
+/*                                    (I,J) element corresponds to the */
+/*                                    I-th primitive and J-th contraction. */
+/*                    L1CACHE      =  Size of level 1 cache in units of */
+/*                                    8 Byte */
+/*                    NCTROW       =  minimum # of rows that are */
+/*                                    accepted for blocked contractions */
+/*                    SPHERIC      =  is true, if spherical integrals */
+/*                                    are wanted, false if cartesian */
+/*                                    ones are wanted */
+
+/*                  Output: */
+
+/*                    IMIN,IOPT    =  minimum/optimum integer memory */
+/*                    ZMIN,ZOPT    =  minimum/optimum flp memory */
+
+
+/*  AUTHOR      : Norbert Flocke */
+/* ------------------------------------------------------------------------ */
+
+
+/*             ...include files and declare variables. */
+
+
+
+
+/* ------------------------------------------------------------------------ */
+
+
+/*             ...set initial memory values. */
+
+
+    /* Parameter adjustments */
+    --alpha;
+    --cc;
+
+    /* Function Body */
+    *imin = 0;
+    *iopt = 0;
+    *zmin = 0;
+    *zopt = 0;
+
+
+/*             ...fix the A,B,C,D labels from the 1,2,3,4 ones. */
+/*                Calculate the relevant data for the A,B,C,D batch of */
+/*                integrals. Most of this data is not needed to */
+/*                evaluate the memory requirements and is dumped into */
+/*                the DUMMYx arrays with x=I,R,L standing for integer, */
+/*                real and logical, respectively. */
+
+
+    lexp1 = 1;
+    lexp2 = lexp1 + *npgto1;
+    lexp3 = lexp2 + *npgto2;
+    lexp4 = lexp3 + *npgto3;
+    lcc1 = 1;
+    lcc2 = lcc1 + *npgto1 * *ncgto1;
+    lcc3 = lcc2 + *npgto2 * *ncgto2;
+    lcc4 = lcc3 + *npgto3 * *ncgto3;
+    erd__set_abcd__ (ncgto1, ncgto2, ncgto3, ncgto4, npgto1, npgto2, npgto3,
+                     npgto4, shell1, shell2, shell3, shell4, x1, y1, z1, x2,
+                     y2, z2, x3, y3, z3, x4, y4, z4, &alpha[lexp1],
+                     &alpha[lexp2], &alpha[lexp3], &alpha[lexp4], &cc[lcc1],
+                     &cc[lcc2], &cc[lcc3], &cc[lcc4], spheric, &ncgtoa,
+                     &ncgtob, &ncgtoc, &ncgtod, &npgtoa, &npgtob, &npgtoc,
+                     &npgtod, &shella, &shellb, &shellc, &shelld, &shellp,
+                     &shellq, &shellt, &mxshell, dummyr, &dummyr[1],
+                     &dummyr[2], &dummyr[3], &dummyr[4], &dummyr[5],
+                     &dummyr[6], &dummyr[7], &dummyr[8], &dummyr[9],
+                     &dummyr[10], &dummyr[11], dummyl, &dummyl[1], &dummyl[2],
+                     &equalab, &equalcd, &dummyr[12], &dummyr[13],
+                     &dummyr[14], &dummyr[15], &dummyr[16], &dummyr[17],
+                     dummyi, &dummyi[1], &dummyr[18], &dummyr[19],
+                     &dummyr[20], &nxyza, &nxyzb, &nxyzc, &nxyzd, &nxyzet,
+                     &nxyzft, &dummyi[2], &dummyi[3], &nrya, &nryb, &nryc,
+                     &nryd, &dummyi[4], &dummyi[5], &dummyi[6], &dummyi[7],
+                     &dummyl[3], &dummyl[4], &dummyl[5], &dummyl[6],
+                     &dummyl[7], &dummyi[8], &dummyi[9], &dummyi[10],
+                     &dummyi[11], &dummyi[12], &dummyi[13], &dummyi[14],
+                     &dummyi[15], &dummyi[16], &dummyi[17], &dummyi[18],
+                     &dummyi[19], &nxyzhrr, &ncolhrr, &nrothrr, &empty);
+    if (empty)
+    {
+        return 0;
+    }
+
+
+/*             ...simulate the cartesian contracted (e0|f0) batch */
+/*                generation. */
+
+
+    if (equalab)
+    {
+        npgtoab = npgtoa * (npgtoa + 1) / 2;
+        ncgtoab = ncgtoa * (ncgtoa + 1) / 2;
+    }
+    else
+    {
+        npgtoab = npgtoa * npgtob;
+        ncgtoab = ncgtoa * ncgtob;
+    }
+    if (equalcd)
+    {
+        npgtocd = npgtoc * (npgtoc + 1) / 2;
+        ncgtocd = ncgtoc * (ncgtoc + 1) / 2;
+    }
+    else
+    {
+        npgtocd = npgtoc * npgtod;
+        ncgtocd = ncgtoc * ncgtod;
+    }
+    nctr = ncgtoab * ncgtocd;
+    nxyzt = nxyzet * nxyzft;
+
+
+/*             ...at this point we would determine the IJ and KL */
+/*                exponent pairs necessay to evaluate the cartesian */
+/*                contracted (e0|f0) batch after a possible screening */
+/*                of the primitives. Since at the moment we do not */
+/*                apply screening for memory determination, we use the */
+/*                complete set of IJ and KL pairs. In any event this */
+/*                will be changed in the future, this is where a memory */
+/*                routine handling the IJ and KL pair determination */
+/*                should be placed. */
+
+
+    nij = npgtoab;
+    nkl = npgtocd;
+    zneed = npgtoab + npgtocd;
+    ineed = zneed << 1;
+    *imin = max (*imin, ineed);
+    *iopt = max (*iopt, ineed);
+    *zmin = max (*zmin, zneed);
+    *zopt = max (*zopt, zneed);
+
+
+/*             ...determine minimum and optimum flp needs for the */
+/*                unnormalized cartesian (e0|f0) contracted batch */
+/*                generation. */
+
+
+    ngqp = shellt / 2 + 1;
+    nmom = (ngqp << 1) - 1;
+    ngqscr = nmom * 5 + (ngqp << 1) - 2;
+    memory = TRUE_;
+    erd__e0f0_def_blocks__ (&c__0, &npgtoa, &npgtob, &npgtoc, &npgtod,
+                            &shellp, &shellq, &nij, &nkl, &ncgtoab, &ncgtocd,
+                            &nctr, &ngqp, &ngqscr, &nxyzt, l1cache, nctrow,
+                            &memory, &zout1, &zout2, dummyi, &dummyi[1],
+                            &dummyi[2], &dummyi[3], &mxprim, &mnprim,
+                            &dummyi[4], &dummyi[5], &dummyi[6], &dummyi[7],
+                            &dummyi[8], &dummyi[9], &dummyi[10], &dummyi[11],
+                            &dummyi[12], &dummyi[13], &dummyi[14],
+                            &dummyi[15], &dummyi[16], &dummyi[17],
+                            &dummyi[18], &dummyi[19], &dummyi[20],
+                            &dummyi[21], &dummyi[22], &dummyi[23],
+                            &dummyi[24], &dummyi[25], &dummyi[26],
+                            &dummyi[27], &dummyi[28], &dummyi[29],
+                            &dummyi[30], &dummyi[31], &dummyi[32],
+                            &dummyi[33], &dummyi[34], &dummyi[35],
+                            &dummyi[36], &dummyi[37], &dummyi[38],
+                            &dummyi[39], &dummyi[40], &dummyi[41],
+                            &dummyi[42], &dummyi[43], &dummyi[44],
+                            &dummyi[45], &dummyi[46], &dummyi[47],
+                            &dummyi[48]);
+    ineed = ineed + (mxprim << 1) + mnprim;
+    *imin = max (*imin, ineed);
+    *iopt = max (*iopt, ineed);
+    *zmin = max (*zmin, zout1);
+    *zopt = max (*zopt, zout2);
+
+
+/*             ...determine the integer/flp memory needs for the next */
+/*                steps: */
+
+
+/*                1) expanding the contraction indices (if any) */
+/*                2) reordering the contraction indices (if any) */
+/*                3) transposing the contraction indices (if any) */
+/*                4) HRR contraction */
+/*                5) cartesian -> spherical transformation or */
+/*                   cartesian normalization */
+
+
+/*                The space partitioning of the flp array will be */
+/*                as follows: */
+
+
+/*                 |  Zone 1  |  Zone 2  |  Zone 3  |  Zone 4  | */
+
+
+/*                 Zone 1 and 2:  2 batches of HRR maximum size */
+
+/*                       Zone 3:  cart -> spher transformation data */
+/*                                             or */
+/*                                cartesian normalization factors */
+
+/*                       Zone 4:  HRR contraction data */
+
+
+    nctr = *ncgto1 * *ncgto2 * *ncgto3 * *ncgto4;
+    mxsize = nctr * nxyzhrr;
+
+
+/*             ...memory for Zone 1 and 2. */
+
+
+    ineed = 0;
+    zneed = mxsize + mxsize;
+
+
+/*             ...memory for Zone 3. */
+
+
+    if (*spheric)
+    {
+        if (mxshell > 1)
+        {
+            if (shelld > 1)
+            {
+                nrowd = (shelld / 2 + 1) * (shelld / 2 + 2) / 2;
+                nrotd = nrowd * nryd;
+                ineed = ineed + nryd + nrotd;
+                zneed = zneed + nrotd + nxyzd;
+            }
+            if (shellc > 1 && shellc != shelld)
+            {
+                nrowc = (shellc / 2 + 1) * (shellc / 2 + 2) / 2;
+                nrotc = nrowc * nryc;
+                ineed = ineed + nryc + nrotc;
+                zneed = zneed + nrotc + nxyzc;
+            }
+            if (shellb > 1 && shellb != shellc && shellb != shelld)
+            {
+                nrowb = (shellb / 2 + 1) * (shellb / 2 + 2) / 2;
+                nrotb = nrowb * nryb;
+                ineed = ineed + nryb + nrotb;
+                zneed = zneed + nrotb + nxyzb;
+            }
+            if (shella > 1 && shella != shellb && shella != shellc && shella
+                != shelld)
+            {
+                nrowa = (shella / 2 + 1) * (shella / 2 + 2) / 2;
+                nrota = nrowa * nrya;
+                ineed = ineed + nrya + nrota;
+                zneed = zneed + nrota + nxyza;
+            }
+        }
+    }
+    else
+    {
+        if (mxshell > 1)
+        {
+            zneed = zneed + mxshell + 1;
+        }
+    }
+
+
+/*             ...memory for Zone 4. */
+
+
+    ineed = ineed + (ncolhrr << 2) + (nrothrr << 1);
+    zneed += nrothrr << 1;
+    *imin = max (*imin, ineed);
+    *iopt = max (*iopt, ineed);
+    *zmin = max (*zmin, zneed);
+    *zopt = max (*zopt, zneed);
+
+
+/*             ...ready! */
+
+
+    return 0;
+}                               /* erd__memory_csgto__ */

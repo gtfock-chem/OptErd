@@ -108,33 +108,26 @@
 /*                                    cartesian sspp/spsp/pssp/spps/ */
 /*                                    psps/ppss integrals */
 /* ------------------------------------------------------------------------ */
-int erd__sspp_pcgto_block (int nbatch, int atomic, int atom12, int atom34,
-                           int mij, int mkl,
-                           int nij, int nijbeg, int nijend,
-                           int nkl, int nklbeg, int nklend,
-                           int npgto1, int npgto2,
-                           int npgto3, int npgto4,
-                           int shell1, int shell3, int shellp,
-                           double x1, double y1, double z1,
-                           double x2, double y2, double z2,
-                           double x3, double y3, double z3,
-                           double x4, double y4, double z4,
-                           double x12, double y12, double z12,
-                           double x34, double y34, double z34,
-                           double *alpha1, double *alpha2,
-                           double *alpha3, double *alpha4,
-                           double *ftable, int mgrid, int ngrid,
-                           double tmax, double tstep, double tvstep,
-                           int *prim1, int *prim2,
-                           int *prim3, int *prim4,
-                           double *norm1, double *norm2,
-                           double *norm3, double *norm4,
-                           double *rho12, double *rho34,
-                           double *p, double *px,
-                           double *py, double *pz, double *scalep,
-                           double *q, double *qx,
-                           double *qy, double *qz,
-                           double *scaleq, double *batch)
+int
+erd__sspp_pcgto_block (int nij, int nkl,
+                       int shell1, int shell3, int shellp,
+                       double x1, double y1, double z1,
+                       double x2, double y2, double z2,
+                       double x3, double y3, double z3,
+                       double x4, double y4, double z4,
+                       double *alpha1, double *alpha2,
+                       double *alpha3, double *alpha4,
+                       double *ftable, int mgrid,
+                       double tmax, double tstep, double tvstep,
+                       int *prim1, int *prim2,
+                       int *prim3, int *prim4,
+                       double *norm1, double *norm2,
+                       double *norm3, double *norm4,
+                       double *rho12, double *rho34,
+                       double *p, double *px,
+                       double *py, double *pz, double *scalep,
+                       double *q, double *qx,
+                       double *qy, double *qz, double *scaleq, double *batch)
 {
     int ftable_dim1, ftable_offset;
 
@@ -150,10 +143,7 @@ int erd__sspp_pcgto_block (int nbatch, int atomic, int atom12, int atom34,
     int ij;
     int kl;
     double u0;
-    double u1;   
-    double xp;
-    double yp;
-    double zp;
+    double u1;
     double pqx;
     double pqy;
     double pqz;
@@ -161,7 +151,6 @@ int erd__sspp_pcgto_block (int nbatch, int atomic, int atom12, int atom34,
     double exp2;
     double exp3;
     double exp4;
-    int tcase;
     double pval;
     double qval;
     double tinv;
@@ -190,7 +179,6 @@ int erd__sspp_pcgto_block (int nbatch, int atomic, int atom12, int atom34,
     double pqpinv;
     double pqmult;
     double pqplus;
-    double rnpqsq;
     double xps1;
     double yps1;
     double zps1;
@@ -210,440 +198,391 @@ int erd__sspp_pcgto_block (int nbatch, int atomic, int atom12, int atom34,
     double e;
     double f;
     double g;
+    double x12;
+    double y12;
+    double z12;
+    double x34;
+    double y34;
+    double z34;
 
-    --batch;
-    --scalep;
-    --pz;
-    --py;
-    --px;
-    --p;
-    --prim2;
-    --prim1;
-    --scaleq;
-    --qz;
-    --qy;
-    --qx;
-    --q;
-    --prim4;
-    --prim3;
-    --rho12;
-    --rho34;
-    --norm1;
-    --alpha1;
-    --norm2;
-    --alpha2;
-    --norm3;
-    --alpha3;
-    --norm4;
-    --alpha4;
+
     ftable_dim1 = mgrid - 0 + 1;
     ftable_offset = 0 + ftable_dim1 * 0;
     ftable -= ftable_offset;
+    x12 = x1 - x2;
+    y12 = y1 - y2;
+    z12 = z1 - z2;
+    x34 = x3 - x4;
+    y34 = y3 - y4;
+    z34 = z3 - z4;
 
-    tcase = 5;
+    for (ij = 0; ij < nij; ++ij)
+    {
+        i = prim1[ij];
+        j = prim2[ij];
+        exp1 = alpha1[i - 1];
+        exp2 = alpha2[j - 1];
+        pval = exp1 + exp2;
+        p[ij] = pval;
+        pval = exp1 / pval;
+        px[ij] = pval * x12 + x2;
+        py[ij] = pval * y12 + y2;
+        pz[ij] = pval * z12 + z2;
+        scalep[ij] = norm1[i - 1] * norm2[j - 1] * rho12[ij];
+    }
+
+    for (kl = 0; kl < nkl; ++kl)
+    {
+        k = prim3[kl];
+        l = prim4[kl];
+        exp3 = alpha3[k - 1];
+        exp4 = alpha4[l - 1];
+        qval = exp3 + exp4;
+        q[kl] = qval;
+        qval = exp3 / qval;
+        qx[kl] = qval * x34 + x4;
+        qy[kl] = qval * y34 + y4;
+        qz[kl] = qval * z34 + z4;
+        scaleq[kl] = norm3[k - 1] * norm4[l - 1] * rho34[kl];
+    }
+
+    // 0     5   |  (AB|CD)  4-center   sspp
+    if (shellp == 0)
     {
         m = 0;
-        for (ij = nijbeg; ij <= nijend; ++ij)
+        for (ij = 0; ij < nij; ++ij)
         {
-            ++m;
-            i = prim1[m];
-            j = prim2[m];
-            exp1 = alpha1[i];
-            exp2 = alpha2[j];
-            pval = exp1 + exp2;
-            p[m] = pval;
-            pval = exp1 / pval;
-            px[m] = pval * x12 + x2;
-            py[m] = pval * y12 + y2;
-            pz[m] = pval * z12 + z2;
-            scalep[m] = norm1[i] * norm2[j] * rho12[ij];
+            pval = p[ij];
+            pxval = px[ij];
+            pyval = py[ij];
+            pzval = pz[ij];
+            pscale = scalep[ij];
+            for (kl = 0; kl < nkl; ++kl)
+            {
+                qval = q[kl];
+                qxval = qx[kl];
+                qyval = qy[kl];
+                qzval = qz[kl];
+                pqmult = pval * qval;
+                pqplus = pval + qval;
+                pqpinv = 1. / pqplus;
+                pqx = pxval - qxval;
+                pqy = pyval - qyval;
+                pqz = pzval - qzval;
+                t = (pqx * pqx + pqy * pqy + pqz * pqz) * pqmult * pqpinv;
+                scale = pscale * scaleq[kl] / (pqmult * sqrt (pqplus));
+#ifdef ERD_TABLE_FREE_BOYS_FUNCTIONS
+                f0 = scale * boys0 (t);
+                f1 = scale * boys1 (t);
+                f2 = scale * boys2 (t);
+#else
+                if (t <= tmax)
+                {
+                    tgrid = (int) (t * tvstep + .5);
+                    delta1 = tgrid * tstep - t;
+                    delta2 = delta1 * .5;
+                    delta3 = delta1 * .333333333333333;
+                    delta4 = delta2 * .5;
+                    delta5 = delta1 * .2;
+                    delta6 = delta3 * .5;
+                    f0 = (((((ftable[tgrid * ftable_dim1 + 6] * delta6 +
+                              ftable[tgrid * ftable_dim1 + 5]) * delta5 +
+                             ftable[tgrid * ftable_dim1 + 4]) * delta4 +
+                            ftable[tgrid * ftable_dim1 + 3]) * delta3 +
+                           ftable[tgrid * ftable_dim1 + 2]) * delta2 +
+                          ftable[tgrid * ftable_dim1 + 1]) * delta1 +
+                        ftable[tgrid * ftable_dim1];
+                    f1 = (((((ftable[tgrid * ftable_dim1 + 7] * delta6 +
+                              ftable[tgrid * ftable_dim1 + 6]) * delta5 +
+                             ftable[tgrid * ftable_dim1 + 5]) * delta4 +
+                            ftable[tgrid * ftable_dim1 + 4]) * delta3 +
+                           ftable[tgrid * ftable_dim1 + 3]) * delta2 +
+                          ftable[tgrid * ftable_dim1 + 2]) * delta1 +
+                        ftable[tgrid * ftable_dim1 + 1];
+                    f2 = (((((ftable[tgrid * ftable_dim1 + 8] * delta6 +
+                              ftable[tgrid * ftable_dim1 + 7]) * delta5 +
+                             ftable[tgrid * ftable_dim1 + 6]) * delta4 +
+                            ftable[tgrid * ftable_dim1 + 5]) * delta3 +
+                           ftable[tgrid * ftable_dim1 + 4]) * delta2 +
+                          ftable[tgrid * ftable_dim1 + 3]) * delta1 +
+                        ftable[tgrid * ftable_dim1 + 2];
+                    f0 = scale * f0;
+                    f1 = scale * f1;
+                    f2 = scale * f2;
+                }
+                else
+                {
+                    tinv = 1. / t;
+                    t2inv = tinv * .5;
+                    f0 = scale * .5 * sqrt (tinv * 3.141592653589793);
+                    f1 = t2inv * f0;
+                    f2 = t2inv * 3. * f1;
+                }
+#endif
+                u0 = pval * pqpinv;
+                u1 = (f0 - u0 * f1) / (qval + qval);
+                xps1 = qxval - x3;
+                yps1 = qyval - y3;
+                zps1 = qzval - z3;
+                xsp1 = qxval - x4;
+                ysp1 = qyval - y4;
+                zsp1 = qzval - z4;
+                xsp2 = pqx * u0;
+                ysp2 = pqy * u0;
+                zsp2 = pqz * u0;
+                a = xps1 * f0 + xsp2 * f1;
+                b = xps1 * f1 + xsp2 * f2;
+                c = yps1 * f0 + ysp2 * f1;
+                d = yps1 * f1 + ysp2 * f2;
+                e = zps1 * f0 + zsp2 * f1;
+                f = zps1 * f1 + zsp2 * f2;
+                batch[m + 0] = xsp1 * a + xsp2 * b + u1;
+                batch[m + 1] = xsp1 * c + xsp2 * d;
+                batch[m + 2] = xsp1 * e + xsp2 * f;
+                batch[m + 3] = ysp1 * a + ysp2 * b;
+                batch[m + 4] = ysp1 * c + ysp2 * d + u1;
+                batch[m + 5] = ysp1 * e + ysp2 * f;
+                batch[m + 6] = zsp1 * a + zsp2 * b;
+                batch[m + 7] = zsp1 * c + zsp2 * d;
+                batch[m + 8] = zsp1 * e + zsp2 * f + u1;
+                m += 9;
+            }
         }
     }
-
+    // 1     5   |  (AB|CD)  4-center   spsp,spps,pssp,psps
+    else if (shellp == 1)
+    {
+        if (shell1 == 1)
+        {
+            pxsub = x1;
+            pysub = y1;
+            pzsub = z1;
+        }
+        else
+        {
+            pxsub = x2;
+            pysub = y2;
+            pzsub = z2;
+        }
+        if (shell3 == 1)
+        {
+            qxsub = x3;
+            qysub = y3;
+            qzsub = z3;
+        }
+        else
+        {
+            qxsub = x4;
+            qysub = y4;
+            qzsub = z4;
+        }
+        m = 0;
+        for (ij = 0; ij < nij; ++ij)
+        {
+            pval = p[ij];
+            pxval = px[ij];
+            pyval = py[ij];
+            pzval = pz[ij];
+            pscale = scalep[ij];
+            xps1 = pxval - pxsub;
+            yps1 = pyval - pysub;
+            zps1 = pzval - pzsub;
+            for (kl = 0; kl < nkl; ++kl)
+            {
+                qval = q[kl];
+                qxval = qx[kl];
+                qyval = qy[kl];
+                qzval = qz[kl];
+                pqmult = pval * qval;
+                pqplus = pval + qval;
+                pqpinv = 1. / pqplus;
+                pqx = pxval - qxval;
+                pqy = pyval - qyval;
+                pqz = pzval - qzval;
+                t = (pqx * pqx + pqy * pqy + pqz * pqz) * pqmult * pqpinv;
+                scale = pscale * scaleq[kl] / (pqmult * sqrt (pqplus));
+#ifdef ERD_TABLE_FREE_BOYS_FUNCTIONS
+                f0 = scale * boys0 (t);
+                f1 = scale * boys1 (t);
+                f2 = scale * boys2 (t);
+#else
+                if (t <= tmax)
+                {
+                    tgrid = (int) (t * tvstep + .5);
+                    delta1 = tgrid * tstep - t;
+                    delta2 = delta1 * .5;
+                    delta3 = delta1 * .333333333333333;
+                    delta4 = delta2 * .5;
+                    delta5 = delta1 * .2;
+                    delta6 = delta3 * .5;
+                    f0 = (((((ftable[tgrid * ftable_dim1 + 6] * delta6 +
+                              ftable[tgrid * ftable_dim1 + 5]) * delta5 +
+                             ftable[tgrid * ftable_dim1 + 4]) * delta4 +
+                            ftable[tgrid * ftable_dim1 + 3]) * delta3 +
+                           ftable[tgrid * ftable_dim1 + 2]) * delta2 +
+                          ftable[tgrid * ftable_dim1 + 1]) * delta1 +
+                        ftable[tgrid * ftable_dim1];
+                    f1 = (((((ftable[tgrid * ftable_dim1 + 7] * delta6 +
+                              ftable[tgrid * ftable_dim1 + 6]) * delta5 +
+                             ftable[tgrid * ftable_dim1 + 5]) * delta4 +
+                            ftable[tgrid * ftable_dim1 + 4]) * delta3 +
+                           ftable[tgrid * ftable_dim1 + 3]) * delta2 +
+                          ftable[tgrid * ftable_dim1 + 2]) * delta1 +
+                        ftable[tgrid * ftable_dim1 + 1];
+                    f2 = (((((ftable[tgrid * ftable_dim1 + 8] * delta6 +
+                              ftable[tgrid * ftable_dim1 + 7]) * delta5 +
+                             ftable[tgrid * ftable_dim1 + 6]) * delta4 +
+                            ftable[tgrid * ftable_dim1 + 5]) * delta3 +
+                           ftable[tgrid * ftable_dim1 + 4]) * delta2 +
+                          ftable[tgrid * ftable_dim1 + 3]) * delta1 +
+                        ftable[tgrid * ftable_dim1 + 2];
+                    f0 = scale * f0;
+                    f1 = scale * f1;
+                    f2 = scale * f2;
+                }
+                else
+                {
+                    tinv = 1. / t;
+                    t2inv = tinv * .5;
+                    f0 = scale * .5 * sqrt (tinv * 3.141592653589793);
+                    f1 = t2inv * f0;
+                    f2 = t2inv * 3. * f1;
+                }
+#endif
+                u0 = pval * pqpinv;
+                u1 = -qval * pqpinv;
+                xsp1 = qxval - qxsub;
+                ysp1 = qyval - qysub;
+                zsp1 = qzval - qzsub;
+                xsp2 = pqx * u0;
+                ysp2 = pqy * u0;
+                zsp2 = pqz * u0;
+                xps2 = pqx * u1;
+                yps2 = pqy * u1;
+                zps2 = pqz * u1;
+                a = xps1 * f0 + xps2 * f1;
+                b = xps1 * f1 + xps2 * f2;
+                c = yps1 * f0 + yps2 * f1;
+                d = yps1 * f1 + yps2 * f2;
+                e = zps1 * f0 + zps2 * f1;
+                f = zps1 * f1 + zps2 * f2;
+                g = f1 * .5 * pqpinv;
+                batch[m + 0] = xsp1 * a + xsp2 * b + g;
+                batch[m + 1] = xsp1 * c + xsp2 * d;
+                batch[m + 2] = xsp1 * e + xsp2 * f;
+                batch[m + 3] = ysp1 * a + ysp2 * b;
+                batch[m + 4] = ysp1 * c + ysp2 * d + g;
+                batch[m + 5] = ysp1 * e + ysp2 * f;
+                batch[m + 6] = zsp1 * a + zsp2 * b;
+                batch[m + 7] = zsp1 * c + zsp2 * d;
+                batch[m + 8] = zsp1 * e + zsp2 * f + g;
+                m += 9;
+            }
+        }
+    }
+    // 2     5   |  (AB|CD)  4-center   ppss
+    else if (shellp == 2)
     {
         m = 0;
-        for (kl = nklbeg; kl <= nklend; ++kl)
+        for (ij = 0; ij < nij; ++ij)
         {
-            ++m;
-            k = prim3[m];
-            l = prim4[m];
-            exp3 = alpha3[k];
-            exp4 = alpha4[l];
-            qval = exp3 + exp4;
-            q[m] = qval;
-            qval = exp3 / qval;
-            qx[m] = qval * x34 + x4;
-            qy[m] = qval * y34 + y4;
-            qz[m] = qval * z34 + z4;
-            scaleq[m] = norm3[k] * norm4[l] * rho34[kl];
-        }
-    }
-    
-
-/*             ...jump according to where the s-type functions are */
-/*                located and the type of 'K4' loop: */
-/*                SHELLP CASE  |        Integral center type */
-/*               --------------|------------------------------------ */
-/*                   0     1   |  (AA|AA)  atomic     sspp */
-/*                   0     2   |  (AA|CC)  2-center   sspp */
-/*                   0     3   |  (AB|CC)  3-center   sspp */
-/*                   0     4   |  (AA|CD)  3-center   sspp */
-/*                   0     5   |  (AB|CD)  4-center   sspp */
-/*                   1     1   |  (AA|AA)  atomic     spsp,spps,pssp,psps */
-/*                   1     2   |  (AA|CC)  2-center   spsp,spps,pssp,psps */
-/*                   1     3   |  (AB|CC)  3-center   spsp,spps,pssp,psps */
-/*                   1     4   |  (AA|CD)  3-center   spsp,spps,pssp,psps */
-/*                   1     5   |  (AB|CD)  4-center   spsp,spps,pssp,psps */
-/*                   2     1   |  (AA|AA)  atomic     ppss */
-/*                   2     2   |  (AA|CC)  2-center   ppss */
-/*                   2     3   |  (AB|CC)  3-center   ppss */
-/*                   2     4   |  (AA|CD)  3-center   ppss */
-/*                   2     5   |  (AB|CD)  4-center   ppss */
-
-
-    switch (shellp * 5 + tcase)
-    {
-    case 5:
-        goto L15;
-    case 10:
-        goto L25;
-    case 15:
-        goto L35;
-    }
-
-  L15:
-    m = 0;
-    for (ij = 1; ij <= mij; ++ij)
-    {
-        pval = p[ij];
-        pxval = px[ij];
-        pyval = py[ij];
-        pzval = pz[ij];
-        pscale = scalep[ij];
-        for (kl = 1; kl <= mkl; ++kl)
-        {
-            qval = q[kl];
-            qxval = qx[kl];
-            qyval = qy[kl];
-            qzval = qz[kl];
-            pqmult = pval * qval;
-            pqplus = pval + qval;
-            pqpinv = 1. / pqplus;
-            pqx = pxval - qxval;
-            pqy = pyval - qyval;
-            pqz = pzval - qzval;
-            t = (pqx * pqx + pqy * pqy + pqz * pqz) * pqmult * pqpinv;
-            scale = pscale * scaleq[kl] / (pqmult * sqrt (pqplus));
+            pval = p[ij];
+            pxval = px[ij];
+            pyval = py[ij];
+            pzval = pz[ij];
+            pscale = scalep[ij];
+            xps1 = pxval - x1;
+            yps1 = pyval - y1;
+            zps1 = pzval - z1;
+            xsp1 = pxval - x2;
+            ysp1 = pyval - y2;
+            zsp1 = pzval - z2;
+            u1 = 1. / (pval + pval);
+            for (kl = 0; kl < nkl; ++kl)
+            {
+                qval = q[kl];
+                qxval = qx[kl];
+                qyval = qy[kl];
+                qzval = qz[kl];
+                pqmult = pval * qval;
+                pqplus = pval + qval;
+                pqpinv = 1. / pqplus;
+                pqx = pxval - qxval;
+                pqy = pyval - qyval;
+                pqz = pzval - qzval;
+                t = (pqx * pqx + pqy * pqy + pqz * pqz) * pqmult * pqpinv;
+                scale = pscale * scaleq[kl] / (pqmult * sqrt (pqplus));
 #ifdef ERD_TABLE_FREE_BOYS_FUNCTIONS
-            f0 = scale * boys0(t);
-            f1 = scale * boys1(t);
-            f2 = scale * boys2(t);
+                f0 = scale * boys0 (t);
+                f1 = scale * boys1 (t);
+                f2 = scale * boys2 (t);
 #else
-            if (t <= tmax)
-            {
-                tgrid = (int) (t * tvstep + .5);
-                delta1 = tgrid * tstep - t;
-                delta2 = delta1 * .5;
-                delta3 = delta1 * .333333333333333;
-                delta4 = delta2 * .5;
-                delta5 = delta1 * .2;
-                delta6 = delta3 * .5;
-                f0 = (((((ftable[tgrid * ftable_dim1 + 6] * delta6 +
-                          ftable[tgrid * ftable_dim1 + 5]) * delta5 +
-                         ftable[tgrid * ftable_dim1 + 4]) * delta4 +
-                        ftable[tgrid * ftable_dim1 + 3]) * delta3 +
-                       ftable[tgrid * ftable_dim1 + 2]) * delta2 +
-                      ftable[tgrid * ftable_dim1 + 1]) * delta1 +
-                    ftable[tgrid * ftable_dim1];
-                f1 = (((((ftable[tgrid * ftable_dim1 + 7] * delta6 +
-                          ftable[tgrid * ftable_dim1 + 6]) * delta5 +
-                         ftable[tgrid * ftable_dim1 + 5]) * delta4 +
-                        ftable[tgrid * ftable_dim1 + 4]) * delta3 +
-                       ftable[tgrid * ftable_dim1 + 3]) * delta2 +
-                      ftable[tgrid * ftable_dim1 + 2]) * delta1 +
-                    ftable[tgrid * ftable_dim1 + 1];
-                f2 = (((((ftable[tgrid * ftable_dim1 + 8] * delta6 +
-                          ftable[tgrid * ftable_dim1 + 7]) * delta5 +
-                         ftable[tgrid * ftable_dim1 + 6]) * delta4 +
-                        ftable[tgrid * ftable_dim1 + 5]) * delta3 +
-                       ftable[tgrid * ftable_dim1 + 4]) * delta2 +
-                      ftable[tgrid * ftable_dim1 + 3]) * delta1 +
-                    ftable[tgrid * ftable_dim1 + 2];
-                f0 = scale * f0;
-                f1 = scale * f1;
-                f2 = scale * f2;
-            }
-            else
-            {
-                tinv = 1. / t;
-                t2inv = tinv * .5;
-                f0 = scale * .5 * sqrt (tinv * 3.141592653589793);
-                f1 = t2inv * f0;
-                f2 = t2inv * 3. * f1;
-            }
+                if (t <= tmax)
+                {
+                    tgrid = (int) (t * tvstep + .5);
+                    delta1 = tgrid * tstep - t;
+                    delta2 = delta1 * .5;
+                    delta3 = delta1 * .333333333333333;
+                    delta4 = delta2 * .5;
+                    delta5 = delta1 * .2;
+                    delta6 = delta3 * .5;
+                    f0 = (((((ftable[tgrid * ftable_dim1 + 6] * delta6 +
+                              ftable[tgrid * ftable_dim1 + 5]) * delta5 +
+                             ftable[tgrid * ftable_dim1 + 4]) * delta4 +
+                            ftable[tgrid * ftable_dim1 + 3]) * delta3 +
+                           ftable[tgrid * ftable_dim1 + 2]) * delta2 +
+                          ftable[tgrid * ftable_dim1 + 1]) * delta1 +
+                        ftable[tgrid * ftable_dim1];
+                    f1 = (((((ftable[tgrid * ftable_dim1 + 7] * delta6 +
+                              ftable[tgrid * ftable_dim1 + 6]) * delta5 +
+                             ftable[tgrid * ftable_dim1 + 5]) * delta4 +
+                            ftable[tgrid * ftable_dim1 + 4]) * delta3 +
+                           ftable[tgrid * ftable_dim1 + 3]) * delta2 +
+                          ftable[tgrid * ftable_dim1 + 2]) * delta1 +
+                        ftable[tgrid * ftable_dim1 + 1];
+                    f2 = (((((ftable[tgrid * ftable_dim1 + 8] * delta6 +
+                              ftable[tgrid * ftable_dim1 + 7]) * delta5 +
+                             ftable[tgrid * ftable_dim1 + 6]) * delta4 +
+                            ftable[tgrid * ftable_dim1 + 5]) * delta3 +
+                           ftable[tgrid * ftable_dim1 + 4]) * delta2 +
+                          ftable[tgrid * ftable_dim1 + 3]) * delta1 +
+                        ftable[tgrid * ftable_dim1 + 2];
+                    f0 = scale * f0;
+                    f1 = scale * f1;
+                    f2 = scale * f2;
+                }
+                else
+                {
+                    tinv = 1. / t;
+                    t2inv = tinv * .5;
+                    f0 = scale * .5 * sqrt (tinv * 3.141592653589793);
+                    f1 = t2inv * f0;
+                    f2 = t2inv * 3. * f1;
+                }
 #endif
-            u0 = pval * pqpinv;
-            u1 = (f0 - u0 * f1) / (qval + qval);
-            xps1 = qxval - x3;
-            yps1 = qyval - y3;
-            zps1 = qzval - z3;
-            xsp1 = qxval - x4;
-            ysp1 = qyval - y4;
-            zsp1 = qzval - z4;
-            xsp2 = pqx * u0;
-            ysp2 = pqy * u0;
-            zsp2 = pqz * u0;
-            a = xps1 * f0 + xsp2 * f1;
-            b = xps1 * f1 + xsp2 * f2;
-            c = yps1 * f0 + ysp2 * f1;
-            d = yps1 * f1 + ysp2 * f2;
-            e = zps1 * f0 + zsp2 * f1;
-            f = zps1 * f1 + zsp2 * f2;
-            batch[m + 1] = xsp1 * a + xsp2 * b + u1;
-            batch[m + 2] = xsp1 * c + xsp2 * d;
-            batch[m + 3] = xsp1 * e + xsp2 * f;
-            batch[m + 4] = ysp1 * a + ysp2 * b;
-            batch[m + 5] = ysp1 * c + ysp2 * d + u1;
-            batch[m + 6] = ysp1 * e + ysp2 * f;
-            batch[m + 7] = zsp1 * a + zsp2 * b;
-            batch[m + 8] = zsp1 * c + zsp2 * d;
-            batch[m + 9] = zsp1 * e + zsp2 * f + u1;
-            m += 9;
+                u0 = -qval * pqpinv;
+                xsp2 = pqx * u0;
+                ysp2 = pqy * u0;
+                zsp2 = pqz * u0;
+                a = xps1 * f0 + xsp2 * f1;
+                b = xps1 * f1 + xsp2 * f2;
+                c = yps1 * f0 + ysp2 * f1;
+                d = yps1 * f1 + ysp2 * f2;
+                e = zps1 * f0 + zsp2 * f1;
+                f = zps1 * f1 + zsp2 * f2;
+                g = u1 * (f0 + u0 * f1);
+                batch[m + 0] = xsp1 * a + xsp2 * b + g;
+                batch[m + 1] = xsp1 * c + xsp2 * d;
+                batch[m + 2] = xsp1 * e + xsp2 * f;
+                batch[m + 3] = ysp1 * a + ysp2 * b;
+                batch[m + 4] = ysp1 * c + ysp2 * d + g;
+                batch[m + 5] = ysp1 * e + ysp2 * f;
+                batch[m + 6] = zsp1 * a + zsp2 * b;
+                batch[m + 7] = zsp1 * c + zsp2 * d;
+                batch[m + 8] = zsp1 * e + zsp2 * f + g;
+                m += 9;
+            }
         }
     }
-    return 0;
-
-  L25:
-    if (shell1 == 1)
-    {
-        pxsub = x1;
-        pysub = y1;
-        pzsub = z1;
-    }
-    else
-    {
-        pxsub = x2;
-        pysub = y2;
-        pzsub = z2;
-    }
-    if (shell3 == 1)
-    {
-        qxsub = x3;
-        qysub = y3;
-        qzsub = z3;
-    }
-    else
-    {
-        qxsub = x4;
-        qysub = y4;
-        qzsub = z4;
-    }
-    m = 0;
-    for (ij = 1; ij <= mij; ++ij)
-    {
-        pval = p[ij];
-        pxval = px[ij];
-        pyval = py[ij];
-        pzval = pz[ij];
-        pscale = scalep[ij];
-        xps1 = pxval - pxsub;
-        yps1 = pyval - pysub;
-        zps1 = pzval - pzsub;
-        for (kl = 1; kl <= mkl; ++kl)
-        {
-            qval = q[kl];
-            qxval = qx[kl];
-            qyval = qy[kl];
-            qzval = qz[kl];
-            pqmult = pval * qval;
-            pqplus = pval + qval;
-            pqpinv = 1. / pqplus;
-            pqx = pxval - qxval;
-            pqy = pyval - qyval;
-            pqz = pzval - qzval;
-            t = (pqx * pqx + pqy * pqy + pqz * pqz) * pqmult * pqpinv;
-            scale = pscale * scaleq[kl] / (pqmult * sqrt (pqplus));
-#ifdef ERD_TABLE_FREE_BOYS_FUNCTIONS
-            f0 = scale * boys0(t);
-            f1 = scale * boys1(t);
-            f2 = scale * boys2(t);
-#else
-            if (t <= tmax)
-            {
-                tgrid = (int) (t * tvstep + .5);
-                delta1 = tgrid * tstep - t;
-                delta2 = delta1 * .5;
-                delta3 = delta1 * .333333333333333;
-                delta4 = delta2 * .5;
-                delta5 = delta1 * .2;
-                delta6 = delta3 * .5;
-                f0 = (((((ftable[tgrid * ftable_dim1 + 6] * delta6 +
-                          ftable[tgrid * ftable_dim1 + 5]) * delta5 +
-                         ftable[tgrid * ftable_dim1 + 4]) * delta4 +
-                        ftable[tgrid * ftable_dim1 + 3]) * delta3 +
-                       ftable[tgrid * ftable_dim1 + 2]) * delta2 +
-                      ftable[tgrid * ftable_dim1 + 1]) * delta1 +
-                    ftable[tgrid * ftable_dim1];
-                f1 = (((((ftable[tgrid * ftable_dim1 + 7] * delta6 +
-                          ftable[tgrid * ftable_dim1 + 6]) * delta5 +
-                         ftable[tgrid * ftable_dim1 + 5]) * delta4 +
-                        ftable[tgrid * ftable_dim1 + 4]) * delta3 +
-                       ftable[tgrid * ftable_dim1 + 3]) * delta2 +
-                      ftable[tgrid * ftable_dim1 + 2]) * delta1 +
-                    ftable[tgrid * ftable_dim1 + 1];
-                f2 = (((((ftable[tgrid * ftable_dim1 + 8] * delta6 +
-                          ftable[tgrid * ftable_dim1 + 7]) * delta5 +
-                         ftable[tgrid * ftable_dim1 + 6]) * delta4 +
-                        ftable[tgrid * ftable_dim1 + 5]) * delta3 +
-                       ftable[tgrid * ftable_dim1 + 4]) * delta2 +
-                      ftable[tgrid * ftable_dim1 + 3]) * delta1 +
-                    ftable[tgrid * ftable_dim1 + 2];
-                f0 = scale * f0;
-                f1 = scale * f1;
-                f2 = scale * f2;
-            }
-            else
-            {
-                tinv = 1. / t;
-                t2inv = tinv * .5;
-                f0 = scale * .5 * sqrt (tinv * 3.141592653589793);
-                f1 = t2inv * f0;
-                f2 = t2inv * 3. * f1;
-            }
-#endif
-            u0 = pval * pqpinv;
-            u1 = -qval * pqpinv;
-            xsp1 = qxval - qxsub;
-            ysp1 = qyval - qysub;
-            zsp1 = qzval - qzsub;
-            xsp2 = pqx * u0;
-            ysp2 = pqy * u0;
-            zsp2 = pqz * u0;
-            xps2 = pqx * u1;
-            yps2 = pqy * u1;
-            zps2 = pqz * u1;
-            a = xps1 * f0 + xps2 * f1;
-            b = xps1 * f1 + xps2 * f2;
-            c = yps1 * f0 + yps2 * f1;
-            d = yps1 * f1 + yps2 * f2;
-            e = zps1 * f0 + zps2 * f1;
-            f = zps1 * f1 + zps2 * f2;
-            g = f1 * .5 * pqpinv;
-            batch[m + 1] = xsp1 * a + xsp2 * b + g;
-            batch[m + 2] = xsp1 * c + xsp2 * d;
-            batch[m + 3] = xsp1 * e + xsp2 * f;
-            batch[m + 4] = ysp1 * a + ysp2 * b;
-            batch[m + 5] = ysp1 * c + ysp2 * d + g;
-            batch[m + 6] = ysp1 * e + ysp2 * f;
-            batch[m + 7] = zsp1 * a + zsp2 * b;
-            batch[m + 8] = zsp1 * c + zsp2 * d;
-            batch[m + 9] = zsp1 * e + zsp2 * f + g;
-            m += 9;
-        }
-    }
-    return 0;
-
-  L35:
-    m = 0;
-    for (ij = 1; ij <= mij; ++ij)
-    {
-        pval = p[ij];
-        pxval = px[ij];
-        pyval = py[ij];
-        pzval = pz[ij];
-        pscale = scalep[ij];
-        xps1 = pxval - x1;
-        yps1 = pyval - y1;
-        zps1 = pzval - z1;
-        xsp1 = pxval - x2;
-        ysp1 = pyval - y2;
-        zsp1 = pzval - z2;
-        u1 = 1. / (pval + pval);
-        for (kl = 1; kl <= mkl; ++kl)
-        {
-            qval = q[kl];
-            qxval = qx[kl];
-            qyval = qy[kl];
-            qzval = qz[kl];
-            pqmult = pval * qval;
-            pqplus = pval + qval;
-            pqpinv = 1. / pqplus;
-            pqx = pxval - qxval;
-            pqy = pyval - qyval;
-            pqz = pzval - qzval;
-            t = (pqx * pqx + pqy * pqy + pqz * pqz) * pqmult * pqpinv;
-            scale = pscale * scaleq[kl] / (pqmult * sqrt (pqplus));
-#ifdef ERD_TABLE_FREE_BOYS_FUNCTIONS
-            f0 = scale * boys0(t);
-            f1 = scale * boys1(t);
-            f2 = scale * boys2(t);
-#else
-            if (t <= tmax)
-            {
-                tgrid = (int) (t * tvstep + .5);
-                delta1 = tgrid * tstep - t;
-                delta2 = delta1 * .5;
-                delta3 = delta1 * .333333333333333;
-                delta4 = delta2 * .5;
-                delta5 = delta1 * .2;
-                delta6 = delta3 * .5;
-                f0 = (((((ftable[tgrid * ftable_dim1 + 6] * delta6 +
-                          ftable[tgrid * ftable_dim1 + 5]) * delta5 +
-                         ftable[tgrid * ftable_dim1 + 4]) * delta4 +
-                        ftable[tgrid * ftable_dim1 + 3]) * delta3 +
-                       ftable[tgrid * ftable_dim1 + 2]) * delta2 +
-                      ftable[tgrid * ftable_dim1 + 1]) * delta1 +
-                    ftable[tgrid * ftable_dim1];
-                f1 = (((((ftable[tgrid * ftable_dim1 + 7] * delta6 +
-                          ftable[tgrid * ftable_dim1 + 6]) * delta5 +
-                         ftable[tgrid * ftable_dim1 + 5]) * delta4 +
-                        ftable[tgrid * ftable_dim1 + 4]) * delta3 +
-                       ftable[tgrid * ftable_dim1 + 3]) * delta2 +
-                      ftable[tgrid * ftable_dim1 + 2]) * delta1 +
-                    ftable[tgrid * ftable_dim1 + 1];
-                f2 = (((((ftable[tgrid * ftable_dim1 + 8] * delta6 +
-                          ftable[tgrid * ftable_dim1 + 7]) * delta5 +
-                         ftable[tgrid * ftable_dim1 + 6]) * delta4 +
-                        ftable[tgrid * ftable_dim1 + 5]) * delta3 +
-                       ftable[tgrid * ftable_dim1 + 4]) * delta2 +
-                      ftable[tgrid * ftable_dim1 + 3]) * delta1 +
-                    ftable[tgrid * ftable_dim1 + 2];
-                f0 = scale * f0;
-                f1 = scale * f1;
-                f2 = scale * f2;
-            }
-            else
-            {
-                tinv = 1. / t;
-                t2inv = tinv * .5;
-                f0 = scale * .5 * sqrt (tinv * 3.141592653589793);
-                f1 = t2inv * f0;
-                f2 = t2inv * 3. * f1;
-            }
-#endif
-            u0 = -qval * pqpinv;
-            xsp2 = pqx * u0;
-            ysp2 = pqy * u0;
-            zsp2 = pqz * u0;
-            a = xps1 * f0 + xsp2 * f1;
-            b = xps1 * f1 + xsp2 * f2;
-            c = yps1 * f0 + ysp2 * f1;
-            d = yps1 * f1 + ysp2 * f2;
-            e = zps1 * f0 + zsp2 * f1;
-            f = zps1 * f1 + zsp2 * f2;
-            g = u1 * (f0 + u0 * f1);
-            batch[m + 1] = xsp1 * a + xsp2 * b + g;
-            batch[m + 2] = xsp1 * c + xsp2 * d;
-            batch[m + 3] = xsp1 * e + xsp2 * f;
-            batch[m + 4] = ysp1 * a + ysp2 * b;
-            batch[m + 5] = ysp1 * c + ysp2 * d + g;
-            batch[m + 6] = ysp1 * e + ysp2 * f;
-            batch[m + 7] = zsp1 * a + zsp2 * b;
-            batch[m + 8] = zsp1 * c + zsp2 * d;
-            batch[m + 9] = zsp1 * e + zsp2 * f + g;
-            m += 9;
-        }
-    }
-
     return 0;
 }

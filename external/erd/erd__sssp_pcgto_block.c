@@ -107,26 +107,26 @@
 /*                                    cartesian sssp/ssps/spss/psss */
 /*                                    integrals */
 /* ------------------------------------------------------------------------ */
-int erd__sssp_pcgto_block (int atomic, int nij, int nkl,
-                           int shell1, int shell3, int shellp,
-                           double x1, double y1, double z1,
-                           double x2, double y2, double z2,
-                           double x3, double y3, double z3,
-                           double x4, double y4, double z4,
-                           double *alpha1, double *alpha2,
-                           double *alpha3, double *alpha4,
-                           double *ftable, int mgrid,
-                           double tmax, double tstep, double tvstep,
-                           int *prim1, int *prim2,
-                           int *prim3, int *prim4,
-                           double *norm1, double *norm2,
-                           double *norm3, double *norm4,
-                           double *rho12, double *rho34,
-                           double *p, double *px,
-                           double *py, double *pz, double *scalep,
-                           double *q, double *qx,
-                           double *qy, double *qz,
-                           double *scaleq, double *batch)
+int
+erd__sssp_pcgto_block (int atomic, int nij, int nkl,
+                       int shell1, int shell3, int shellp,
+                       double x1, double y1, double z1,
+                       double x2, double y2, double z2,
+                       double x3, double y3, double z3,
+                       double x4, double y4, double z4,
+                       double *alpha1, double *alpha2,
+                       double *alpha3, double *alpha4,
+                       double *ftable, int mgrid,
+                       double tmax, double tstep, double tvstep,
+                       int *prim1, int *prim2,
+                       int *prim3, int *prim4,
+                       double *norm1, double *norm2,
+                       double *norm3, double *norm4,
+                       double *rho12, double *rho34,
+                       double *p, double *px,
+                       double *py, double *pz, double *scalep,
+                       double *q, double *qx,
+                       double *qy, double *qz, double *scaleq, double *batch)
 {
     int ftable_dim1, ftable_offset;
 
@@ -182,7 +182,7 @@ int erd__sssp_pcgto_block (int atomic, int nij, int nkl,
     double x34;
     double y34;
     double z34;
-    
+
 
     ftable_dim1 = mgrid - 0 + 1;
     ftable_offset = 0 + ftable_dim1 * 0;
@@ -193,10 +193,10 @@ int erd__sssp_pcgto_block (int atomic, int nij, int nkl,
     x34 = x3 - x4;
     y34 = y3 - y4;
     z34 = z3 - z4;
-    
+
     if (atomic)
         return 0;
-    
+
     for (ij = 0; ij < nij; ++ij)
     {
         i = prim1[ij];
@@ -265,8 +265,8 @@ int erd__sssp_pcgto_block (int atomic, int nij, int nkl,
                 t = (pqx * pqx + pqy * pqy + pqz * pqz) * pqmult * pqpinv;
                 scale = pscale * scaleq[kl] / (pqmult * sqrt (pqplus));
 #ifdef ERD_TABLE_FREE_BOYS_FUNCTIONS
-                f0 = scale * boys0(t);
-                f1 = scale * boys1(t);
+                f0 = scale * boys0 (t);
+                f1 = scale * boys1 (t);
 #else
                 if (t <= tmax)
                 {
@@ -347,8 +347,8 @@ int erd__sssp_pcgto_block (int atomic, int nij, int nkl,
                 t = (pqx * pqx + pqy * pqy + pqz * pqz) * pqmult * pqpinv;
                 scale = pscale * scaleq[kl] / (pqmult * sqrt (pqplus));
 #ifdef ERD_TABLE_FREE_BOYS_FUNCTIONS
-                f0 = scale * boys0(t);
-                f1 = scale * boys1(t);
+                f0 = scale * boys0 (t);
+                f1 = scale * boys1 (t);
 #else
                 if (t <= tmax)
                 {

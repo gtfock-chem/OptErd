@@ -43,28 +43,23 @@
 /*                                     after the move */
 /*                       Y          =  final set of integrals */
 /* ------------------------------------------------------------------------ */
-int erd__move_ry (int nintgrl, int nindex,
-                  int notmove, int move, int nry,
+int erd__move_ry (int nindex, int notmove, int move, int nry,
                   int index, double *x,
                   int *ixoff, double *y)
 {
     int i;
 /*             ...check, if the move is simply a transposition */
 /*                or a more general ijkl -> ikjl move. */
-    --y;
-    --x;
-    --ixoff;
     if (notmove == 1)
     {
-        erd__transpose_batch (move, nry, &x[1], &y[1]);
+        erd__transpose_batch (move, nry, x, y);
     }
     else
     {
-        erd__map_ijkl_to_ikjl (notmove, move, nry, 1,
-                               &x[1], &y[1]);
+        erd__map_ijkl_to_ikjl (notmove, move, nry, 1, x, y);
     }
 
-    for (i = index; i <= nindex; i++)
+    for (i = index; i < nindex; i++)
     {
         ixoff[i] *= nry;
     }
