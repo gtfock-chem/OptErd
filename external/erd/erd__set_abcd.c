@@ -202,6 +202,10 @@ int erd__set_abcd (int npgto1, int npgto2, int npgto3, int npgto4,
         *empty = 1;
         return 0;
     }
+    atom12 = 0;
+    atom23 = 0;
+    atom34 = 0;
+    *atomic = 0;
 
 /*             ...determine csh equality between center pairs 1,2 */
 /*                and 3,4 in increasing order of complexity: */

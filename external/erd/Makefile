@@ -66,7 +66,7 @@ SRC_OPT = erd__1111_csgto.c \
 	erd__ctr_4index_reorder.f \
 	erd__dsqmin_line_segments.c \
 	erd__e0f0_def_blocks.c \
-	erd__e0f0_pcgto_block.f \
+	erd__e0f0_pcgto_block.c \
 	erd__gener_eri_batch.f \
 	erd__hrr_matrix.c \
 	erd__hrr_step.c \
