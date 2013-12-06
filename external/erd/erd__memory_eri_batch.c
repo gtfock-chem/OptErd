@@ -4,10 +4,6 @@
 #include "erd.h"
 
 
-static int c__32768 = 32768;
-static int c__110 = 110;
-
-
 /* ------------------------------------------------------------------------ */
 /*  OPERATION   : ERD__MEMORY_ERI_BATCH */
 /*  MODULE      : ELECTRON REPULSION INTEGRALS DIRECT */
@@ -55,32 +51,27 @@ int erd__memory_eri_batch_ (int * nalpha, int * ncoeff,
                             int * spheric, int * imin, int * iopt,
                             int * zmin, int * zopt)
 {
-    int i__1;
-
-    --alpha;
-    --cc;
-
-/* Computing MAX */
-    i__1 = MAX(*shell1, *shell2);
-    i__1 = MAX(i__1, *shell3);
-    if (MAX(i__1, *shell4) < 2)
+    int maxshell;
+    
+    maxshell = MAX(*shell1, *shell2);
+    maxshell = MAX(maxshell, *shell3);
+    if (MAX(maxshell, *shell4) < 2)
     {
         erd__memory_1111_csgto (*npgto1, *npgto2, *npgto3, *npgto4,
                                 *shell1, *shell2, *shell3, *shell4,
                                 *x1, *y1, *z1, *x2, *y2, *z2,
                                 *x3, *y3, *z3, *x4, *y4, *z4,
-                                &alpha[1], &cc[1],
+                                alpha, cc,
                                 imin, iopt, zmin, zopt);
     }
     else
     {
-        erd__memory_csgto_ (nalpha, ncoeff, ncgto1, ncgto2, ncgto3, ncgto4,
-                            npgto1, npgto2, npgto3, npgto4, shell1, shell2,
-                            shell3, shell4, x1, y1, z1, x2, y2, z2, x3, y3,
-                            z3, x4, y4, z4, &alpha[1], &cc[1], &c__32768,
-                            &c__110, spheric, imin, iopt, zmin, zopt);
+        erd__memory_csgto (*npgto1, *npgto2, *npgto3, *npgto4,
+                           *shell1, *shell2, *shell3, *shell4,
+                           *x1, *y1, *z1, *x2, *y2, *z2,
+                           *x3, *y3, *z3, *x4, *y4, *z4,
+                           alpha, cc, *spheric, imin, iopt, zmin, zopt);
     }
-
 
     return 0;
 }

@@ -145,11 +145,7 @@
 /*                [E0|F0] integrals will be essential for numerical */
 /*                stability during contraction. */
 /* ------------------------------------------------------------------------ */
-int erd__csgto (int imax, int zmax,
-                int nalpha, int ncoeff, int ncsum,
-                int ncgto1, int ncgto2,
-                int ncgto3, int ncgto4,
-                int npgto1, int npgto2,
+int erd__csgto (int zmax, int npgto1, int npgto2,
                 int npgto3, int npgto4,
                 int shell1, int shell2,
                 int shell3, int shell4,
@@ -158,10 +154,8 @@ int erd__csgto (int imax, int zmax,
                 double x3, double y3, double z3,
                 double x4, double y4, double z4,
                 double *alpha, double *cc,
-                int *ccbeg, int *ccend,
                 double *ftable, int mgrid, int ngrid,
                 double tmax, double tstep, double tvstep,
-                int l1cache, int tile, int nctrow,
                 int spheric, int screen, int *icore,
                 int *nbatch, int *nfirst, double *zcore)
 {
@@ -174,14 +168,14 @@ int erd__csgto (int imax, int zmax,
     double abx;
     int zb00, zb01, zb10;
     double aby;
-    int mij, nij;
+    int nij;
     double abz, cdx;
-    int mkl, nkl;
+    int nkl;
     double cdy, cdz;
     int out, zpx, lcc1, lcc2, lcc3, lcc4, zpy, zpz, zqx, zqy, zqz,
         pos1, pos2, lcca, lccb, lccc, lccd;
     int tr1234;
-    int zc00x, ngqp, move, nctr, nmom, nrya, nryb, nryc, nryd,
+    int zc00x, ngqp, move, nmom, nrya, nryb, nryc, nryd,
         temp, zc00y, zc00z, zpax, zpay, zpaz, zqcx, zqcy, zqcz, zd00x,
         zd00y, zd00z;
     int zrts, zwts;     
@@ -199,29 +193,24 @@ int erd__csgto (int imax, int zmax,
     int atomab, atomcd;
     int indexa, indexb, indexc, indexd;
     int atomic;
-    int ncgtoa, ncgtob, ncgtoc, iprima, iprimb, iprimc, iprimd,
-        ippair, ncgtod, ipsave, nijblk, indexr, indexs, indext, indexu,
-        ipused, ncgtor, ncgtos, ncgtot, mnprim, ncgtou, isrowa, ihnrow,
+    int iprima, iprimb, iprimc, iprimd,
+        isrowa, ihnrow,
         isrowb;
-    int memory;
-    int isrowc, isrowd, ngqscr, mxprim, nklblk;
+    int isrowc, isrowd, ngqscr;
     int swaprs;
-    int mxsize, nijend, nklend;
+    int mxsize;
     int swaptu;
-    int npgtoa, npgtob, npgtoc, npgtod, npsize, ncsize, nwsize,
+    int npgtoa, npgtob, npgtoc, npgtod, npsize, ncsize,
         shella, shellb, shellc, shelld, shellp, nxyzet, nxyzft, shellq,
         shellt, znorma, znormb, znormc, znormd, zcnorm, zrhoab, zrhocd,
         zgqscr, zsrota, zsrotb, zsrotc, zsrotd;
     double rnabsq, rncdsq, spnorm;
     int zscpqk4, lccsega, lccsegb;
-    int blocked;
     int lccsegc, lccsegd, zint2dx, zint2dy, zint2dz;
     int equalab;
-    int ncgtoab;
     int equalcd;
-    int zcbatch, ncgtocd, nabcoor, ncdcoor, npgtoab, zpbatch,
+    int zcbatch, nabcoor, ncdcoor, npgtoab, zpbatch,
         mgqijkl, npgtocd;
-    int reorder;
     int ncolhrr;
     int mxshell, isnrowa, isnrowb, isnrowc, isnrowd, zpinvhf,
         notmove, zqinvhf, nrothrr, nrowhrr;
@@ -229,10 +218,6 @@ int erd__csgto (int imax, int zmax,
 
     --icore;
     --zcore;
-    --alpha;
-    --cc;
-    --ccend;
-    --ccbeg;
     ftable_dim1 = mgrid - 0 + 1;
     ftable_offset = 0 + ftable_dim1 * 0;
     ftable -= ftable_offset;
@@ -240,43 +225,40 @@ int erd__csgto (int imax, int zmax,
 /*             ...fix the A,B,C,D labels from the 1,2,3,4 ones. */
 /*                Calculate the relevant data for the A,B,C,D batch of */
 /*                integrals. */
-    lexp1 = 1;
+    lexp1 = 0;
     lexp2 = lexp1 + npgto1;
     lexp3 = lexp2 + npgto2;
     lexp4 = lexp3 + npgto3;
-    lcc1 = 1;
+    lcc1 = 0;
     lcc2 = lcc1 + npgto1;
     lcc3 = lcc2 + npgto2;
     lcc4 = lcc3 + npgto3;
-    erd__set_abcd_ (&ncgto1, &ncgto2, &ncgto3, &ncgto4,
-                    &npgto1, &npgto2, &npgto3, &npgto4,
-                    &shell1, &shell2, &shell3, &shell4,
-                    &x1, &y1, &z1, &x2, &y2, &z2,
-                    &x3, &y3, &z3, &x4, &y4, &z4,
-                    &alpha[lexp1], &alpha[lexp2],
-                    &alpha[lexp3], &alpha[lexp4],
-                    &cc[lcc1], &cc[lcc2],
-                    &cc[lcc3], &cc[lcc4],
-                    &spheric, &ncgtoa, &ncgtob,
-                    &ncgtoc, &ncgtod,
-                    &npgtoa, &npgtob, &npgtoc, &npgtod,
-                    &shella, &shellb, &shellc, &shelld,
-                    &shellp, &shellq, &shellt, &mxshell,
-                    &xa, &ya, &za, &xb, &yb, &zb,
-                    &xc, &yc, &zc, &xd, &yd, &zd,
-                    &atomic, &atomab, &atomcd,
-                    &equalab, &equalcd,
-                    &abx, &aby, &abz, &cdx, &cdy, &cdz,
-                    &nabcoor, &ncdcoor, &rnabsq, &rncdsq,
-                    &spnorm, &nxyza, &nxyzb, &nxyzc, &nxyzd,
-                    &nxyzet, &nxyzft, &nxyzp, &nxyzq,
-                    &nrya, &nryb, &nryc, &nryd,
-                    &indexa, &indexb, &indexc, &indexd,
-                    &swap12, &swap34, &swaprs, &swaptu, &tr1234,
-                    &lexpa, &lexpb, &lexpc, &lexpd,
-                    &lcca, &lccb, &lccc, &lccd,
-                    &lccsega, &lccsegb, &lccsegc, &lccsegd,
-                    &nxyzhrr, &ncolhrr, &nrothrr, &empty);
+    erd__set_abcd (npgto1, npgto2, npgto3, npgto4,
+                   shell1, shell2, shell3, shell4,
+                   x1, y1, z1, x2, y2, z2,
+                   x3, y3, z3, x4, y4, z4,
+                   &alpha[lexp1], &alpha[lexp2],
+                   &alpha[lexp3], &alpha[lexp4],
+                   &cc[lcc1], &cc[lcc2],
+                   &cc[lcc3], &cc[lcc4], spheric,
+                   &npgtoa, &npgtob, &npgtoc, &npgtod,
+                   &shella, &shellb, &shellc, &shelld,
+                   &shellp, &shellq, &shellt, &mxshell,
+                   &xa, &ya, &za, &xb, &yb, &zb,
+                   &xc, &yc, &zc, &xd, &yd, &zd,
+                   &atomic, &atomab, &atomcd,
+                   &equalab, &equalcd,
+                   &abx, &aby, &abz, &cdx, &cdy, &cdz,
+                   &nabcoor, &ncdcoor, &rnabsq, &rncdsq,
+                   &spnorm, &nxyza, &nxyzb, &nxyzc, &nxyzd,
+                   &nxyzet, &nxyzft, &nxyzp, &nxyzq,
+                   &nrya, &nryb, &nryc, &nryd,
+                   &indexa, &indexb, &indexc, &indexd,
+                   &swap12, &swap34, &swaprs, &swaptu, &tr1234,
+                   &lexpa, &lexpb, &lexpc, &lexpd,
+                   &lcca, &lccb, &lccc, &lccd,
+                   &lccsega, &lccsegb, &lccsegc, &lccsegd,
+                   &nxyzhrr, &ncolhrr, &nrothrr, &empty);
     if (empty)
     {
         *nbatch = 0;
@@ -302,7 +284,6 @@ int erd__csgto (int imax, int zmax,
     {
         npgtocd = npgtoc * npgtod;
     }
-    nctr = 1;
     nxyzt = nxyzet * nxyzft;
     iprima = 1;
     iprimb = iprima + npgtoab;
@@ -333,13 +314,11 @@ int erd__csgto (int imax, int zmax,
     ngqp = shellt / 2 + 1;
     nmom = (ngqp << 1) - 1;
     ngqscr = nmom * 5 + (ngqp << 1) - 2;
-    memory = 0;
     erd__e0f0_def_blocks (zmax, npgtoa, npgtob, npgtoc, npgtod,
                           shellp, shellq, nij, nkl,
-                          1, 1, 1, ngqp, ngqscr,
-                          nxyzt, l1cache, nctrow, memory,
-                          &nijblk, &nklblk, &npsize, &ncsize, &nwsize,
-                          &nint2d, &mxprim, &mnprim, &zcbatch, &zpbatch,
+                          ngqp, ngqscr, nxyzt, 0,
+                          &npsize, &ncsize,
+                          &nint2d, &zcbatch, &zpbatch,
                           &zwork, &znorma, &znormb, &znormc, &znormd,
                           &zrhoab, &zrhocd, &zp, &zpx, &zpy, &zpz, &zpax,
                           &zpay, &zpaz, &zpinvhf, &zscpk2,
@@ -350,8 +329,7 @@ int erd__csgto (int imax, int zmax,
                           &zc00x, &zc00y, &zc00z,
                           &zd00x, &zd00y, &zd00z,
                           &zint2dx, &zint2dy, &zint2dz);
-    blocked = 0;
-
+    
     erd__prepare_ctr (ncsize, nij, nkl,
                       npgtoa, npgtob, npgtoc, npgtod,
                       shella, shellb, shellc, shelld,
@@ -367,18 +345,13 @@ int erd__csgto (int imax, int zmax,
 /*                (e0|f0). The keyword REORDER indicates, if the */
 /*                primitive [e0|f0] blocks need to be transposed */
 /*                before being contracted. */
-    reorder = 1;
     nijbeg = 1;
-    nijend = nij;
-    mij = nij;
     nklbeg = 1;
-    nklend = nkl;
-    mkl = nkl;
-    mijkl = mij * mkl;
+    mijkl = nij * nkl;
     mgqijkl = ngqp * mijkl;
     erd__e0f0_pcgto_block_ (&npsize, &nint2d, &atomic, &atomab, &atomcd,
-                            &mij, &mkl, &mijkl, &nij, &nijbeg, &nijend, &nkl,
-                            &nklbeg, &nklend, &ngqp, &nmom, &ngqscr,
+                            &nij, &nkl, &mijkl, &nij, &nijbeg, &nij, &nkl,
+                            &nklbeg, &nkl, &ngqp, &nmom, &ngqscr,
                             &mgqijkl, &npgtoa, &npgtob, &npgtoc, &npgtod,
                             &nxyzet, &nxyzft, &nxyzp, &nxyzq, &shella,
                             &shellp, &shellc, &shellq, &xa, &ya, &za, &xb,
@@ -386,10 +359,10 @@ int erd__csgto (int imax, int zmax,
                             &aby, &abz, &cdx, &cdy, &cdz, &alpha[lexpa],
                             &alpha[lexpb], &alpha[lexpc], &alpha[lexpd],
                             &ftable[ftable_offset], &mgrid, &ngrid, &tmax,
-                            &tstep, &tvstep, &icore[iprima + nijbeg - 1],
-                            &icore[iprimb + nijbeg - 1],
-                            &icore[iprimc + nklbeg - 1],
-                            &icore[iprimd + nklbeg - 1], &zcore[znorma],
+                            &tstep, &tvstep, &icore[iprima],
+                            &icore[iprimb],
+                            &icore[iprimc],
+                            &icore[iprimd], &zcore[znorma],
                             &zcore[znormb], &zcore[znormc], &zcore[znormd],
                             &zcore[zrhoab], &zcore[zrhocd], &zcore[zp],
                             &zcore[zpx], &zcore[zpy], &zcore[zpz],
@@ -406,13 +379,13 @@ int erd__csgto (int imax, int zmax,
                             &zcore[zint2dy], &zcore[zint2dz],
                             &zcore[zpbatch]);
 
-    erd__ctr_4index_block (nxyzt, mij, mkl,
+    erd__ctr_4index_block (nxyzt, nij, nkl,
                            &cc[lcca], &cc[lccb], &cc[lccc],&cc[lccd],
-                           &icore[iprima + nijbeg - 1],
-                           &icore[iprimb + nijbeg - 1],
-                           &icore[iprimc + nklbeg - 1],
-                           &icore[iprimd + nklbeg - 1],
-                           equalab, equalcd, reorder,
+                           &icore[iprima],
+                           &icore[iprimb],
+                           &icore[iprimc],
+                           &icore[iprimd],
+                           equalab, equalcd, 1,
                            &zcore[zpbatch], &zcore[zwork], &zcore[zcbatch]);
 
 /*             ...the unnormalized cartesian (e0|f0) contracted batch is */
@@ -514,7 +487,6 @@ int erd__csgto (int imax, int zmax,
     {
         if (mxshell > 1)
         {
-            int c__1 = 1;
             erd__xyz_to_ry_abcd (nxyza, nxyzb, nxyzc, nxyzd,
                                  nrya, nryb, nryc, nryd,
                                  shella, shellb, shellc, shelld,
@@ -537,7 +509,7 @@ int erd__csgto (int imax, int zmax,
         if (mxshell > 1)
         {
             zcnorm = zbase;
-            erd__cartesian_norms_ (&mxshell, &zcore[zcnorm]);
+            erd__cartesian_norms (mxshell, &zcore[zcnorm]);
             iused = 0;
             zused = mxshell + 1;
         }
@@ -552,7 +524,6 @@ int erd__csgto (int imax, int zmax,
     ihscr = ihrow + nrothrr + nrothrr;
     zhrot = zbase + zused;
 
-
 /*             ...do the first stage of processing the integrals: */
 /*                   batch (ijkl,e0,f0) --> batch (ijkl,e0,cd) */
 /*                   batch (ijkl,e0,c,d) --> batch (ijkl,e0,c,d') */
@@ -566,8 +537,7 @@ int erd__csgto (int imax, int zmax,
                          ncdcoor, cdx, cdy, cdz,
                          &icore[ihscr], &pos1, &pos2, &nrowhrr,
                          &icore[ihnrow], &icore[ihrow], &zcore[zhrot]);
-        erd__hrr_transform (nctr * nxyzet, nrowhrr, nxyzft,
-                            nxyzc * nxyzd, nxyzc, nxyzd,
+        erd__hrr_transform (nxyzet, nrowhrr, nxyzc, nxyzd,
                             &icore[ihnrow + pos1 - 1],
                             &icore[ihrow + pos2 - 1],
                             &zcore[zhrot + pos2 - 1], &zcore[in],
@@ -579,8 +549,8 @@ int erd__csgto (int imax, int zmax,
         {
             if (spheric)
             {
-                erd__spherical_transform (nctr * nxyzet * nxyzc,
-                                          nrowd, nxyzd, nryd,
+                erd__spherical_transform (nxyzet * nxyzc,
+                                          nrowd, nryd,
                                           &icore[isnrowd], &icore[isrowd],
                                           &zcore[zsrotd], &zcore[in],
                                           &zcore[out]);
@@ -590,16 +560,14 @@ int erd__csgto (int imax, int zmax,
             }
             else
             {
-                int i__1;
-                i__1 = nctr * nxyzet * nxyzc;
-                erd__normalize_cartesian_ (&i__1, &nxyzd, &shelld,
-                                           &zcore[zcnorm], &zcore[in]);
+                erd__normalize_cartesian (nxyzet * nxyzc, shelld,
+                                          &zcore[zcnorm], &zcore[in]);
             }
         }
     }
     if (nryd > 1)
     {
-        *nbatch = nctr * nxyzet * nxyzc * nryd;
+        *nbatch = nxyzet * nxyzc * nryd;
         notmove = ixoff[indexd - 1];
         move = *nbatch / (notmove * nryd);
         if (move > 1)
@@ -610,13 +578,13 @@ int erd__csgto (int imax, int zmax,
             in = out;
             out = temp;
         }
-    }
+    } 
     if (shellc > 1)
     {
         if (spheric)
         {
-            erd__spherical_transform (nctr * nxyzet * nryd,
-                                      nrowc, nxyzc, nryc,
+            erd__spherical_transform (nxyzet * nryd,
+                                      nrowc, nryc,
                                       &icore[isnrowc], &icore[isrowc],
                                       &zcore[zsrotc], &zcore[in],
                                       &zcore[out]);
@@ -626,15 +594,13 @@ int erd__csgto (int imax, int zmax,
         }
         else
         {
-            int i__1;
-            i__1 = nctr * nxyzet * nryd;
-            erd__normalize_cartesian_ (&i__1, &nxyzc, &shellc,
-                                        &zcore[zcnorm], &zcore[in]);
+            erd__normalize_cartesian (nxyzet * nryd, shellc,
+                                      &zcore[zcnorm], &zcore[in]);
         }
     }
     if (nryc > 1)
     {
-        *nbatch = nctr * nryd * nxyzet * nryc;
+        *nbatch = nryd * nxyzet * nryc;
         notmove = ixoff[indexc - 1];
         move = *nbatch / (notmove * nryc);
         if (move > 1)
@@ -660,8 +626,7 @@ int erd__csgto (int imax, int zmax,
                          nabcoor, abx, aby, abz,
                          &icore[ihscr], &pos1, &pos2, &nrowhrr,
                          &icore[ihnrow], &icore[ihrow], &zcore[zhrot]);
-        erd__hrr_transform (nctr * nryc * nryd, nrowhrr, nxyzet,
-                            nxyza * nxyzb, nxyza, nxyzb,
+        erd__hrr_transform (nryc * nryd, nrowhrr, nxyza, nxyzb,
                             &icore[ihnrow + pos1 - 1],
                             &icore[ihrow + pos2 - 1],
                             &zcore[zhrot + pos2 - 1], &zcore[in],
@@ -673,8 +638,8 @@ int erd__csgto (int imax, int zmax,
         {
             if (spheric)
             {
-                erd__spherical_transform (nctr * nryc * nryd * nxyza,
-                                          nrowb, nxyzb, nryb,
+                erd__spherical_transform (nryc * nryd * nxyza,
+                                          nrowb, nryb,
                                           &icore[isnrowb], &icore[isrowb],
                                           &zcore[zsrotb], &zcore[in],
                                           &zcore[out]);
@@ -684,16 +649,14 @@ int erd__csgto (int imax, int zmax,
             }
             else
             {
-                int i__1;
-                i__1 = nctr * nryc * nryd * nxyza;
-                erd__normalize_cartesian_ (&i__1, &nxyzb, &shellb,
-                                           &zcore[zcnorm], &zcore[in]);
+                erd__normalize_cartesian (nryc * nryd * nxyza, shellb,
+                                          &zcore[zcnorm], &zcore[in]);
             }
         }
     }
     if (nryb > 1)
     {
-        *nbatch = nctr * nryc * nryd * nxyza * nryb;
+        *nbatch = nryc * nryd * nxyza * nryb;
         notmove = ixoff[indexb - 1];
         move = *nbatch / (notmove * nryb);
         if (move > 1)
@@ -709,8 +672,8 @@ int erd__csgto (int imax, int zmax,
     {
         if (spheric)
         {
-            erd__spherical_transform (nctr * nryb * nryc * nryd,
-                                      nrowa, nxyza, nrya,
+            erd__spherical_transform (nryb * nryc * nryd,
+                                      nrowa, nrya,
                                       &icore[isnrowa], &icore[isrowa],
                                       &zcore[zsrota], &zcore[in],
                                       &zcore[out]);
@@ -720,13 +683,11 @@ int erd__csgto (int imax, int zmax,
         }
         else
         {
-            int i__1;
-            i__1 = nctr * nryb * nryc * nryd;
-            erd__normalize_cartesian_ (&i__1, &nxyza, &shella,
-                                        &zcore[zcnorm], &zcore[in]);
+            erd__normalize_cartesian (nryb * nryc * nryd, shella,
+                                      &zcore[zcnorm], &zcore[in]);
         }
     }
-    *nbatch = nctr * nryb * nryc * nryd * nrya;
+    *nbatch = nryb * nryc * nryd * nrya;
     if (nrya > 1)
     {
         notmove = ixoff[indexa - 1];
@@ -766,11 +727,7 @@ int erd__csgto_ (int * imax, int * zmax, int * nalpha,
               int * spheric, int * screen, int * icore,
               int * nbatch, int * nfirst, double * zcore)
 {
-    erd__csgto (*imax, *zmax,
-                *nalpha, *ncoeff, *ncsum,
-                *ncgto1, *ncgto2,
-                *ncgto3, *ncgto4,
-                *npgto1, *npgto2,
+    erd__csgto (*zmax, *npgto1, *npgto2,
                 *npgto3, *npgto4,
                 *shell1, *shell2,
                 *shell3, *shell4,
@@ -779,10 +736,8 @@ int erd__csgto_ (int * imax, int * zmax, int * nalpha,
                 *x3, *y3, *z3,
                 *x4, *y4, *z4,
                 alpha, cc,
-                ccbeg, ccend,
                 ftable, *mgrid, *ngrid,
                 *tmax, *tstep, *tvstep,
-                *l1cache, *tile, *nctrow,
                 *spheric, *screen,
                 icore, nbatch, nfirst, zcore);
                 

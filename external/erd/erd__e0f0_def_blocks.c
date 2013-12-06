@@ -142,14 +142,10 @@
 int erd__e0f0_def_blocks (int zmax, int npgtoa, int npgtob,
                           int npgtoc, int npgtod,
                           int shellp, int shellq,
-                          int nij, int nkl, int nrs, int ntu,
-                          int nrstu, int ngqp, int ngqscr,
-                          int nxyzt, int l1cache, int nctrow,
-                          int memory,
-                          int *nijblk, int *nklblk,
-                          int *npsize, int *ncsize, int *nwsize,
-                          int *nint2d, int *mxprim, int *mnprim,
-                          int *zcbatch, int *zpbatch, int *zwork,
+                          int nij, int nkl, int ngqp, int ngqscr,
+                          int nxyzt, int memory, int *npsize,
+                          int *ncsize, int *nint2d, int *zcbatch,
+                          int *zpbatch, int *zwork,
                           int *znorma, int *znormb, int *znormc,
                           int *znormd, int *zrhoab, int *zrhocd,
                           int *zp, int *zpx, int *zpy,
@@ -163,12 +159,8 @@ int erd__e0f0_def_blocks (int zmax, int npgtoa, int npgtob,
                           int *zb00, int *zb01, int *zb10,
                           int *zc00x, int *zc00y, int *zc00z,
                           int *zd00x, int *zd00y, int *zd00z,
-                          int *zint2dx, int *zint2dy,
-                          int *zint2dz)
+                          int *zint2dx, int *zint2dy, int *zint2dz)
 {
-    int mij;
-    int mkl;
-    int wcol;
     int zone3;
     int zone4;
     int mijkl;
@@ -177,20 +169,9 @@ int erd__e0f0_def_blocks (int zmax, int npgtoa, int npgtob,
     int zone4b;
     int zone4c;
     int mgqijkl;
-    int npminrs;
-    int npmintu;
-
-    mij = nij;
-    mkl = nkl;
-    npminrs = MIN (npgtoa, npgtob);
-    npmintu = MIN (npgtoc, npgtod);
-    *ncsize = nxyzt * nrstu;
-    *mnprim = MAX (npminrs, npmintu);    
-    *mxprim = MAX (npgtoa, npgtob);
-    *mxprim = MAX (*mxprim, npgtoc);
-    *mxprim = MAX (*mxprim, npgtod);    
+    int nwsize;
+  
     zone3 = npgtoa + npgtob + npgtoc + npgtod + nij + nkl;
-
 
 /*             ...if the MEMORY keyword is activated, the routine */
 /*                will only determine the optimum and minimum flp */
@@ -198,57 +179,37 @@ int erd__e0f0_def_blocks (int zmax, int npgtoa, int npgtob,
 /*                into the NKLBLK and NIJBLK variables and exit. */
     if (memory)
     {
-        mijkl = mij * mkl;
+        mijkl = nij * nkl;
         mgqijkl = ngqp * mijkl;
-        *nint2d = mgqijkl * (shellp + 1) * (shellq + 1);
-        mrskl = nrs * mkl;
+        mrskl = nkl;
         *npsize = nxyzt * MAX (mijkl, mrskl);
-        *nwsize = *npsize;
-        zone12 = *npsize + *ncsize;
+        nwsize = *npsize;
+        zone12 = *npsize + nxyzt;
         zone4b = ngqscr + mijkl * 2 +
-            (mij + mkl) * 9 + mgqijkl * 12 +
-            *nint2d * 3;
-        wcol = *mnprim;
-        zone4c = *nwsize + nctrow * wcol;
+            (nij + nkl) * 9 + mgqijkl * 12 +
+            (mgqijkl * (shellp + 1) * (shellq + 1)) * 3;
+        zone4c = nwsize;
         zone4 = MAX (zone4b, zone4c);
-        *nklblk = zone12 + zone3 + zone4;
-        
-        mij = 1;
-        mkl = 1;
-        mijkl = mij * mkl;
-        mgqijkl = ngqp * mijkl;
-        *nint2d = mgqijkl * (shellp + 1) * (shellq + 1);
-        mrskl = nrs * mkl;
-        *npsize = nxyzt * MAX (mijkl, mrskl);
-        *nwsize = *npsize;
-        zone12 = *npsize + *ncsize;
-        zone4b = ngqscr + mijkl * 2 + (mij + mkl) * 9 +
-            mgqijkl * 12 + *nint2d * 3;
-        wcol = *mnprim;
-        zone4c = *nwsize + nctrow * wcol;
-        zone4 = MAX (zone4b, zone4c);
-        *nijblk = zone12 + zone3 + zone4;
+        *npsize = zone12 + zone3 + zone4;
     }
     else
     {
-        mijkl = mij * mkl;
+        *ncsize = nxyzt;
+        mijkl = nij * nkl;
         mgqijkl = ngqp * mijkl;
         *nint2d = mgqijkl * (shellp + 1) * (shellq + 1);
-        mrskl = nrs * mkl;
+        mrskl = nkl;
         *npsize = nxyzt * MAX (mijkl, mrskl);
-        *nwsize = *npsize;
+        nwsize = *npsize;
         zone12 = *npsize + *ncsize;
         zone4b = ngqscr + mijkl * 2 +
-                 (mij + mkl) * 9 + mgqijkl * 12 +
+                 (nij + nkl) * 9 +
+                 mgqijkl * 12 +
                  *nint2d * 3;
-        wcol = *mnprim;
-        zone4c = *nwsize + nctrow * wcol;
+        zone4c = nwsize;
         zone4 = MAX (zone4b, zone4c);
         assert (zone12 + zone3 + zone4 <= zmax);
-
-        *nijblk = mij;
-        *nklblk = mkl;
-        *nwsize = zmax - zone12 - zone3;
+        
 /*             ...generate the memory allocation pointers. */
         *zcbatch = 1;
         *zpbatch = *ncsize + 1;
@@ -259,24 +220,24 @@ int erd__e0f0_def_blocks (int zmax, int npgtoa, int npgtob,
         *zrhoab = *znormd + npgtod;
         *zrhocd = *zrhoab + nij;
         *zp = *zrhocd + nkl;
-        *zpx = *zp + mij;
-        *zpy = *zpx + mij;
-        *zpz = *zpy + mij;
-        *zpax = *zpz + mij;
-        *zpay = *zpax + mij;
-        *zpaz = *zpay + mij;
-        *zpinvhf = *zpaz + mij;
-        *zscpk2 = *zpinvhf + mij;
-        *zq = *zscpk2 + mij;
-        *zqx = *zq + mkl;
-        *zqy = *zqx + mkl;
-        *zqz = *zqy + mkl;
-        *zqcx = *zqz + mkl;
-        *zqcy = *zqcx + mkl;
-        *zqcz = *zqcy + mkl;
-        *zqinvhf = *zqcz + mkl;
-        *zscqk2 = *zqinvhf + mkl;
-        *zrts = *zscqk2 + mkl;
+        *zpx = *zp + nij;
+        *zpy = *zpx + nij;
+        *zpz = *zpy + nij;
+        *zpax = *zpz + nij;
+        *zpay = *zpax + nij;
+        *zpaz = *zpay + nij;
+        *zpinvhf = *zpaz + nij;
+        *zscpk2 = *zpinvhf + nij;
+        *zq = *zscpk2 + nij;
+        *zqx = *zq + nkl;
+        *zqy = *zqx + nkl;
+        *zqz = *zqy + nkl;
+        *zqcx = *zqz + nkl;
+        *zqcy = *zqcx + nkl;
+        *zqcz = *zqcy + nkl;
+        *zqinvhf = *zqcz + nkl;
+        *zscqk2 = *zqinvhf + nkl;
+        *zrts = *zscqk2 + nkl;
         *zwts = *zrts + mgqijkl;
         *zgqscr = *zwts + mgqijkl;
         *ztval = *zgqscr + ngqscr;
@@ -296,63 +257,6 @@ int erd__e0f0_def_blocks (int zmax, int npgtoa, int npgtob,
         *zint2dz = *zint2dy + *nint2d;
         *zwork = *zp;
     }
-
-    return 0;
-}
-
-
-int erd__e0f0_def_blocks_ (int * zmax, int * npgtoa,
-                        int * npgtob, int * npgtoc, int * npgtod,
-                        int * shellp, int * shellq, int * nij,
-                        int * nkl, int * nrs, int * ntu,
-                        int * nrstu, int * ngqp, int * ngqscr,
-                        int * nxyzt, int * l1cache, int * nctrow,
-                        int * memory, int * nijblk, int * nklblk,
-                        int * npsize, int * ncsize, int * nwsize,
-                        int * nint2d, int * mxprim, int * mnprim,
-                        int * zcbatch, int * zpbatch, int * zwork,
-                        int * znorma, int * znormb, int * znormc,
-                        int * znormd, int * zrhoab, int * zrhocd,
-                        int * zp, int * zpx, int * zpy,
-                        int * zpz, int * zpax, int * zpay,
-                        int * zpaz, int * zpinvhf, int * zscpk2,
-                        int * zq, int * zqx, int * zqy,
-                        int * zqz, int * zqcx, int * zqcy,
-                        int * zqcz, int * zqinvhf, int * zscqk2,
-                        int * zrts, int * zwts, int * zgqscr,
-                        int * ztval, int * zpqpinv, int * zscpqk4,
-                        int * zb00, int * zb01, int * zb10,
-                        int * zc00x, int * zc00y, int * zc00z,
-                        int * zd00x, int * zd00y, int * zd00z,
-                        int * zint2dx, int * zint2dy,
-                        int * zint2dz)
-{
-    erd__e0f0_def_blocks (*zmax, *npgtoa, *npgtob,
-                          *npgtoc, *npgtod,
-                          *shellp, *shellq,
-                          *nij, *nkl, *nrs, *ntu,
-                          *nrstu, *ngqp, *ngqscr,
-                          *nxyzt, *l1cache, *nctrow,
-                          *memory,
-                          nijblk, nklblk,
-                          npsize, ncsize, nwsize,
-                          nint2d, mxprim, mnprim,
-                          zcbatch, zpbatch, zwork,
-                          znorma, znormb, znormc,
-                          znormd, zrhoab, zrhocd,
-                          zp, zpx, zpy,
-                          zpz, zpax, zpay,
-                          zpaz, zpinvhf, zscpk2,
-                          zq, zqx, zqy,
-                          zqz, zqcx, zqcy,
-                          zqcz, zqinvhf, zscqk2,
-                          zrts, zwts, zgqscr,
-                          ztval, zpqpinv, zscpqk4,
-                          zb00, zb01, zb10,
-                          zc00x, zc00y, zc00z,
-                          zd00x, zd00y, zd00z,
-                          zint2dx, zint2dy,
-                          zint2dz);
 
     return 0;
 }

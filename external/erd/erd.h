@@ -189,34 +189,7 @@ int erd__ctr_4index_block (int nxyzt, int mij, int mkl,
                            int equalrs, int equaltu, int ptrans,
                            double *pbatch, double *work, double *cbatch);
 
-int erd__e0f0_def_blocks (int zmax, int npgtoa, int npgtob,
-                          int npgtoc, int npgtod,
-                          int shellp, int shellq,
-                          int nij, int nkl, int nrs, int ntu,
-                          int nrstu, int ngqp, int ngqscr,
-                          int nxyzt, int l1cache, int nctrow,
-                          int memory,
-                          int *nijblk, int *nklblk,
-                          int *npsize, int *ncsize, int *nwsize,
-                          int *nint2d, int *mxprim, int *mnprim,
-                          int *zcbatch, int *zpbatch, int *zwork,
-                          int *znorma, int *znormb, int *znormc,
-                          int *znormd, int *zrhoab, int *zrhocd,
-                          int *zp, int *zpx, int *zpy,
-                          int *zpz, int *zpax, int *zpay,
-                          int *zpaz, int *zpinvhf, int *zscpk2,
-                          int *zq, int *zqx, int *zqy,
-                          int *zqz, int *zqcx, int *zqcy,
-                          int *zqcz, int *zqinvhf, int *zscqk2,
-                          int *zrts, int *zwts, int *zgqscr,
-                          int *ztval, int *zpqpinv, int *zscpqk4,
-                          int *zb00, int *zb01, int *zb10,
-                          int *zc00x, int *zc00y, int *zc00z,
-                          int *zd00x, int *zd00y, int *zd00z,
-                          int *zint2dx, int *zint2dy, int *zint2dz);
-
 int erd__hrr_transform (int m, int nrow,
-                        int nxyzet, int nxyzab,
                         int nxyza, int nxyzb,
                         int *lrow, int *row,
                         double *rot, double *x, double *y);
@@ -241,7 +214,7 @@ int erd__xyz_to_ry_matrix (int nxyz, int nry,
                            double *temp, int *nrow,
                            int *row, double *tmat);
 
-int erd__spherical_transform (int m, int nrow, int nxyz, int nry,
+int erd__spherical_transform (int m, int nrow, int nry,
                               int *lrow, int *row, double *rot,
                               double *x, double *y);
 
@@ -279,38 +252,85 @@ int erd__memory_1111_csgto (int npgto1, int npgto2,
                             double *alpha, double *cc,
                             int *imin, int *iopt, int *zmin, int *zopt);
 
+int erd__set_abcd (int npgto1, int npgto2, int npgto3, int npgto4,
+                   int shell1, int shell2, int shell3, int shell4,
+                   double x1, double y1, double z1,
+                   double x2, double y2, double z2, 
+                   double x3, double y3, double z3,
+                   double x4, double y4, double z4,
+                   double *exp1, double *exp2,
+                   double *exp3, double *exp4,
+                   double *cc1, double *cc2,
+                   double *cc3, double *cc4, int spheric,
+                   int *npgtoa, int *npgtob,
+                   int *npgtoc, int *npgtod,
+                   int *shella, int *shellb, int *shellc, int *shelld,
+                   int *shellp, int *shellq, int *shellt, int *mxshell,
+                   double *xa, double *ya, double *za,
+                   double *xb, double *yb, double *zb,
+                   double *xc, double *yc, double *zc,
+                   double *xd, double *yd, double *zd,
+                   int *atomic, int *atomab, int *atomcd,
+                   int *equalab, int *equalcd,
+                   double *abx, double *aby,
+                   double *abz, double *cdx, double *cdy,
+                   double *cdz, int *nabcoor, int *ncdcoor,
+                   double *rnabsq, double *rncdsq,
+                   double *spnorm, int *nxyza, int *nxyzb,
+                   int *nxyzc, int *nxyzd, int *nxyzet,
+                   int *nxyzft, int *nxyzp, int *nxyzq,
+                   int *nrya, int *nryb, int *nryc,
+                   int *nryd, int *indexa, int *indexb,
+                   int *indexc, int *indexd, int *swap12,
+                   int *swap34, int *swaprs, int *swaptu,
+                   int *tr1234, int *lexpa, int *lexpb,
+                   int *lexpc, int *lexpd, int *lcca,
+                   int *lccb, int *lccc, int *lccd,
+                   int *lccsega, int *lccsegb, int *lccsegc,
+                   int *lccsegd, int *nxyzhrr, int *ncolhrr,
+                   int *nrothrr, int *empty);
+
+int erd__e0f0_def_blocks (int zmax, int npgtoa, int npgtob,
+                          int npgtoc, int npgtod,
+                          int shellp, int shellq,
+                          int nij, int nkl, int ngqp, int ngqscr,
+                          int nxyzt, int memory,
+                          int *npsize, int *ncsize,
+                          int *nint2d, int *zcbatch,
+                          int *zpbatch, int *zwork,
+                          int *znorma, int *znormb, int *znormc,
+                          int *znormd, int *zrhoab, int *zrhocd,
+                          int *zp, int *zpx, int *zpy,
+                          int *zpz, int *zpax, int *zpay,
+                          int *zpaz, int *zpinvhf, int *zscpk2,
+                          int *zq, int *zqx, int *zqy,
+                          int *zqz, int *zqcx, int *zqcy,
+                          int *zqcz, int *zqinvhf, int *zscqk2,
+                          int *zrts, int *zwts, int *zgqscr,
+                          int *ztval, int *zpqpinv, int *zscpqk4,
+                          int *zb00, int *zb01, int *zb10,
+                          int *zc00x, int *zc00y, int *zc00z,
+                          int *zd00x, int *zd00y, int *zd00z,
+                          int *zint2dx, int *zint2dy, int *zint2dz);
+                          
+int erd__memory_csgto (int npgto1, int npgto2,
+                       int npgto3, int npgto4,
+                       int shell1, int shell2, int shell3, int shell4,
+                       double x1, double y1, double z1,
+                       double x2, double y2, double z2,
+                       double x3, double y3, double z3,
+                       double x4, double y4, double z4,
+                       double *alpha, double *cc, int spheric,
+                       int *imin, int *iopt,
+                       int *zmin, int *zopt);
+
+int erd__normalize_cartesian (int m, int l, double *norm, double *batch);
+
+int erd__cartesian_norms (int l, double *norm);
+
 
 /*******************************************************************/
 // Fortran functions
-
-
-int erd__normalize_cartesian_ (int *, int *, int *, double *, double *);
-
-int erd__cartesian_norms_ (int *, double *);
-
-int erd__set_abcd_ (int *, int *, 
-	    int *, int *, int *, int *, int *, int *, 
-	    int *, int *, int *, int *, double *, 
-	    double *, double *, double *, double *, 
-	    double *, double *, double *, double *, 
-	    double *, double *, double *, double *, 
-	    double *, double *, double *, double *, 
-	    double *, double *, double *, int *, int *, 
-	    int *, int *, int *, int *, int *, int *, 
-	    int *, int *, int *, int *, int *, int *, 
-	    int *, int *, int *, double *, double *, 
-	    double *, double *, double *, double *, 
-	    double *, double *, double *, double *, 
-	    double *, double *, int *, int *, int *, 
-	    int *, int *, double *, double *, double *, 
-	    double *, double *, double *, int *, int *, 
-	    double *, double *, double *, int *, int *, 
-	    int *, int *, int *, int *, int *, int *, 
-	    int *, int *, int *, int *, int *, int *, 
-	    int *, int *, int *, int *, int *, int *, 
-	    int *, int *, int *, int *, int *, int *, 
-	    int *, int *, int *, int *, int *, int *, 
-	    int *, int *, int *, int *, int *);
 
 int erd__e0f0_pcgto_block_ (int *, int *, 
 	    int *, int *, int *, int *, int *, int *, 
@@ -335,46 +355,7 @@ int erd__e0f0_pcgto_block_ (int *, int *,
 	    double *, double *, double *, double *, 
 	    double *, double *, double *, double *, 
 	    double *, double *, double *, double *, 
-	    double *, double *, double *);;
-
-int erd__e0f0_def_blocks_ (int * zmax, int * npgtoa,
-                        int * npgtob, int * npgtoc, int * npgtod,
-                        int * shellp, int * shellq, int * nij,
-                        int * nkl, int * nrs, int * ntu,
-                        int * nrstu, int * ngqp, int * ngqscr,
-                        int * nxyzt, int * l1cache, int * nctrow,
-                        int * memory, int * nijblk, int * nklblk,
-                        int * npsize, int * ncsize, int * nwsize,
-                        int * nint2d, int * mxprim, int * mnprim,
-                        int * zcbatch, int * zpbatch, int * zwork,
-                        int * znorma, int * znormb, int * znormc,
-                        int * znormd, int * zrhoab, int * zrhocd,
-                        int * zp, int * zpx, int * zpy,
-                        int * zpz, int * zpax, int * zpay,
-                        int * zpaz, int * zpinvhf, int * zscpk2,
-                        int * zq, int * zqx, int * zqy,
-                        int * zqz, int * zqcx, int * zqcy,
-                        int * zqcz, int * zqinvhf, int * zscqk2,
-                        int * zrts, int * zwts, int * zgqscr,
-                        int * ztval, int * zpqpinv, int * zscpqk4,
-                        int * zb00, int * zb01, int * zb10,
-                        int * zc00x, int * zc00y, int * zc00z,
-                        int * zd00x, int * zd00y, int * zd00z,
-                        int * zint2dx, int * zint2dy,
-                        int * zint2dz);
-
-int erd__memory_csgto_ (int * nalpha, int * ncoeff,
-                        int * ncgto1, int * ncgto2, int * ncgto3,
-                        int * ncgto4, int * npgto1, int * npgto2,
-                        int * npgto3, int * npgto4, int * shell1,
-                        int * shell2, int * shell3, int * shell4,
-                        double * x1, double * y1, double * z1,
-                        double * x2, double * y2, double * z2,
-                        double * x3, double * y3, double * z3,
-                        double * x4, double * y4, double * z4,
-                        double * alpha, double * cc, int * l1cache,
-                        int * nctrow, int * spheric, int * imin,
-                        int * iopt, int * zmin, int * zopt);
+	    double *, double *, double *);
 
 
 #endif /* __ERD_H__ */

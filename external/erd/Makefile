@@ -60,7 +60,7 @@ SRC_OPT = erd__1111_csgto.c \
 	erd__2d_pq_integrals.f \
 	erd__atom_int2d_to_e000.f \
 	erd__atom_int2d_to_e0f0.f \
-	erd__cartesian_norms.f \
+	erd__cartesian_norms.c \
 	erd__csgto.c \
 	erd__ctr_4index_block.c \
 	erd__ctr_4index_reorder.f \
@@ -78,7 +78,7 @@ SRC_OPT = erd__1111_csgto.c \
 	erd__memory_csgto.c \
 	erd__memory_eri_batch.c \
 	erd__move_ry.c \
-	erd__normalize_cartesian.f \
+	erd__normalize_cartesian.c \
 	erd__pppp_pcgto_block.c \
 	erd__rys_1_roots_weights.f \
 	erd__rys_2_roots_weights.f \
@@ -87,7 +87,7 @@ SRC_OPT = erd__1111_csgto.c \
 	erd__rys_5_roots_weights.f \
 	erd__rys_roots_weights.f \
 	erd__rys_x_roots_weights.f \
-	erd__set_abcd.f \
+	erd__set_abcd.c \
 	erd__set_ij_kl_pairs.c \
 	erd__spherical_transform.c \
 	erd__sppp_pcgto_block.c \

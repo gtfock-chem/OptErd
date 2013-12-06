@@ -42,44 +42,35 @@
 /*                    IMIN,IOPT    =  minimum/optimum int memory */
 /*                    ZMIN,ZOPT    =  minimum/optimum flp memory */
 /* ------------------------------------------------------------------------ */
-int erd__memory_csgto_ (int * nalpha, int * ncoeff,
-                        int * ncgto1, int * ncgto2, int * ncgto3,
-                        int * ncgto4, int * npgto1, int * npgto2,
-                        int * npgto3, int * npgto4, int * shell1,
-                        int * shell2, int * shell3, int * shell4,
-                        double * x1, double * y1, double * z1,
-                        double * x2, double * y2, double * z2,
-                        double * x3, double * y3, double * z3,
-                        double * x4, double * y4, double * z4,
-                        double * alpha, double * cc, int * l1cache,
-                        int * nctrow, int * spheric, int * imin,
-                        int * iopt, int * zmin, int * zopt)
+int erd__memory_csgto (int npgto1, int npgto2,
+                       int npgto3, int npgto4,
+                       int shell1, int shell2, int shell3, int shell4,
+                       double x1, double y1, double z1,
+                       double x2, double y2, double z2,
+                       double x3, double y3, double z3,
+                       double x4, double y4, double z4,
+                       double *alpha, double *cc, int spheric,
+                       int *imin, int *iopt,
+                       int *zmin, int *zopt)
 {
     int nxyzhrr, nij, nkl;
-    int lcc1, lcc2, lcc3, lcc4, ngqp, nctr, nmom, nrya, nryb, nryc,
-        nryd, lexp1, lexp2, lexp3, lexp4, zout1, zout2, ineed;
+    int lcc1, lcc2, lcc3, lcc4, ngqp, nmom, nrya, nryb, nryc,
+        nryd, lexp1, lexp2, lexp3, lexp4, zout2, ineed;
     int zneed, nrota, nrotb, nrotc, nrotd, nrowa, nrowb, nrowc,
         nrowd;
     int empty;
     int nxyza, nxyzb, nxyzc, nxyzd, nxyzt, shella, shellb, shellc,
-        ncgtoa, ncgtob, ncgtoc, ncgtod, shelld, shellp, npgtoa, npgtob,
+        shelld, shellp, npgtoa, npgtob,
         npgtoc, npgtod, shellq, ngqscr, shellt, mnprim, dummyi[49];
-    int dummyl[8], memory;
+    int dummyl[8];
     int mxprim;
     double dummyr[21];
     int mxsize, nxyzet, nxyzft;
     int equalab;
-    int ncgtoab;
     int equalcd;
-    int ncgtocd, npgtoab, npgtocd, ncolhrr, mxshell, nrothrr;
+    int npgtoab, npgtocd, ncolhrr, mxshell, nrothrr;
 
-    --alpha;
-    --cc;
-
-    /* Function Body */
-    *imin = 0;
     *iopt = 0;
-    *zmin = 0;
     *zopt = 0;
 
 
@@ -89,66 +80,64 @@ int erd__memory_csgto_ (int * nalpha, int * ncoeff,
 /*                evaluate the memory requirements and is dumped into */
 /*                the DUMMYx arrays with x=I,R,L standing for int, */
 /*                real and int, respectively. */
-    lexp1 = 1;
-    lexp2 = lexp1 + *npgto1;
-    lexp3 = lexp2 + *npgto2;
-    lexp4 = lexp3 + *npgto3;
-    lcc1 = 1;
-    lcc2 = lcc1 + *npgto1 * *ncgto1;
-    lcc3 = lcc2 + *npgto2 * *ncgto2;
-    lcc4 = lcc3 + *npgto3 * *ncgto3;
+    lexp1 = 0;
+    lexp2 = lexp1 + npgto1;
+    lexp3 = lexp2 + npgto2;
+    lexp4 = lexp3 + npgto3;
+    lcc1 = 0;
+    lcc2 = lcc1 + npgto1;
+    lcc3 = lcc2 + npgto2;
+    lcc4 = lcc3 + npgto3;
     
-    erd__set_abcd_ (ncgto1, ncgto2, ncgto3, ncgto4, npgto1, npgto2, npgto3,
-                    npgto4, shell1, shell2, shell3, shell4, x1, y1, z1, x2,
-                    y2, z2, x3, y3, z3, x4, y4, z4, &alpha[lexp1],
-                    &alpha[lexp2], &alpha[lexp3], &alpha[lexp4], &cc[lcc1],
-                    &cc[lcc2], &cc[lcc3], &cc[lcc4], spheric, &ncgtoa,
-                    &ncgtob, &ncgtoc, &ncgtod, &npgtoa, &npgtob, &npgtoc,
-                    &npgtod, &shella, &shellb, &shellc, &shelld, &shellp,
-                    &shellq, &shellt, &mxshell, dummyr, &dummyr[1],
-                    &dummyr[2], &dummyr[3], &dummyr[4], &dummyr[5],
-                    &dummyr[6], &dummyr[7], &dummyr[8], &dummyr[9],
-                    &dummyr[10], &dummyr[11], dummyl, &dummyl[1], &dummyl[2],
-                    &equalab, &equalcd, &dummyr[12], &dummyr[13],
-                    &dummyr[14], &dummyr[15], &dummyr[16], &dummyr[17],
-                    dummyi, &dummyi[1], &dummyr[18], &dummyr[19],
-                    &dummyr[20], &nxyza, &nxyzb, &nxyzc, &nxyzd, &nxyzet,
-                    &nxyzft, &dummyi[2], &dummyi[3], &nrya, &nryb, &nryc,
-                    &nryd, &dummyi[4], &dummyi[5], &dummyi[6], &dummyi[7],
-                    &dummyl[3], &dummyl[4], &dummyl[5], &dummyl[6],
-                    &dummyl[7], &dummyi[8], &dummyi[9], &dummyi[10],
-                    &dummyi[11], &dummyi[12], &dummyi[13], &dummyi[14],
-                    &dummyi[15], &dummyi[16], &dummyi[17], &dummyi[18],
-                    &dummyi[19], &nxyzhrr, &ncolhrr, &nrothrr, &empty);
+    erd__set_abcd (npgto1, npgto2, npgto3, npgto4,
+                   shell1, shell2, shell3, shell4,
+                   x1, y1, z1, x2, y2, z2,
+                   x3, y3, z3, x4, y4, z4,
+                   &alpha[lexp1], &alpha[lexp2],
+                   &alpha[lexp3], &alpha[lexp4],
+                   &cc[lcc1], &cc[lcc2],
+                   &cc[lcc3], &cc[lcc4], spheric,
+                   &npgtoa, &npgtob, &npgtoc, &npgtod,
+                   &shella, &shellb, &shellc, &shelld, &shellp,
+                   &shellq, &shellt, &mxshell,
+                   &dummyr[0], &dummyr[1],
+                   &dummyr[2], &dummyr[3], &dummyr[4], &dummyr[5],
+                   &dummyr[6], &dummyr[7], &dummyr[8], &dummyr[9],
+                   &dummyr[10], &dummyr[11], dummyl, &dummyl[1], &dummyl[2],
+                   &equalab, &equalcd, &dummyr[12], &dummyr[13],
+                   &dummyr[14], &dummyr[15], &dummyr[16], &dummyr[17],
+                   dummyi, &dummyi[1], &dummyr[18], &dummyr[19],
+                   &dummyr[20], &nxyza, &nxyzb, &nxyzc, &nxyzd, &nxyzet,
+                   &nxyzft, &dummyi[2], &dummyi[3], &nrya, &nryb, &nryc,
+                   &nryd, &dummyi[4], &dummyi[5], &dummyi[6], &dummyi[7],
+                   &dummyl[3], &dummyl[4], &dummyl[5], &dummyl[6],
+                   &dummyl[7], &dummyi[8], &dummyi[9], &dummyi[10],
+                   &dummyi[11], &dummyi[12], &dummyi[13], &dummyi[14],
+                   &dummyi[15], &dummyi[16], &dummyi[17], &dummyi[18],
+                   &dummyi[19], &nxyzhrr, &ncolhrr, &nrothrr, &empty);
     if (empty)
     {
         return 0;
     }
-
 
 /*             ...simulate the cartesian contracted (e0|f0) batch */
 /*                generation. */
     if (equalab)
     {
         npgtoab = npgtoa * (npgtoa + 1) / 2;
-        ncgtoab = ncgtoa * (ncgtoa + 1) / 2;
     }
     else
     {
         npgtoab = npgtoa * npgtob;
-        ncgtoab = ncgtoa * ncgtob;
     }
     if (equalcd)
     {
         npgtocd = npgtoc * (npgtoc + 1) / 2;
-        ncgtocd = ncgtoc * (ncgtoc + 1) / 2;
     }
     else
     {
         npgtocd = npgtoc * npgtod;
-        ncgtocd = ncgtoc * ncgtod;
     }
-    nctr = ncgtoab * ncgtocd;
     nxyzt = nxyzet * nxyzft;
 
 /*             ...at this point we would determine the IJ and KL */
@@ -163,10 +152,8 @@ int erd__memory_csgto_ (int * nalpha, int * ncoeff,
     nij = npgtoab;
     nkl = npgtocd;
     zneed = npgtoab + npgtocd;
-    ineed = zneed << 1;
-    *imin = MAX (*imin, ineed);
+    ineed = zneed * 2;
     *iopt = MAX (*iopt, ineed);
-    *zmin = MAX (*zmin, zneed);
     *zopt = MAX (*zopt, zneed);
 
 
@@ -176,32 +163,28 @@ int erd__memory_csgto_ (int * nalpha, int * ncoeff,
     ngqp = shellt / 2 + 1;
     nmom = (ngqp << 1) - 1;
     ngqscr = nmom * 5 + (ngqp << 1) - 2;
-    memory = 1;
-    int c__0 = 0;
-    erd__e0f0_def_blocks_ (&c__0, &npgtoa, &npgtob, &npgtoc, &npgtod,
-                           &shellp, &shellq, &nij, &nkl, &ncgtoab, &ncgtocd,
-                           &nctr, &ngqp, &ngqscr, &nxyzt, l1cache, nctrow,
-                           &memory, &zout1, &zout2, dummyi, &dummyi[1],
-                           &dummyi[2], &dummyi[3], &mxprim, &mnprim,
-                           &dummyi[4], &dummyi[5], &dummyi[6], &dummyi[7],
-                           &dummyi[8], &dummyi[9], &dummyi[10], &dummyi[11],
-                           &dummyi[12], &dummyi[13], &dummyi[14],
-                           &dummyi[15], &dummyi[16], &dummyi[17],
-                           &dummyi[18], &dummyi[19], &dummyi[20],
-                           &dummyi[21], &dummyi[22], &dummyi[23],
-                           &dummyi[24], &dummyi[25], &dummyi[26],
-                           &dummyi[27], &dummyi[28], &dummyi[29],
-                           &dummyi[30], &dummyi[31], &dummyi[32],
-                           &dummyi[33], &dummyi[34], &dummyi[35],
-                           &dummyi[36], &dummyi[37], &dummyi[38],
-                           &dummyi[39], &dummyi[40], &dummyi[41],
-                           &dummyi[42], &dummyi[43], &dummyi[44],
-                           &dummyi[45], &dummyi[46], &dummyi[47],
-                           &dummyi[48]);
+    
+    erd__e0f0_def_blocks (0, npgtoa, npgtob, npgtoc, npgtod,
+                          shellp, shellq, nij, nkl,
+                          ngqp, ngqscr, nxyzt,
+                          1, &zout2, NULL, NULL,
+                          NULL, NULL, NULL, NULL, NULL,
+                          NULL, NULL, NULL, NULL, NULL,
+                          NULL, NULL, NULL, NULL, NULL,
+                          NULL, NULL, NULL, NULL, NULL,
+                          NULL, NULL, NULL, NULL, NULL,
+                          NULL, NULL, NULL, NULL, NULL,
+                          NULL, NULL, NULL, NULL, NULL,
+                          NULL, NULL, NULL, NULL, NULL,
+                          NULL, NULL, NULL, NULL, NULL);
+
+    mnprim = MAX (MIN (npgtoa, npgtob), MIN (npgtoc, npgtod));    
+    mxprim = MAX (npgtoa, npgtob);
+    mxprim = MAX (mxprim, npgtoc);
+    mxprim = MAX (mxprim, npgtod); 
+    
     ineed = ineed + (mxprim << 1) + mnprim;
-    *imin = MAX (*imin, ineed);
     *iopt = MAX (*iopt, ineed);
-    *zmin = MAX (*zmin, zout1);
     *zopt = MAX (*zopt, zout2);
 
 /*             ...determine the int/flp memory needs for the next */
@@ -220,8 +203,7 @@ int erd__memory_csgto_ (int * nalpha, int * ncoeff,
 /*                                             or */
 /*                                cartesian normalization factors */
 /*                       Zone 4:  HRR contraction data */
-    nctr = *ncgto1 * *ncgto2 * *ncgto3 * *ncgto4;
-    mxsize = nctr * nxyzhrr;
+    mxsize = nxyzhrr;
 
 
 /*             ...memory for Zone 1 and 2. */
@@ -230,7 +212,7 @@ int erd__memory_csgto_ (int * nalpha, int * ncoeff,
 
 
 /*             ...memory for Zone 3. */
-    if (*spheric)
+    if (spheric)
     {
         if (mxshell > 1)
         {
@@ -277,11 +259,12 @@ int erd__memory_csgto_ (int * nalpha, int * ncoeff,
 /*             ...memory for Zone 4. */
     ineed = ineed + (ncolhrr << 2) + (nrothrr << 1);
     zneed += nrothrr << 1;
-    *imin = MAX (*imin, ineed);
     *iopt = MAX (*iopt, ineed);
-    *zmin = MAX (*zmin, zneed);
     *zopt = MAX (*zopt, zneed);
 
-
+    *zmin = *zopt;
+    *imin = *iopt;
+    
+    printf ("return %d %d\n", *zopt, *iopt);
     return 0;
 }
