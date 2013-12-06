@@ -62,7 +62,7 @@
 /*                    CBATCH       =  contraction batch initialized */
 /*                                    to zero (if needed) */
 /* ------------------------------------------------------------------------ */
-int erd__prepare_ctr (int ncsize, int nij, int nkl,
+int erd__prepare_ctr (int nij, int nkl,
                       int npgtoa, int npgtob,
                       int npgtoc, int npgtod,
                       int shella, int shellb,
@@ -72,7 +72,7 @@ int erd__prepare_ctr (int ncsize, int nij, int nkl,
                       int equalab, int equalcd, double *rho,
                       double *norma, double *normb,
                       double *normc, double *normd,
-                      double *rhoab, double *rhocd, double *cbatch)
+                      double *rhoab, double *rhocd)
 {
     int n;
     int npmin;

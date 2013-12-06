@@ -167,7 +167,7 @@ int erd__memory_csgto (int npgto1, int npgto2,
     erd__e0f0_def_blocks (0, npgtoa, npgtob, npgtoc, npgtod,
                           shellp, shellq, nij, nkl,
                           ngqp, ngqscr, nxyzt,
-                          1, &zout2, NULL, NULL,
+                          1, &zout2, NULL,
                           NULL, NULL, NULL, NULL, NULL,
                           NULL, NULL, NULL, NULL, NULL,
                           NULL, NULL, NULL, NULL, NULL,
@@ -265,6 +265,5 @@ int erd__memory_csgto (int npgto1, int npgto2,
     *zmin = *zopt;
     *imin = *iopt;
     
-    printf ("return %d %d\n", *zopt, *iopt);
     return 0;
 }

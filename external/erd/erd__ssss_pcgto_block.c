@@ -111,6 +111,8 @@ int erd__ssss_pcgto_block (int nij, int nkl,
                            double x4, double y4, double z4,
                            double *alpha1, double *alpha2,
                            double *alpha3, double *alpha4,
+                           double *cc1, double *cc2,
+                           double *cc3, double *cc4,
                            double *ftable, int mgrid,
                            double tmax, double tstep, double tvstep,
                            int *prim1, int *prim2,
@@ -121,7 +123,7 @@ int erd__ssss_pcgto_block (int nij, int nkl,
                            double *p, double *px, double *py, double *pz,
                            double *scalep, double *q, double *qx,
                            double *qy, double *qz,
-                           double *scaleq, double *batch)
+                           double *scaleq, double *cbatch)
 {
     int ftable_dim1, ftable_offset;
 
@@ -129,7 +131,6 @@ int erd__ssss_pcgto_block (int nij, int nkl,
     int j;
     int k;
     int l;
-    int m;
     double t;
     double f0;
     int ij;
@@ -181,7 +182,8 @@ int erd__ssss_pcgto_block (int nij, int nkl,
         px[ij] = pval * x12 + x2;
         py[ij] = pval * y12 + y2;
         pz[ij] = pval * z12 + z2;
-        scalep[ij] = norm1[i - 1] * norm2[j - 1] * rho12[ij];
+        scalep[ij] = cc1[i - 1] * cc2[j - 1] *
+            norm1[i - 1] * norm2[j - 1] * rho12[ij];
     }
 
     for (kl = 0; kl < nkl; ++kl)
@@ -196,10 +198,10 @@ int erd__ssss_pcgto_block (int nij, int nkl,
         qx[kl] = qval * x34 + x4;
         qy[kl] = qval * y34 + y4;
         qz[kl] = qval * z34 + z4;
-        scaleq[kl] = norm3[k - 1] * norm4[l - 1] * rho34[kl];
+        scaleq[kl] = cc3[k - 1] * cc4[l - 1] *
+            norm3[k - 1] * norm4[l - 1] * rho34[kl];
     }
     
-    m = 0;
     for (ij = 0; ij < nij; ++ij)
     {
         pval = p[ij];
@@ -239,8 +241,7 @@ int erd__ssss_pcgto_block (int nij, int nkl,
                 f0 = sqrt (M_PI / t) * .5;
             }
 #endif
-            batch[m] = scale * f0;
-            m++;
+            cbatch[0] += scale * f0; 
         }
     }
 

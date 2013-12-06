@@ -46,18 +46,15 @@ int erd__memory_1111_csgto (int npgto1, int npgto2,
                             double x2, double y2, double z2,
                             double x3, double y3, double z3,
                             double x4, double y4, double z4,
-                            double *alpha, double *cc,
-                            int *imin, int *iopt, int *zmin, int *zopt)
+                            int *imin, int *iopt,
+                            int *zmin, int *zopt)
 {
-    int i;
-    int lcc1, lcc2, lcc3, lcc4, lexp1, lexp2,
-        lexp3, lexp4, zout2, ineed, nxyz1, nxyz2, nxyz3, nxyz4;
+    int zout2, ineed, nxyz1, nxyz2, nxyz3, nxyz4;
     int atom12, atom23;
     int zneed;
     int atom34;
     int nxyzt;
-    int equal12, atomic;
-    int equal34;
+    int atomic;
     int shellp, npgto12, shellt, npgto34;
     int mxprim;
     int mnprim;
@@ -77,65 +74,9 @@ int erd__memory_1111_csgto (int npgto1, int npgto2,
     {
         return 0;
     }
-    
-    lexp1 = 0;
-    lexp2 = lexp1 + npgto1;
-    lexp3 = lexp2 + npgto2;
-    lexp4 = lexp3 + npgto3;
-    lcc1 = 0;
-    lcc2 = lcc1 + npgto1;
-    lcc3 = lcc2 + npgto2;
-    lcc4 = lcc3 + npgto3;
-
 /*             ...determine csh equality between center pairs 1,2 */
 /*                and 3,4 in increasing order of complexity: */
 /*                 centers -> shells -> exponents -> ctr coefficients */
-    equal12 = atom12;
-    if (equal12)
-    {
-        equal12 = ((shell1 == shell2) &&
-                   (npgto1 == npgto2));
-        if (equal12)
-        {
-            for (i = 0; i < npgto1; ++i)
-            {
-                equal12 = (equal12 &&
-                           (alpha[lexp1 + i] == alpha[lexp2 + i]));
-            }
-            if (equal12)
-            {
-                for (i = 0; i < npgto1; ++i)
-                {
-                    equal12 = (equal12 && 
-                        (cc[lcc1 + i] == cc[lcc2 + i]));
-                }
-            }
-        }
-    }
-    equal34 = atom34;
-    if (equal34)
-    {
-        equal34 = ((shell3 == shell4) &&
-                   (npgto3 == npgto4));
-        if (equal34)
-        {
-            for (i = 0; i < npgto3; ++i)
-            {
-                equal34 = (equal34 &&
-                           (alpha[lexp3 + i] == alpha[lexp4 + i]));
-            }
-            if (equal34)
-            {
-                for (i = 0; i < npgto3; ++i)
-                {
-                    equal34 = (equal34 &&
-                        (cc[lcc3 + i] == cc[lcc4 + i]));
-                }
-            }
-        }
-    }
-
-
 /*             ...calculate relevant data for the [12|34] batch of */
 /*                integrals, such as dimensions, total # of integrals */
 /*                to be expected, etc... */
@@ -144,22 +85,8 @@ int erd__memory_1111_csgto (int npgto1, int npgto2,
     nxyz3 = shell3 + shell3 + 1;
     nxyz4 = shell4 + shell4 + 1;
     nxyzt = nxyz1 * nxyz2 * nxyz3 * nxyz4;
-    if (equal12)
-    {
-        npgto12 = npgto1 * (npgto1 + 1) / 2;
-    }
-    else
-    {
-        npgto12 = npgto1 * npgto2;
-    }
-    if (equal34)
-    {
-        npgto34 = npgto3 * (npgto3 + 1) / 2;
-    }
-    else
-    {
-        npgto34 = npgto3 * npgto4;
-    }
+    npgto12 = npgto1 * npgto2;
+    npgto34 = npgto3 * npgto4;
 
 /*             ...at this point we would determine the IJ and KL */
 /*                exponent pairs necessay to evaluate the cartesian */
@@ -181,7 +108,7 @@ int erd__memory_1111_csgto (int npgto1, int npgto2,
 /*                generation. */
     erd__1111_def_blocks (0, npgto1, npgto2, npgto3, npgto4,
                           npgto12, npgto34, nxyzt, 1,
-                          &zout2, NULL, NULL, NULL, NULL,
+                          &zout2, NULL,
                           NULL, NULL, NULL, NULL, NULL,
                           NULL, NULL, NULL, NULL, NULL,
                           NULL, NULL, NULL, NULL, NULL);

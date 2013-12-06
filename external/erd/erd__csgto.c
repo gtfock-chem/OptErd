@@ -200,7 +200,7 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
     int swaprs;
     int mxsize;
     int swaptu;
-    int npgtoa, npgtob, npgtoc, npgtod, npsize, ncsize,
+    int npgtoa, npgtob, npgtoc, npgtod, npsize,
         shella, shellb, shellc, shelld, shellp, nxyzet, nxyzft, shellq,
         shellt, znorma, znormb, znormc, znormd, zcnorm, zrhoab, zrhocd,
         zgqscr, zsrota, zsrotb, zsrotc, zsrotd;
@@ -317,8 +317,7 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
     erd__e0f0_def_blocks (zmax, npgtoa, npgtob, npgtoc, npgtod,
                           shellp, shellq, nij, nkl,
                           ngqp, ngqscr, nxyzt, 0,
-                          &npsize, &ncsize,
-                          &nint2d, &zcbatch, &zpbatch,
+                          &npsize, &nint2d, &zcbatch, &zpbatch,
                           &zwork, &znorma, &znormb, &znormc, &znormd,
                           &zrhoab, &zrhocd, &zp, &zpx, &zpy, &zpz, &zpax,
                           &zpay, &zpaz, &zpinvhf, &zscpk2,
@@ -330,7 +329,7 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
                           &zd00x, &zd00y, &zd00z,
                           &zint2dx, &zint2dy, &zint2dz);
     
-    erd__prepare_ctr (ncsize, nij, nkl,
+    erd__prepare_ctr (nij, nkl,
                       npgtoa, npgtob, npgtoc, npgtod,
                       shella, shellb, shellc, shelld,
                       &alpha[lexpa], &alpha[lexpb],
@@ -338,7 +337,7 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
                       equalab, equalcd, &zcore[1],
                       &zcore[znorma], &zcore[znormb],
                       &zcore[znormc], &zcore[znormd],
-                      &zcore[zrhoab], &zcore[zrhocd], &zcore[zcbatch]);
+                      &zcore[zrhoab], &zcore[zrhocd]);
 
 /*             ...evaluate unnormalized rescaled [e0|f0] in blocks */
 /*                over ij and kl pairs and add to final contracted */

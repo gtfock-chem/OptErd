@@ -144,7 +144,7 @@ int erd__e0f0_def_blocks (int zmax, int npgtoa, int npgtob,
                           int shellp, int shellq,
                           int nij, int nkl, int ngqp, int ngqscr,
                           int nxyzt, int memory, int *npsize,
-                          int *ncsize, int *nint2d, int *zcbatch,
+                          int *nint2d, int *zcbatch,
                           int *zpbatch, int *zwork,
                           int *znorma, int *znormb, int *znormc,
                           int *znormd, int *zrhoab, int *zrhocd,
@@ -170,6 +170,7 @@ int erd__e0f0_def_blocks (int zmax, int npgtoa, int npgtob,
     int zone4c;
     int mgqijkl;
     int nwsize;
+    int ncsize; 
   
     zone3 = npgtoa + npgtob + npgtoc + npgtod + nij + nkl;
 
@@ -179,12 +180,13 @@ int erd__e0f0_def_blocks (int zmax, int npgtoa, int npgtob,
 /*                into the NKLBLK and NIJBLK variables and exit. */
     if (memory)
     {
+        ncsize = nxyzt;
         mijkl = nij * nkl;
         mgqijkl = ngqp * mijkl;
         mrskl = nkl;
         *npsize = nxyzt * MAX (mijkl, mrskl);
         nwsize = *npsize;
-        zone12 = *npsize + nxyzt;
+        zone12 = *npsize + ncsize;
         zone4b = ngqscr + mijkl * 2 +
             (nij + nkl) * 9 + mgqijkl * 12 +
             (mgqijkl * (shellp + 1) * (shellq + 1)) * 3;
@@ -194,14 +196,14 @@ int erd__e0f0_def_blocks (int zmax, int npgtoa, int npgtob,
     }
     else
     {
-        *ncsize = nxyzt;
+        ncsize = nxyzt;
         mijkl = nij * nkl;
         mgqijkl = ngqp * mijkl;
         *nint2d = mgqijkl * (shellp + 1) * (shellq + 1);
         mrskl = nkl;
         *npsize = nxyzt * MAX (mijkl, mrskl);
         nwsize = *npsize;
-        zone12 = *npsize + *ncsize;
+        zone12 = *npsize + ncsize;
         zone4b = ngqscr + mijkl * 2 +
                  (nij + nkl) * 9 +
                  mgqijkl * 12 +
@@ -212,7 +214,7 @@ int erd__e0f0_def_blocks (int zmax, int npgtoa, int npgtob,
         
 /*             ...generate the memory allocation pointers. */
         *zcbatch = 1;
-        *zpbatch = *ncsize + 1;
+        *zpbatch = ncsize + 1;
         *znorma = *zpbatch + *npsize;
         *znormb = *znorma + npgtoa;
         *znormc = *znormb + npgtob;

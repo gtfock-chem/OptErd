@@ -107,26 +107,27 @@
 /*                                    cartesian sssp/ssps/spss/psss */
 /*                                    integrals */
 /* ------------------------------------------------------------------------ */
-int
-erd__sssp_pcgto_block (int atomic, int nij, int nkl,
-                       int shell1, int shell3, int shellp,
-                       double x1, double y1, double z1,
-                       double x2, double y2, double z2,
-                       double x3, double y3, double z3,
-                       double x4, double y4, double z4,
-                       double *alpha1, double *alpha2,
-                       double *alpha3, double *alpha4,
-                       double *ftable, int mgrid,
-                       double tmax, double tstep, double tvstep,
-                       int *prim1, int *prim2,
-                       int *prim3, int *prim4,
-                       double *norm1, double *norm2,
-                       double *norm3, double *norm4,
-                       double *rho12, double *rho34,
-                       double *p, double *px,
-                       double *py, double *pz, double *scalep,
-                       double *q, double *qx,
-                       double *qy, double *qz, double *scaleq, double *batch)
+int erd__sssp_pcgto_block (int nij, int nkl,
+                           int shell1, int shell3, int shellp,
+                           double x1, double y1, double z1,
+                           double x2, double y2, double z2,
+                           double x3, double y3, double z3,
+                           double x4, double y4, double z4,
+                           double *alpha1, double *alpha2,
+                           double *alpha3, double *alpha4,
+                           double *cc1, double *cc2,
+                           double *cc3, double *cc4,
+                           double *ftable, int mgrid,
+                           double tmax, double tstep, double tvstep,
+                           int *prim1, int *prim2,
+                           int *prim3, int *prim4,
+                           double *norm1, double *norm2,
+                           double *norm3, double *norm4,
+                           double *rho12, double *rho34,
+                           double *p, double *px,
+                           double *py, double *pz, double *scalep,
+                           double *q, double *qx,
+                           double *qy, double *qz, double *scaleq, double *cbatch)
 {
     int ftable_dim1, ftable_offset;
 
@@ -134,7 +135,6 @@ erd__sssp_pcgto_block (int atomic, int nij, int nkl,
     int j;
     int k;
     int l;
-    int m;
     double t;
     double f0;
     double f1;
@@ -194,9 +194,6 @@ erd__sssp_pcgto_block (int atomic, int nij, int nkl,
     y34 = y3 - y4;
     z34 = z3 - z4;
 
-    if (atomic)
-        return 0;
-
     for (ij = 0; ij < nij; ++ij)
     {
         i = prim1[ij];
@@ -209,7 +206,8 @@ erd__sssp_pcgto_block (int atomic, int nij, int nkl,
         px[ij] = pval * x12 + x2;
         py[ij] = pval * y12 + y2;
         pz[ij] = pval * z12 + z2;
-        scalep[ij] = norm1[i - 1] * norm2[j - 1] * rho12[ij];
+        scalep[ij] = cc1[i - 1] * cc2[j - 1] *
+            norm1[i - 1] * norm2[j - 1] * rho12[ij];
     }
 
     for (kl = 0; kl < nkl; ++kl)
@@ -224,7 +222,8 @@ erd__sssp_pcgto_block (int atomic, int nij, int nkl,
         qx[kl] = qval * x34 + x4;
         qy[kl] = qval * y34 + y4;
         qz[kl] = qval * z34 + z4;
-        scaleq[kl] = norm3[k - 1] * norm4[l - 1] * rho34[kl];
+        scaleq[kl] = cc3[k - 1] * cc4[l - 1] *
+            norm3[k - 1] * norm4[l - 1] * rho34[kl];
     }
 
     // 0     5   |  (AB|CD)  4-center   sssp and ssps
@@ -242,7 +241,6 @@ erd__sssp_pcgto_block (int atomic, int nij, int nkl,
             qysub = y4;
             qzsub = z4;
         }
-        m = 0;
         for (ij = 0; ij < nij; ++ij)
         {
             pval = p[ij];
@@ -302,10 +300,9 @@ erd__sssp_pcgto_block (int atomic, int nij, int nkl,
                 }
 #endif
                 f1 = f1 * pval * pqpinv;
-                batch[m] = (qxval - qxsub) * f0 + pqx * f1;
-                batch[m + 1] = (qyval - qysub) * f0 + pqy * f1;
-                batch[m + 2] = (qzval - qzsub) * f0 + pqz * f1;
-                m += 3;
+                cbatch[0] += (qxval - qxsub) * f0 + pqx * f1;
+                cbatch[1] += (qyval - qysub) * f0 + pqy * f1;
+                cbatch[2] += (qzval - qzsub) * f0 + pqz * f1;
             }
         }
     }
@@ -324,7 +321,6 @@ erd__sssp_pcgto_block (int atomic, int nij, int nkl,
             pysub = y2;
             pzsub = z2;
         }
-        m = 0;
         for (ij = 0; ij < nij; ++ij)
         {
             pval = p[ij];
@@ -384,10 +380,9 @@ erd__sssp_pcgto_block (int atomic, int nij, int nkl,
                 }
 #endif
                 f1 = -f1 * qval * pqpinv;
-                batch[m] = xp * f0 + pqx * f1;
-                batch[m + 1] = yp * f0 + pqy * f1;
-                batch[m + 2] = zp * f0 + pqz * f1;
-                m += 3;
+                cbatch[0] += xp * f0 + pqx * f1;
+                cbatch[1] += yp * f0 + pqy * f1;
+                cbatch[2] += zp * f0 + pqz * f1;
             }
         }
     }

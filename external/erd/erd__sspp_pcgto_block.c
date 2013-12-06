@@ -108,26 +108,28 @@
 /*                                    cartesian sspp/spsp/pssp/spps/ */
 /*                                    psps/ppss integrals */
 /* ------------------------------------------------------------------------ */
-int
-erd__sspp_pcgto_block (int nij, int nkl,
-                       int shell1, int shell3, int shellp,
-                       double x1, double y1, double z1,
-                       double x2, double y2, double z2,
-                       double x3, double y3, double z3,
-                       double x4, double y4, double z4,
-                       double *alpha1, double *alpha2,
-                       double *alpha3, double *alpha4,
-                       double *ftable, int mgrid,
-                       double tmax, double tstep, double tvstep,
-                       int *prim1, int *prim2,
-                       int *prim3, int *prim4,
-                       double *norm1, double *norm2,
-                       double *norm3, double *norm4,
-                       double *rho12, double *rho34,
-                       double *p, double *px,
-                       double *py, double *pz, double *scalep,
-                       double *q, double *qx,
-                       double *qy, double *qz, double *scaleq, double *batch)
+int erd__sspp_pcgto_block (int nij, int nkl,
+                           int shell1, int shell3, int shellp,
+                           double x1, double y1, double z1,
+                           double x2, double y2, double z2,
+                           double x3, double y3, double z3,
+                           double x4, double y4, double z4,
+                           double *alpha1, double *alpha2,
+                           double *alpha3, double *alpha4,
+                           double *cc1, double *cc2,
+                           double *cc3, double *cc4,                       
+                           double *ftable, int mgrid,
+                           double tmax, double tstep, double tvstep,
+                           int *prim1, int *prim2,
+                           int *prim3, int *prim4,
+                           double *norm1, double *norm2,
+                           double *norm3, double *norm4,
+                           double *rho12, double *rho34,
+                           double *p, double *px,
+                           double *py, double *pz, double *scalep,
+                           double *q, double *qx,
+                           double *qy, double *qz,
+                           double *scaleq, double *cbatch)
 {
     int ftable_dim1, ftable_offset;
 
@@ -135,7 +137,6 @@ erd__sspp_pcgto_block (int nij, int nkl,
     int j;
     int k;
     int l;
-    int m;
     double t;
     double f0;
     double f1;
@@ -228,7 +229,8 @@ erd__sspp_pcgto_block (int nij, int nkl,
         px[ij] = pval * x12 + x2;
         py[ij] = pval * y12 + y2;
         pz[ij] = pval * z12 + z2;
-        scalep[ij] = norm1[i - 1] * norm2[j - 1] * rho12[ij];
+        scalep[ij] = cc1[i - 1] * cc2[j - 1] *
+            norm1[i - 1] * norm2[j - 1] * rho12[ij];
     }
 
     for (kl = 0; kl < nkl; ++kl)
@@ -243,13 +245,13 @@ erd__sspp_pcgto_block (int nij, int nkl,
         qx[kl] = qval * x34 + x4;
         qy[kl] = qval * y34 + y4;
         qz[kl] = qval * z34 + z4;
-        scaleq[kl] = norm3[k - 1] * norm4[l - 1] * rho34[kl];
+        scaleq[kl] = cc3[k - 1] * cc4[l - 1] *
+            norm3[k - 1] * norm4[l - 1] * rho34[kl];
     }
 
     // 0     5   |  (AB|CD)  4-center   sspp
     if (shellp == 0)
     {
-        m = 0;
         for (ij = 0; ij < nij; ++ij)
         {
             pval = p[ij];
@@ -336,16 +338,15 @@ erd__sspp_pcgto_block (int nij, int nkl,
                 d = yps1 * f1 + ysp2 * f2;
                 e = zps1 * f0 + zsp2 * f1;
                 f = zps1 * f1 + zsp2 * f2;
-                batch[m + 0] = xsp1 * a + xsp2 * b + u1;
-                batch[m + 1] = xsp1 * c + xsp2 * d;
-                batch[m + 2] = xsp1 * e + xsp2 * f;
-                batch[m + 3] = ysp1 * a + ysp2 * b;
-                batch[m + 4] = ysp1 * c + ysp2 * d + u1;
-                batch[m + 5] = ysp1 * e + ysp2 * f;
-                batch[m + 6] = zsp1 * a + zsp2 * b;
-                batch[m + 7] = zsp1 * c + zsp2 * d;
-                batch[m + 8] = zsp1 * e + zsp2 * f + u1;
-                m += 9;
+                cbatch[0] += xsp1 * a + xsp2 * b + u1;
+                cbatch[1] += xsp1 * c + xsp2 * d;
+                cbatch[2] += xsp1 * e + xsp2 * f;
+                cbatch[3] += ysp1 * a + ysp2 * b;
+                cbatch[4] += ysp1 * c + ysp2 * d + u1;
+                cbatch[5] += ysp1 * e + ysp2 * f;
+                cbatch[6] += zsp1 * a + zsp2 * b;
+                cbatch[7] += zsp1 * c + zsp2 * d;
+                cbatch[8] += zsp1 * e + zsp2 * f + u1;
             }
         }
     }
@@ -376,7 +377,6 @@ erd__sspp_pcgto_block (int nij, int nkl,
             qysub = y4;
             qzsub = z4;
         }
-        m = 0;
         for (ij = 0; ij < nij; ++ij)
         {
             pval = p[ij];
@@ -467,23 +467,21 @@ erd__sspp_pcgto_block (int nij, int nkl,
                 e = zps1 * f0 + zps2 * f1;
                 f = zps1 * f1 + zps2 * f2;
                 g = f1 * .5 * pqpinv;
-                batch[m + 0] = xsp1 * a + xsp2 * b + g;
-                batch[m + 1] = xsp1 * c + xsp2 * d;
-                batch[m + 2] = xsp1 * e + xsp2 * f;
-                batch[m + 3] = ysp1 * a + ysp2 * b;
-                batch[m + 4] = ysp1 * c + ysp2 * d + g;
-                batch[m + 5] = ysp1 * e + ysp2 * f;
-                batch[m + 6] = zsp1 * a + zsp2 * b;
-                batch[m + 7] = zsp1 * c + zsp2 * d;
-                batch[m + 8] = zsp1 * e + zsp2 * f + g;
-                m += 9;
+                cbatch[0] += xsp1 * a + xsp2 * b + g;
+                cbatch[1] += xsp1 * c + xsp2 * d;
+                cbatch[2] += xsp1 * e + xsp2 * f;
+                cbatch[3] += ysp1 * a + ysp2 * b;
+                cbatch[4] += ysp1 * c + ysp2 * d + g;
+                cbatch[5] += ysp1 * e + ysp2 * f;
+                cbatch[6] += zsp1 * a + zsp2 * b;
+                cbatch[7] += zsp1 * c + zsp2 * d;
+                cbatch[8] += zsp1 * e + zsp2 * f + g;
             }
         }
     }
     // 2     5   |  (AB|CD)  4-center   ppss
     else if (shellp == 2)
     {
-        m = 0;
         for (ij = 0; ij < nij; ++ij)
         {
             pval = p[ij];
@@ -571,16 +569,15 @@ erd__sspp_pcgto_block (int nij, int nkl,
                 e = zps1 * f0 + zsp2 * f1;
                 f = zps1 * f1 + zsp2 * f2;
                 g = u1 * (f0 + u0 * f1);
-                batch[m + 0] = xsp1 * a + xsp2 * b + g;
-                batch[m + 1] = xsp1 * c + xsp2 * d;
-                batch[m + 2] = xsp1 * e + xsp2 * f;
-                batch[m + 3] = ysp1 * a + ysp2 * b;
-                batch[m + 4] = ysp1 * c + ysp2 * d + g;
-                batch[m + 5] = ysp1 * e + ysp2 * f;
-                batch[m + 6] = zsp1 * a + zsp2 * b;
-                batch[m + 7] = zsp1 * c + zsp2 * d;
-                batch[m + 8] = zsp1 * e + zsp2 * f + g;
-                m += 9;
+                cbatch[0] += xsp1 * a + xsp2 * b + g;
+                cbatch[1] += xsp1 * c + xsp2 * d;
+                cbatch[2] += xsp1 * e + xsp2 * f;
+                cbatch[3] += ysp1 * a + ysp2 * b;
+                cbatch[4] += ysp1 * c + ysp2 * d + g;
+                cbatch[5] += ysp1 * e + ysp2 * f;
+                cbatch[6] += zsp1 * a + zsp2 * b;
+                cbatch[7] += zsp1 * c + zsp2 * d;
+                cbatch[8] += zsp1 * e + zsp2 * f + g;
             }
         }
     }

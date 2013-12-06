@@ -106,8 +106,8 @@
 int erd__1111_def_blocks (int zmax, int npgto1, int npgto2,
                           int npgto3, int npgto4,
                           int nij, int nkl, int nxyzt,
-                          int memory, int *ncsize,
-                          int *zcbatch, int *zpbatch, int *zwork, 
+                          int memory,
+                          int *zcbatch, 
                           int *znorm1, int *znorm2,
                           int *znorm3, int *znorm4,
                           int *zrho12, int *zrho34,
@@ -126,9 +126,10 @@ int erd__1111_def_blocks (int zmax, int npgto1, int npgto2,
     int zone4c;
     int npsize;
     int nwsize;
+    int ncsize;
    
     zone3 = npgto1 + npgto2 + npgto3 + npgto4 + nij + nkl;
-    *ncsize = nxyzt;
+    ncsize = nxyzt;
     
 /*             ...if the MEMORY keyword is activated, the routine */
 /*                will only determine the optimum and minimum flp */
@@ -138,15 +139,9 @@ int erd__1111_def_blocks (int zmax, int npgto1, int npgto2,
     mkl = nkl;
     if (memory)
     {
-        mijkl = mij * mkl;
-        mrskl = mkl;
-        npsize = nxyzt * (mijkl > mrskl ? mijkl : mrskl);
-        nwsize = npsize;
-        zone12 = npsize + *ncsize;
-        zone4b = (mij + mkl) * 5;
-        zone4c = nwsize;
-        zone4 = zone4b > zone4c ? zone4b : zone4c;
-        *ncsize = zone12 + zone3 + zone4;
+        zone12 = ncsize;
+        zone4 = (mij + mkl) * 5;
+        *zcbatch = zone12 + zone3 + zone4;
     }
     else
     {
@@ -155,7 +150,7 @@ int erd__1111_def_blocks (int zmax, int npgto1, int npgto2,
         mrskl = mkl;
         npsize = nxyzt * (mijkl > mrskl ? mijkl : mrskl);
         nwsize = npsize;
-        zone12 = npsize + *ncsize;
+        zone12 = npsize + ncsize;
         zone4b = (mij + mkl) * 5;
         zone4c = nwsize;
         zone4 = zone4b > zone4c ? zone4b : zone4c;
@@ -163,8 +158,7 @@ int erd__1111_def_blocks (int zmax, int npgto1, int npgto2,
                      
 /*             ...generate the memory allocation pointers. */
         *zcbatch = 0;
-        *zpbatch = *ncsize;
-        *znorm1 = *zpbatch + npsize;
+        *znorm1 = *zcbatch + ncsize;
         *znorm2 = *znorm1 + npgto1;
         *znorm3 = *znorm2 + npgto2;
         *znorm4 = *znorm3 + npgto3;
@@ -180,7 +174,6 @@ int erd__1111_def_blocks (int zmax, int npgto1, int npgto2,
         *zqy = *zqx + mkl;
         *zqz = *zqy + mkl;
         *zscqk2 = *zqz + mkl;
-        *zwork = *zp;
     }
 
     return 0;
