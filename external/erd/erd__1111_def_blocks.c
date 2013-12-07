@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <assert.h>
 
+#include "erd.h"
+
 
 /* ------------------------------------------------------------------------ */
 /*  OPERATION   : ERD__1111_DEF_BLOCKS */
