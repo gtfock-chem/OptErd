@@ -7,70 +7,6 @@
 #include "erd.h"
 
 
-int erd__e0f0_pcgto_block_ (int * nbatch, int * nint2d,
-                         int * atomic, int * atomab, int * atomcd,
-                         int * mij, int * mkl, int * mijkl,
-                         int * nij, int * nijbeg, int * nijend,
-                         int * nkl, int * nklbeg, int * nklend,
-                         int * ngqp, int * nmom, int * ngqscr,
-                         int * mgqijkl, int * npgtoa,
-                         int * npgtob, int * npgtoc, int * npgtod,
-                         int * nxyzet, int * nxyzft, int * nxyzp,
-                         int * nxyzq, int * shella, int * shellp,
-                         int * shellc, int * shellq, double * xa,
-                         double * ya, double * za, double * xb,
-                         double * yb, double * zb, double * xc,
-                         double * yc, double * zc, double * xd,
-                         double * yd, double * zd, double * abx,
-                         double * aby, double * abz, double * cdx,
-                         double * cdy, double * cdz,
-                         double * alphaa, double * alphab,
-                         double * alphac, double * alphad,
-                         double * ftable, int * mgrid,
-                         int * ngrid, double * tmax,
-                         double * tstep, double * tvstep,
-                         int * prima, int * primb, int * primc,
-                         int * primd, double * norma,
-                         double * normb, double * normc,
-                         double * normd, double * rhoab,
-                         double * rhocd, double * p, double * px,
-                         double * py, double * pz, double * pax,
-                         double * pay, double * paz,
-                         double * pinvhf, double * scalep,
-                         double * q, double * qx, double * qy,
-                         double * qz, double * qcx, double * qcy,
-                         double * qcz, double * qinvhf,
-                         double * scaleq, double * rts,
-                         double * wts, double * gqscr,
-                         double * tval, double * pqpinv,
-                         double * scalepq, double * b00,
-                         double * b01, double * b10,
-                         double * c00x, double * c00y,
-                         double * c00z, double * d00x,
-                         double * d00y, double * d00z,
-                         double * int2dx, double * int2dy,
-                         double * int2dz, double * batch)
-{
-    /* System generated locals */
-    int ftable_dim1, ftable_offset, i_1, i_2;
-
-    /* Builtin functions */
-    double sqrt (double);
-
-    static int i_, j, k, l, m, n;
-    static int ij, kl, g000, g010, g020, g030, g040, g050, g060;
-    static double pqx, pqy, pqz;
-
-    static double expa, expb, expc, expd, pval, qval;
-
-    static double pinv, qinv, pxval, pyval, pzval;
-    static int case2d;
-
-    static int caseat;
-
-    static double pscale, invers, pqmult, pqplus, rnpqsq;
-
-
 /* ------------------------------------------------------------------------ */
 /*  OPERATION   : ERD_E0F0_PCGTO_BLOCK */
 /*  MODULE      : ELECTRON REPULSION INTEGRALS DIRECT */
@@ -87,23 +23,16 @@ int erd__e0f0_pcgto_block_ (int * nbatch, int * nint2d,
 /*  DESCRIPTION : This operation calculates a batch of unnormed electron */
 /*                repulsion integrals between primitive cartesian */
 /*                gaussians for the shell quadruplet range: */
-
 /*                    [E0|F0]     , E = A to P, F = C to Q */
 /*                           ijkl */
-
 /*                and the block of ij and kl exponent pairs. The total */
 /*                number of eris generated here is thus given by the */
 /*                total number of cartesian monomials NXYZET*NXYZFT */
 /*                times the total number of exponent pairs MIJKL in the */
 /*                present block. */
-
 /*                On exit, the batch elements will be stored as: */
-
 /*                             batch (kl,ij,nxyzt) */
-
-
 /*                  Input: */
-
 /*                    NBATCH       =  size of the primitive cartesian */
 /*                                    integral batch */
 /*                    NINT2D       =  space needed for each of the 2D */
@@ -233,33 +162,71 @@ int erd__e0f0_pcgto_block_ (int * nbatch, int * nint2d,
 /*                    INT2Dx       =  will hold all current 2D integrals */
 /*                                    for each cartesian component */
 /*                                    (x = X,Y,Z) */
-
 /*                  Output: */
-
 /*                    BATCH        =  current batch of primitive */
 /*                                    cartesian [E0|F0] integrals */
-
-
-
-/*  AUTHOR      : Norbert Flocke */
 /* ------------------------------------------------------------------------ */
-
-
-/*             ...include files and declare variables. */
-
-
-
-
-/* ------------------------------------------------------------------------ */
-
-
-/*             ...predetermine 2D integral case. This is done in */
-/*                order to distinguish the P- and Q-shell combinations */
-/*                for efficient evaluation of the 2D integrals and */
-/*                their VRR coefficients. The cases distinguished */
-/*                are summarized in the following table, indicating */
-/*                the value of CASE2D: */
-
+int erd__e0f0_pcgto_block (int atomab, int atomcd,
+                           int nij, int nkl,
+                           int ngqp, int nmom,
+                           int nxyzet, int nxyzft,
+                           int nxyzp, int nxyzq,
+                           int shella, int shellp,
+                           int shellc, int shellq,
+                           double xa, double ya, double za,
+                           double xb, double yb, double zb,
+                           double xc, double yc, double zc,
+                           double xd, double yd, double zd,
+                           double *alphaa, double *alphab,
+                           double *alphac, double *alphad,
+                           double *cca, double *ccb,
+                           double *ccc, double *ccd,
+                           double *ftable, int mgrid, int ngrid,
+                           double tmax, double tstep, double tvstep,
+                           int *prima, int *primb,
+                           int *primc, int *primd,
+                           double *norma, double *normb,
+                           double *normc, double *normd,
+                           double *rhoab, double *rhocd,
+                           double *p, double *px,
+                           double *py, double *pz,
+                           double *pax, double *pay, double *paz,
+                           double *pinvhf, double *scalep, double *q,
+                           double *qx, double *qy, double *qz,
+                           double *qcx, double *qcy, double *qcz,
+                           double *qinvhf, double *scaleq,
+                           double *rts, double *wts,
+                           double *gqscr, double *tval,
+                           double *pqpinv, double *scalepq,
+                           double *b00, double *b01, double *b10,
+                           double *c00x, double *c00y, double *c00z,
+                           double *d00x, double *d00y, double *d00z,
+                           double *int2dx, double *int2dy,
+                           double *int2dz, double *batch)
+{
+    int i, j, k, l, m, n;
+    int ij, kl, g000, g010, g020, g030, g040, g050, g060;
+    double pqx, pqy, pqz;
+    double expa, expb, expc, expd, pval, qval;
+    double pinv, qinv, pxval, pyval, pzval;
+    int case2d;
+    double pscale, invers, pqmult, pqplus;
+    int nijkl;
+    double abx;
+    double aby;
+    double abz;
+    double cdx;
+    double cdy;
+    double cdz;
+    int mgqijkl;
+    
+    
+/*            ...predetermine 2D integral case. This is done in */
+/*               order to distinguish the P- and Q-shell combinations */
+/*               for efficient evaluation of the 2D integrals and */
+/*               their VRR coefficients. The cases distinguished */
+/*               are summarized in the following table, indicating */
+/*               the value of CASE2D: */
 /*                                Q-shell */
 /*                              s    p   >p */
 /*                            --------------- */
@@ -270,10 +237,6 @@ int erd__e0f0_pcgto_block_ (int * nbatch, int * nint2d,
 /*                           | */
 /*                        >p |  3    6    9 */
 /*                           | */
-
-
-
-    /* Parameter adjustments */
     --batch;
     --int2dz;
     --int2dy;
@@ -325,307 +288,118 @@ int erd__e0f0_pcgto_block_ (int * nbatch, int * nint2d,
     --alphac;
     --normd;
     --alphad;
-    ftable_dim1 = *mgrid - 0 + 1;
-    ftable_offset = 0 + ftable_dim1 * 0;
-    ftable -= ftable_offset;
-
-    /* Function Body */
-    case2d = MIN(2, *shellq) * 3 + MIN(2, *shellp) + 1;
-
-
+    
 /*             ...predetermine in 'K2' loops the quantities associated */
 /*                with the A,B-part and C,D-part. Set the atom equality */
 /*                case CASEAT here to exploit simplifications due to */
 /*                center equalities later on: */
-
 /*                     CASEAT = 1  -->    atomic (AA|AA) integrals */
 /*                            = 2  -->  2-center (AA|CC) integrals */
 /*                            = 3  -->  3-center (AB|CC) integrals */
 /*                            = 4  -->  3-center (AA|CD) integrals */
 /*                            = 5  -->  4-center (AB|CD) integrals */
-
-
-    caseat = 5;
-    if (*atomab)
+    case2d = MIN(2, shellq) * 3 + MIN(2, shellp) + 1;
+    nijkl = nij * nkl;
+    mgqijkl = ngqp * nijkl;
+    abx = xa - xb;
+    aby = ya - yb;
+    abz = za - zb;
+    cdx = xc - xd;
+    cdy = yc - yd;
+    cdz = zc - zd; 
+        
+    for (ij = 1; ij <= nij; ++ij)
     {
-        m = 0;
-        i_1 = *nijend;
-        for (ij = *nijbeg; ij <= i_1; ++ij)
-        {
-            ++m;
-            i_ = prima[m];
-            j = primb[m];
-            pval = alphaa[i_] + alphab[j];
-            p[m] = pval;
-            px[m] = *xa;
-            py[m] = *ya;
-            pz[m] = *za;
-            pinvhf[m] = .5 / pval;
-            scalep[m] = norma[i_] * normb[j];
-/* L100: */
-        }
-        --caseat;
-    }
-    else
-    {
-        m = 0;
-        i_1 = *nijend;
-        for (ij = *nijbeg; ij <= i_1; ++ij)
-        {
-            ++m;
-            i_ = prima[m];
-            j = primb[m];
-            expa = alphaa[i_];
-            expb = alphab[j];
-            pval = expa + expb;
-            pinv = 1. / pval;
-            p[m] = pval;
-            pval = -expb * pinv;
-            pax[m] = pval * *abx;
-            pay[m] = pval * *aby;
-            paz[m] = pval * *abz;
-            px[m] = pax[m] + *xa;
-            py[m] = pay[m] + *ya;
-            pz[m] = paz[m] + *za;
-            pinvhf[m] = pinv * .5;
-            scalep[m] = norma[i_] * normb[j] * rhoab[ij];
-/* L110: */
-        }
-    }
-    if (*atomcd)
-    {
-        m = 0;
-        i_1 = *nklend;
-        for (kl = *nklbeg; kl <= i_1; ++kl)
-        {
-            ++m;
-            k = primc[m];
-            l = primd[m];
-            qval = alphac[k] + alphad[l];
-            q[m] = qval;
-            qx[m] = *xc;
-            qy[m] = *yc;
-            qz[m] = *zc;
-            qinvhf[m] = .5 / qval;
-            scaleq[m] = normc[k] * normd[l];
-/* L200: */
-        }
-        caseat += -2;
-    }
-    else
-    {
-        m = 0;
-        i_1 = *nklend;
-        for (kl = *nklbeg; kl <= i_1; ++kl)
-        {
-            ++m;
-            k = primc[m];
-            l = primd[m];
-            expc = alphac[k];
-            expd = alphad[l];
-            qval = expc + expd;
-            qinv = 1. / qval;
-            q[m] = qval;
-            qval = -expd * qinv;
-            qcx[m] = qval * *cdx;
-            qcy[m] = qval * *cdy;
-            qcz[m] = qval * *cdz;
-            qx[m] = qcx[m] + *xc;
-            qy[m] = qcy[m] + *yc;
-            qz[m] = qcz[m] + *zc;
-            qinvhf[m] = qinv * .5;
-            scaleq[m] = normc[k] * normd[l] * rhocd[kl];
-/* L220: */
-        }
-    }
-    if (*atomic)
-    {
-        --caseat;
+        i = prima[ij];
+        j = primb[ij];
+        expa = alphaa[i];
+        expb = alphab[j];
+        pval = expa + expb;
+        pinv = 1. / pval;
+        p[ij] = pval;
+        pval = -expb * pinv;
+        pax[ij] = pval * abx;
+        pay[ij] = pval * aby;
+        paz[ij] = pval * abz;
+        px[ij] = pax[ij] + xa;
+        py[ij] = pay[ij] + ya;
+        pz[ij] = paz[ij] + za;
+        pinvhf[ij] = pinv * 0.5;
+        scalep[ij] = norma[i] * normb[j] * rhoab[ij];
     }
 
+    for (kl = 1; kl <= nkl; ++kl)
+    {
+        k = primc[kl];
+        l = primd[kl];
+        expc = alphac[k];
+        expd = alphad[l];
+        qval = expc + expd;
+        qinv = 1.0 / qval;
+        q[kl] = qval;
+        qval = -expd * qinv;
+        qcx[kl] = qval * cdx;
+        qcy[kl] = qval * cdy;
+        qcz[kl] = qval * cdz;
+        qx[kl] = qcx[kl] + xc;
+        qy[kl] = qcy[kl] + yc;
+        qz[kl] = qcz[kl] + zc;
+        qinvhf[kl] = qinv * 0.5;
+        scaleq[kl] = normc[k] * normd[l] * rhocd[kl];
+    }
 
 /*             ...the 'K4' loop over all ij- and kl-exponent pairs */
 /*                in present ij and kl block to calculate all T's */
 /*                and scaling factors for the cases: */
-
 /*                     CASEAT = 1  -->    atomic (AA|AA) integrals */
 /*                            = 2  -->  2-center (AA|CC) integrals */
 /*                            = 3  -->  3-center (AB|CC) integrals */
 /*                            = 4  -->  3-center (AA|CD) integrals */
 /*                            = 5  -->  4-center (AB|CD) integrals */
-
 /*                4-center (AB|CD) integrals are checked first */
 /*                (most common occurence in large systems). */
-
-
-    if (caseat == 5)
+    m = 1;
+    for (ij = 1; ij <= nij; ++ij)
     {
-        m = 1;
-        i_1 = *mij;
-        for (ij = 1; ij <= i_1; ++ij)
+        pval = p[ij];
+        pxval = px[ij];
+        pyval = py[ij];
+        pzval = pz[ij];
+        pscale = scalep[ij];
+        for (kl = 1; kl <= nkl; ++kl)
         {
-            pval = p[ij];
-            pxval = px[ij];
-            pyval = py[ij];
-            pzval = pz[ij];
-            pscale = scalep[ij];
-            i_2 = *mkl;
-            for (kl = 1; kl <= i_2; ++kl)
-            {
-                qval = q[kl];
-                pqmult = pval * qval;
-                pqplus = pval + qval;
-                invers = 1. / pqplus;
-                pqx = pxval - qx[kl];
-                pqy = pyval - qy[kl];
-                pqz = pzval - qz[kl];
-                tval[m] = (pqx * pqx + pqy * pqy + pqz * pqz) * pqmult *
-                    invers;
-                pqpinv[m] = invers;
-                scalepq[m] = pscale * scaleq[kl] / (pqmult * sqrt (pqplus));
-                ++m;
-/* L5500: */
-            }
-/* L5000: */
+            qval = q[kl];
+            pqmult = pval * qval;
+            pqplus = pval + qval;
+            invers = 1. / pqplus;
+            pqx = pxval - qx[kl];
+            pqy = pyval - qy[kl];
+            pqz = pzval - qz[kl];
+            tval[m] = (pqx * pqx + pqy * pqy + pqz * pqz) * pqmult * invers;
+            pqpinv[m] = invers;
+            scalepq[m] = pscale * scaleq[kl] / (pqmult * sqrt (pqplus));
+            ++m;
         }
     }
-    else if (caseat == 4)
-    {
-        m = 1;
-        i_1 = *mij;
-        for (ij = 1; ij <= i_1; ++ij)
-        {
-            pval = p[ij];
-            pscale = scalep[ij];
-            i_2 = *mkl;
-            for (kl = 1; kl <= i_2; ++kl)
-            {
-                qval = q[kl];
-                pqmult = pval * qval;
-                pqplus = pval + qval;
-                invers = 1. / pqplus;
-                pqx = *xa - qx[kl];
-                pqy = *ya - qy[kl];
-                pqz = *za - qz[kl];
-                tval[m] = (pqx * pqx + pqy * pqy + pqz * pqz) * pqmult *
-                    invers;
-                pqpinv[m] = invers;
-                scalepq[m] = pscale * scaleq[kl] / (pqmult * sqrt (pqplus));
-                ++m;
-/* L4400: */
-            }
-/* L4000: */
-        }
-    }
-    else if (caseat == 3)
-    {
-        m = 1;
-        i_1 = *mij;
-        for (ij = 1; ij <= i_1; ++ij)
-        {
-            pval = p[ij];
-            pxval = px[ij];
-            pyval = py[ij];
-            pzval = pz[ij];
-            pqx = pxval - *xc;
-            pqy = pyval - *yc;
-            pqz = pzval - *zc;
-            rnpqsq = pqx * pqx + pqy * pqy + pqz * pqz;
-            pscale = scalep[ij];
-            i_2 = *mkl;
-            for (kl = 1; kl <= i_2; ++kl)
-            {
-                qval = q[kl];
-                pqmult = pval * qval;
-                pqplus = pval + qval;
-                invers = 1. / pqplus;
-                tval[m] = rnpqsq * pqmult * invers;
-                pqpinv[m] = invers;
-                scalepq[m] = pscale * scaleq[kl] / (pqmult * sqrt (pqplus));
-                ++m;
-/* L3300: */
-            }
-/* L3000: */
-        }
-    }
-    else if (caseat == 2)
-    {
-        pqx = *xa - *xc;
-        pqy = *ya - *yc;
-        pqz = *za - *zc;
-        rnpqsq = pqx * pqx + pqy * pqy + pqz * pqz;
-        m = 1;
-        i_1 = *mij;
-        for (ij = 1; ij <= i_1; ++ij)
-        {
-            pval = p[ij];
-            pscale = scalep[ij];
-            i_2 = *mkl;
-            for (kl = 1; kl <= i_2; ++kl)
-            {
-                qval = q[kl];
-                pqmult = pval * qval;
-                pqplus = pval + qval;
-                invers = 1. / pqplus;
-                tval[m] = rnpqsq * pqmult * invers;
-                pqpinv[m] = invers;
-                scalepq[m] = pscale * scaleq[kl] / (pqmult * sqrt (pqplus));
-                ++m;
-/* L2200: */
-            }
-/* L2000: */
-        }
-    }
-    else
-    {
-        m = 1;
-        i_1 = *mij;
-        for (ij = 1; ij <= i_1; ++ij)
-        {
-            pval = p[ij];
-            pscale = scalep[ij];
-            i_2 = *mkl;
-            for (kl = 1; kl <= i_2; ++kl)
-            {
-                qval = q[kl];
-                pqplus = pval + qval;
-                tval[m] = 0.;
-                pqpinv[m] = 1. / pqplus;
-                scalepq[m] = pscale * scaleq[kl] / (pval * qval * sqrt (pval +
-                                                                        qval));
-                ++m;
-/* L1100: */
-            }
-/* L1000: */
-        }
-    }
-
 
 /*             ...if necessary, expand the scaling array size from */
 /*                MIJKL to MGQIJKL starting from the last elements. */
-
-
-    if (*ngqp > 1)
+    if (ngqp > 1)
     {
-        n = *mgqijkl + 1;
-        for (m = *mijkl; m >= 1; --m)
+        n = mgqijkl + 1;
+        for (m = nijkl; m >= 1; --m)
         {
-            i_1 = *ngqp;
-            for (i_ = 1; i_ <= i_1; ++i_)
+            for (i = 1; i <= ngqp; ++i)
             {
-                scalepq[n - i_] = scalepq[m];
-/* L20: */
+                scalepq[n - i] = scalepq[m];
             }
-            n -= *ngqp;
-/* L10: */
+            n -= ngqp;
         }
     }
-
 
 /*             ...determine memory allocation offsets for the scratch */
 /*                arrays used to calculate the quadrature roots + */
 /*                weights: */
-
 /*                   G000 = offset for A coefficients (Jacobi/Laguerre) */
 /*                   G010 = offset for B coefficients (Jacobi/Laguerre) */
 /*                   G020 = offset for moments (Jacobi/Laguerre) */
@@ -635,40 +409,30 @@ int erd__e0f0_pcgto_block_ (int * nbatch, int * nint2d,
 /*                          evaluation of symmetric termat */
 /*                   G060 = offset for second row intermediates during */
 /*                          evaluation of symmetric termat */
-
-
     g000 = 1;
-    g010 = g000 + *nmom;
-    g020 = g010 + *nmom - 1;
-    g030 = g020 + *nmom;
-    g040 = g030 + *ngqp;
-    g050 = g040 + *ngqp;
-    g060 = g050 + *nmom;
-
+    g010 = g000 + nmom;
+    g020 = g010 + nmom - 1;
+    g030 = g020 + nmom;
+    g040 = g030 + ngqp;
+    g050 = g040 + ngqp;
+    g060 = g050 + nmom;
 
 /*             ...calculate all roots and weights. Array B00 is passed */
 /*                as a scratch array. */
-
-
-    erd__rys_roots_weights_ (mijkl, mgqijkl, ngqp, nmom, &tval[1], &b00[1],
-                              &ftable[ftable_offset], mgrid, ngrid, tmax,
-                              tstep, tvstep, &gqscr[g000], &gqscr[g010],
-                              &gqscr[g020], &gqscr[g030], &gqscr[g040],
-                              &gqscr[g050], &gqscr[g060], &rts[1], &wts[1]);
-
+    erd__rys_roots_weights_ (&nijkl, &mgqijkl, &ngqp, &nmom, &tval[1], &b00[1],
+                             ftable, &mgrid, &ngrid,
+                             &tmax, &tstep, &tvstep, &gqscr[g000], &gqscr[g010],
+                             &gqscr[g020], &gqscr[g030], &gqscr[g040],
+                             &gqscr[g050], &gqscr[g060], &rts[1], &wts[1]);
 
 /*             ...perform the following steps: */
-
 /*                1) generate all VRR coefficients. */
-
 /*                2) construct all 2D PQ x,y,z integrals using all the */
 /*                   weights and all the generated VRR coefficients for */
 /*                   all exponent quadruples. */
-
 /*                3) assemble the complete [E0|F0] batch for all ij and */
 /*                   kl pairs using the 2D integrals. Arrays B00 and B01 */
 /*                   are passed as scratch arrays. */
-
 /*                The last step 3) is the most compute intensive and */
 /*                separate routines are provided depending on presence */
 /*                of s-shells. The gainings are in the innermost loops */
@@ -676,80 +440,40 @@ int erd__e0f0_pcgto_block_ (int * nbatch, int * nint2d,
 /*                for the special s-shell cases. Note, that the case */
 /*                in which both P- and Q-shells are s-shells cannot */
 /*                arise, as this case is dealt with in separate routines. */
-
-
-    if (!(*atomic))
+    erd__2d_coefficients_ (&nij, &nkl, &nijkl, &ngqp, &mgqijkl, &atomab,
+                           &atomcd, &p[1], &q[1], &px[1], &py[1], &pz[1],
+                           &qx[1], &qy[1], &qz[1], &pax[1], &pay[1],
+                           &paz[1], &qcx[1], &qcy[1], &qcz[1],
+                           &pinvhf[1], &qinvhf[1], &pqpinv[1], &rts[1],
+                           &case2d, &b00[1], &b01[1], &b10[1], &c00x[1],
+                           &c00y[1], &c00z[1], &d00x[1], &d00y[1],
+                           &d00z[1]);
+    erd__2d_pq_integrals_ (&shellp, &shellq, &mgqijkl, &wts[1], &b00[1],
+                           &b01[1], &b10[1], &c00x[1], &c00y[1],
+                           &c00z[1], &d00x[1], &d00y[1], &d00z[1],
+                           &case2d, &int2dx[1], &int2dy[1], &int2dz[1]);
+    if (shellq == 0)
     {
-        erd__2d_coefficients_ (mij, mkl, mijkl, ngqp, mgqijkl, atomab,
-                                atomcd, &p[1], &q[1], &px[1], &py[1], &pz[1],
-                                &qx[1], &qy[1], &qz[1], &pax[1], &pay[1],
-                                &paz[1], &qcx[1], &qcy[1], &qcz[1],
-                                &pinvhf[1], &qinvhf[1], &pqpinv[1], &rts[1],
-                                &case2d, &b00[1], &b01[1], &b10[1], &c00x[1],
-                                &c00y[1], &c00z[1], &d00x[1], &d00y[1],
-                                &d00z[1]);
-        erd__2d_pq_integrals_ (shellp, shellq, mgqijkl, &wts[1], &b00[1],
-                                &b01[1], &b10[1], &c00x[1], &c00y[1],
-                                &c00z[1], &d00x[1], &d00y[1], &d00z[1],
-                                &case2d, &int2dx[1], &int2dy[1], &int2dz[1]);
-        if (*shellq == 0)
-        {
-            erd__int2d_to_e000_ (shella, shellp, ngqp, mijkl, mgqijkl,
-                                  nxyzet, nxyzp, &int2dx[1], &int2dy[1],
-                                  &int2dz[1], &b00[1], &b01[1], &scalepq[1],
-                                  &batch[1]);
-        }
-        else if (*shellp == 0)
-        {
-            erd__int2d_to_e000_ (shellc, shellq, ngqp, mijkl, mgqijkl,
-                                  nxyzft, nxyzq, &int2dx[1], &int2dy[1],
-                                  &int2dz[1], &b00[1], &b01[1], &scalepq[1],
-                                  &batch[1]);
-        }
-        else
-        {
-            erd__int2d_to_e0f0_ (shella, shellp, shellc, shellq, ngqp, mijkl,
-                                  mgqijkl, nxyzet, nxyzft, nxyzp, nxyzq,
-                                  &int2dx[1], &int2dy[1], &int2dz[1], &b00[1],
-                                  &b01[1], &scalepq[1], &batch[1]);
-        }
+        erd__int2d_to_e000_ (&shella, &shellp, &ngqp, &nijkl, &mgqijkl,
+                             &nxyzet, &nxyzp, &int2dx[1], &int2dy[1],
+                             &int2dz[1], &b00[1], &b01[1], &scalepq[1],
+                             &batch[1]);
+    }
+    else if (shellp == 0)
+    {
+        erd__int2d_to_e000_ (&shellc, &shellq, &ngqp, &nijkl, &mgqijkl,
+                             &nxyzft, &nxyzq, &int2dx[1], &int2dy[1],
+                             &int2dz[1], &b00[1], &b01[1], &scalepq[1],
+                             &batch[1]);
     }
     else
     {
-        erd__2d_atom_coefficients_ (mij, mkl, mijkl, ngqp, mgqijkl, &p[1],
-                                     &pinvhf[1], &qinvhf[1], &pqpinv[1],
-                                     &rts[1], &case2d, &b00[1], &b01[1],
-                                     &b10[1]);
-        erd__2d_atom_pq_integrals_ (shellp, shellq, mgqijkl, &wts[1],
-                                     &b00[1], &b01[1], &b10[1], &case2d,
-                                     &int2dx[1], &int2dy[1], &int2dz[1]);
-        if (*shellq == 0)
-        {
-            erd__atom_int2d_to_e000_ (shella, shellp, ngqp, mijkl, mgqijkl,
-                                       nxyzet, nxyzp, &int2dx[1], &int2dy[1],
-                                       &int2dz[1], &b00[1], &b01[1],
-                                       &scalepq[1], &batch[1]);
-        }
-        else if (*shellp == 0)
-        {
-            erd__atom_int2d_to_e000_ (shellc, shellq, ngqp, mijkl, mgqijkl,
-                                       nxyzft, nxyzq, &int2dx[1], &int2dy[1],
-                                       &int2dz[1], &b00[1], &b01[1],
-                                       &scalepq[1], &batch[1]);
-        }
-        else
-        {
-            erd__atom_int2d_to_e0f0_ (shella, shellp, shellc, shellq, ngqp,
-                                       mijkl, mgqijkl, nxyzet, nxyzft, nxyzp,
-                                       nxyzq, &int2dx[1], &int2dy[1],
-                                       &int2dz[1], &b00[1], &b01[1],
-                                       &scalepq[1], &batch[1]);
-        }
+        erd__int2d_to_e0f0_ (&shella, &shellp, &shellc, &shellq, &ngqp, &nijkl,
+                             &mgqijkl, &nxyzet, &nxyzft, &nxyzp, &nxyzq,
+                             &int2dx[1], &int2dy[1], &int2dz[1], &b00[1],
+                             &b01[1], &scalepq[1], &batch[1]);
     }
-
-
-/*             ...ready! */
-
+    
 
     return 0;
-}                               /* erd_e0f0_pcgto_block_ */
+}

@@ -159,8 +159,6 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
                 int spheric, int screen, int *icore,
                 int *nbatch, int *nfirst, double *zcore)
 {
-    int ftable_dim1, ftable_offset;
-
     int nxyzhrr;   
     int in;
     double xa, ya, za, xb, yb, zb, xc, yc, zc, xd, yd, zd;
@@ -181,7 +179,7 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
     int zrts, zwts;     
     int lexp1, lexp2, lexp3, lexp4;
     int zbase;
-    int mijkl, ihscr, iused, lexpa, lexpb, lexpc;
+    int ihscr, iused, lexpa, lexpb, lexpc;
     int swap12;
     int lexpd, ixoff[4];
     int swap34;
@@ -189,7 +187,7 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
         nrowc, nrowd;
     int empty;
     int ztval, zhrot, nxyza, nxyzb, nxyzc, nxyzd, zwork, nint2d,
-        nxyzp, nxyzq, nxyzt, zscpk2, zscqk2, nijbeg, nklbeg;
+        nxyzp, nxyzq, nxyzt, zscpk2, zscqk2;
     int atomab, atomcd;
     int indexa, indexb, indexc, indexd;
     int atomic;
@@ -210,7 +208,7 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
     int equalab;
     int equalcd;
     int zcbatch, nabcoor, ncdcoor, npgtoab, zpbatch,
-        mgqijkl, npgtocd;
+        npgtocd;
     int ncolhrr;
     int mxshell, isnrowa, isnrowb, isnrowc, isnrowd, zpinvhf,
         notmove, zqinvhf, nrothrr, nrowhrr;
@@ -218,10 +216,6 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
 
     --icore;
     --zcore;
-    ftable_dim1 = mgrid - 0 + 1;
-    ftable_offset = 0 + ftable_dim1 * 0;
-    ftable -= ftable_offset;
-
 /*             ...fix the A,B,C,D labels from the 1,2,3,4 ones. */
 /*                Calculate the relevant data for the A,B,C,D batch of */
 /*                integrals. */
@@ -296,7 +290,7 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
                           rnabsq, rncdsq, PREFACT,
                           &alpha[lexpa], &alpha[lexpb],
                           &alpha[lexpc], &alpha[lexpd],
-                          &ftable[ftable_offset], mgrid, ngrid,
+                          ftable, mgrid, ngrid,
                           tmax, tstep, tvstep,
                           screen, &empty, &nij, &nkl,
                           &icore[iprima], &icore[iprimb], &icore[iprimc],
@@ -343,40 +337,36 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
 /*                over ij and kl pairs and add to final contracted */
 /*                (e0|f0). The keyword REORDER indicates, if the */
 /*                primitive [e0|f0] blocks need to be transposed */
-/*                before being contracted. */
-    nijbeg = 1;
-    nklbeg = 1;
-    mijkl = nij * nkl;
-    mgqijkl = ngqp * mijkl;
-    erd__e0f0_pcgto_block_ (&npsize, &nint2d, &atomic, &atomab, &atomcd,
-                            &nij, &nkl, &mijkl, &nij, &nijbeg, &nij, &nkl,
-                            &nklbeg, &nkl, &ngqp, &nmom, &ngqscr,
-                            &mgqijkl, &npgtoa, &npgtob, &npgtoc, &npgtod,
-                            &nxyzet, &nxyzft, &nxyzp, &nxyzq, &shella,
-                            &shellp, &shellc, &shellq, &xa, &ya, &za, &xb,
-                            &yb, &zb, &xc, &yc, &zc, &xd, &yd, &zd, &abx,
-                            &aby, &abz, &cdx, &cdy, &cdz, &alpha[lexpa],
-                            &alpha[lexpb], &alpha[lexpc], &alpha[lexpd],
-                            &ftable[ftable_offset], &mgrid, &ngrid, &tmax,
-                            &tstep, &tvstep, &icore[iprima],
-                            &icore[iprimb],
-                            &icore[iprimc],
-                            &icore[iprimd], &zcore[znorma],
-                            &zcore[znormb], &zcore[znormc], &zcore[znormd],
-                            &zcore[zrhoab], &zcore[zrhocd], &zcore[zp],
-                            &zcore[zpx], &zcore[zpy], &zcore[zpz],
-                            &zcore[zpax], &zcore[zpay], &zcore[zpaz],
-                            &zcore[zpinvhf], &zcore[zscpk2], &zcore[zq],
-                            &zcore[zqx], &zcore[zqy], &zcore[zqz],
-                            &zcore[zqcx], &zcore[zqcy], &zcore[zqcz],
-                            &zcore[zqinvhf], &zcore[zscqk2], &zcore[zrts],
-                            &zcore[zwts], &zcore[zgqscr], &zcore[ztval],
-                            &zcore[zpqpinv], &zcore[zscpqk4], &zcore[zb00],
-                            &zcore[zb01], &zcore[zb10], &zcore[zc00x],
-                            &zcore[zc00y], &zcore[zc00z], &zcore[zd00x],
-                            &zcore[zd00y], &zcore[zd00z], &zcore[zint2dx],
-                            &zcore[zint2dy], &zcore[zint2dz],
-                            &zcore[zpbatch]);
+/*                before being contracted. */    
+    erd__e0f0_pcgto_block (atomab, atomcd, nij, nkl, ngqp, nmom,
+                           nxyzet, nxyzft, nxyzp, nxyzq,
+                           shella, shellp, shellc, shellq,
+                           xa, ya, za, xb, yb, zb,
+                           xc, yc, zc, xd, yd, zd,
+                           &alpha[lexpa], &alpha[lexpb],
+                           &alpha[lexpc], &alpha[lexpd],
+                           &cc[lcca], &cc[lccb], &cc[lccc],&cc[lccd],
+                           ftable, mgrid, ngrid,
+                           tmax, tstep, tvstep,
+                           &icore[iprima], &icore[iprimb],
+                           &icore[iprimc], &icore[iprimd],
+                           &zcore[znorma], &zcore[znormb],
+                           &zcore[znormc], &zcore[znormd],
+                           &zcore[zrhoab], &zcore[zrhocd],
+                           &zcore[zp], &zcore[zpx], &zcore[zpy], &zcore[zpz],
+                           &zcore[zpax], &zcore[zpay], &zcore[zpaz],
+                           &zcore[zpinvhf], &zcore[zscpk2],
+                           &zcore[zq], &zcore[zqx], &zcore[zqy], &zcore[zqz],
+                           &zcore[zqcx], &zcore[zqcy], &zcore[zqcz],
+                           &zcore[zqinvhf], &zcore[zscqk2],
+                           &zcore[zrts], &zcore[zwts],
+                           &zcore[zgqscr], &zcore[ztval],
+                           &zcore[zpqpinv], &zcore[zscpqk4],
+                           &zcore[zb00], &zcore[zb01], &zcore[zb10],
+                           &zcore[zc00x], &zcore[zc00y], &zcore[zc00z],
+                           &zcore[zd00x], &zcore[zd00y], &zcore[zd00z],
+                           &zcore[zint2dx], &zcore[zint2dy], &zcore[zint2dz],
+                           &zcore[zpbatch]);
 
     erd__ctr_4index_block (nxyzt, nij, nkl,
                            &cc[lcca], &cc[lccb], &cc[lccc],&cc[lccd],
