@@ -68,8 +68,8 @@ int erd__prepare_ctr (int nij, int nkl,
                       int shella, int shellb,
                       int shellc, int shelld,
                       double *alphaa, double *alphab,
-                      double *alphac, double *alphad, double spnorm,
-                      int equalab, int equalcd, double *rho,
+                      double *alphac, double *alphad,
+                      double spnorm, double *rho,
                       double *norma, double *normb,
                       double *normc, double *normd,
                       double *rhoab, double *rhocd)
@@ -100,7 +100,7 @@ int erd__prepare_ctr (int nij, int nkl,
     }
 
     // normalize a and b
-    power = (double)shella * 0.5 + 0.75;
+    power = (double) shella *0.5 + 0.75;
     for (n = 0; n < npgtoa; n++)
     {
         if (alphaa[n] == 0.0)
@@ -112,28 +112,21 @@ int erd__prepare_ctr (int nij, int nkl,
             norma[n] = pow (alphaa[n], power);
         }
     }
-    if (equalab == 1)
+    power = (double) shellb *0.5 + 0.75;
+    for (n = 0; n < npgtob; n++)
     {
-        memcpy (normb, norma, sizeof(double) * npgtoa);
-    }
-    else
-    {
-        power = (double)shellb * 0.5 + 0.75;
-        for (n = 0; n < npgtob; n++)
+        if (alphab[n] == 0.0)
         {
-            if (alphab[n] == 0.0)
-            {
-                normb[n] = 1.0;
-            }
-            else
-            {
-                normb[n] = pow (alphab[n], power);
-            }
+            normb[n] = 1.0;
+        }
+        else
+        {
+            normb[n] = pow (alphab[n], power);
         }
     }
 
     // c and d
-    power = (double)shellc * 0.5 + 0.75;
+    power = (double) shellc *0.5 + 0.75;
     for (n = 0; n < npgtoc; n++)
     {
         if (alphac[n] == 0.0)
@@ -145,25 +138,18 @@ int erd__prepare_ctr (int nij, int nkl,
             normc[n] = pow (alphac[n], power);
         }
     }
-    if (equalcd == 1)
+    power = (double) shelld *0.5 + 0.75;
+    for (n = 0; n < npgtod; n++)
     {
-        memcpy (normd, normc, sizeof(double) * npgtoc);
-    }
-    else
-    {
-        power = (double)shelld * 0.5 + 0.75;
-        for (n = 0; n < npgtod; n++)
+        if (alphad[n] == 0.0)
         {
-            if (alphad[n] == 0.0)
-            {
-                normd[n] = 1.0;
-            }
-            else
-            {
-                normd[n] = pow (alphad[n], power);
-            }
+            normd[n] = 1.0;
         }
-    }    
+        else
+        {
+            normd[n] = pow (alphad[n], power);
+        }
+    }
 
 /*             ...rescale one of the A,B,C,D norms, which has the */
 /*                least number of elements. */

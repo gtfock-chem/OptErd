@@ -284,7 +284,6 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
     iprimc = iprimb + npgtoab;
     iprimd = iprimc + npgtocd;
     erd__set_ij_kl_pairs (npgtoa, npgtob, npgtoc, npgtod,
-                          atomab, atomcd, equalab, equalcd,
                           xa, ya, za, xb, yb, zb,
                           xc, yc, zc, xd, yd, zd,
                           rnabsq, rncdsq, PREFACT,
@@ -328,7 +327,7 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
                       shella, shellb, shellc, shelld,
                       &alpha[lexpa], &alpha[lexpb],
                       &alpha[lexpc], &alpha[lexpd], spnorm,
-                      equalab, equalcd, &zcore[1],
+                      &zcore[1],
                       &zcore[znorma], &zcore[znormb],
                       &zcore[znormc], &zcore[znormd],
                       &zcore[zrhoab], &zcore[zrhocd]);

@@ -196,7 +196,6 @@ int erd__1111_csgto (int zmax, int npgto1, int npgto2,
         spnorm += spnorm;
     }
     erd__set_ij_kl_pairs  (npgto1, npgto2, npgto3, npgto4,
-                           0, 0, 0, 0,
                            x1, y1, z1, x2, y2, z2,
                            x3, y3, z3, x4, y4, z4,
                            rn12sq, rn34sq, PREFACT,
@@ -229,8 +228,8 @@ int erd__1111_csgto (int zmax, int npgto1, int npgto2,
                       npgto1, npgto2, npgto3, npgto4,
                       shell1, shell2, shell3, shell4,
                       &alpha[lexp1], &alpha[lexp2],
-                      &alpha[lexp3], &alpha[lexp4], spnorm,
-                      0, 0, &zcore[0],
+                      &alpha[lexp3], &alpha[lexp4],
+                      spnorm, &zcore[0],
                       &zcore[znorm1], &zcore[znorm2],
                       &zcore[znorm3], &zcore[znorm4],
                       &zcore[zrho12], &zcore[zrho34]);

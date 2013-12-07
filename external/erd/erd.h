@@ -18,7 +18,6 @@ int erd__move_ry (int nindex, int notmove, int move, int nry,
                   int *ixoff, double *y);
 
 int erd__set_ij_kl_pairs (int npgtoa, int npgtob, int npgtoc, int npgtod,
-                          int atomab, int atomcd, int equalab, int equalcd,
                           double xa, double ya, double za,
                           double xb, double yb, double zb,
                           double xc, double yc, double zc,
@@ -44,8 +43,8 @@ int erd__prepare_ctr (int nij, int nkl,
                       int shella, int shellb,
                       int shellc, int shelld,
                       double *alphaa, double *alphab,
-                      double *alphac, double *alphad, double spnorm,
-                      int equalab, int equalcd, double *rho,
+                      double *alphac, double *alphad,
+                      double spnorm, double *rho,
                       double *norma, double *normb,
                       double *normc, double *normd,
                       double *rhoab, double *rhocd);
