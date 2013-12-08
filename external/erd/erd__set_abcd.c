@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
+#include <math.h>
 
 #include "erd.h"
 
@@ -121,148 +122,68 @@ int erd__set_abcd (int npgto1, int npgto2, int npgto3, int npgto4,
                    double x1, double y1, double z1,
                    double x2, double y2, double z2, 
                    double x3, double y3, double z3,
-                   double x4, double y4, double z4,
-                   double *exp1, double *exp2,
-                   double *exp3, double *exp4,
-                   double *cc1, double *cc2,
-                   double *cc3, double *cc4, int spheric,
-                   int *npgtoa, int *npgtob,
-                   int *npgtoc, int *npgtod,
+                   double x4, double y4, double z4, int spheric,
+                   int *npgtoa, int *npgtob, int *npgtoc, int *npgtod,
                    int *shella, int *shellb, int *shellc, int *shelld,
-                   int *shellp, int *shellq, int *shellt, int *mxshell,
                    double *xa, double *ya, double *za,
                    double *xb, double *yb, double *zb,
                    double *xc, double *yc, double *zc,
                    double *xd, double *yd, double *zd,
-                   int *atomic, int *atomab, int *atomcd,
-                   int *equalab, int *equalcd,
-                   double *abx, double *aby,
-                   double *abz, double *cdx, double *cdy,
-                   double *cdz, int *nabcoor, int *ncdcoor,
-                   double *rnabsq, double *rncdsq,
-                   double *spnorm, int *nxyza, int *nxyzb,
-                   int *nxyzc, int *nxyzd, int *nxyzet,
-                   int *nxyzft, int *nxyzp, int *nxyzq,
-                   int *nrya, int *nryb, int *nryc,
-                   int *nryd, int *indexa, int *indexb,
-                   int *indexc, int *indexd, int *swap12,
-                   int *swap34, int *swaprs, int *swaptu,
-                   int *tr1234, int *lexpa, int *lexpb,
-                   int *lexpc, int *lexpd, int *lcca,
-                   int *lccb, int *lccc, int *lccd,
-                   int *lccsega, int *lccsegb, int *lccsegc,
-                   int *lccsegd, int *nxyzhrr, int *ncolhrr,
-                   int *nrothrr, int *empty)
+                   int *nxyza, int *nxyzb, int *nxyzc, int *nxyzd,
+                   int *nxyzet, int *nxyzft,
+                   int *nrya, int *nryb, int *nryc, int *nryd,
+                   int *indexa, int *indexb, int *indexc, int *indexd,
+                   int *lexpa, int *lexpb, int *lexpc, int *lexpd,
+                   int *lcca, int *lccb, int *lccc, int *lccd,
+                   int *nabcoor, int *ncdcoor,
+                   int *ncolhrr, int *nrothrr,
+                   int *nxyzhrr, int *empty)
 {
     int add[3] = { 0, 0, 1 };
-    int cc1_offset, cc2_offset, cc3_offset,
-        cc4_offset;
-
-    int i, j, m, ngh, ncc1, ncc2, ncc3, nry1, nry2, nry3, nry4,
+    int m, ngh, ncc1, ncc2, ncc3, nry1, nry2, nry3, nry4,
         ngho, ncol, nrot, nrow;
     int case1, case2;
     int nxyz1, nxyz2, nxyz3, nxyz4;
     int atom12, atom23, atom34;
-    int nxyze, nxyzf, nxyzg, nxyzh, nxyzi;
-    int equal12, equal34;
+    int nxyze, nxyzf, nxyzi;
     int shellg, shellh, nxyzgo, nxyzho, nhrr2nd, nhrr1st;
+    int swap12;
+    int swap34;
+    int atomic;
+    double abx, aby, abz, cdx, cdy, cdz;
+    int tr1234;
+    int shellp;
+    int shellq;
+    int shellt;
+    int mxshell;
+    int nxyzp;
+    int nxyzq;
 
-    cc1_offset = 1 + npgto1 * 1;
-    cc1 -= cc1_offset;
-    --exp1;
-    cc2_offset = 1 + npgto2 * 1;
-    cc2 -= cc2_offset;
-    --exp2;
-    cc3_offset = 1 + npgto3 * 1;
-    cc3 -= cc3_offset;
-    --exp3;
-    cc4_offset = 1 + npgto4 * 1;
-    cc4 -= cc4_offset;
-    --exp4;
-
- 
 /*             ...generate all 1,2,3,4 data. Decide as early as */
 /*                possible, if a zero batch of integrals is expected. */
     *empty = 0;
     atom12 = x1 == x2 && y1 == y2 && z1 == z2;
     atom23 = x2 == x3 && y2 == y3 && z2 == z3;
     atom34 = x3 == x4 && y3 == y4 && z3 == z4;
-    *atomic = atom12 && atom34 && atom23;
-    *shellp = shell1 + shell2;
-    *shellq = shell3 + shell4;
-    *shellt = *shellp + *shellq;
+    atomic = atom12 && atom34 && atom23;
+    shellp = shell1 + shell2;
+    shellq = shell3 + shell4;
+    shellt = shellp + shellq;
 
-    *mxshell = MAX(shell1, shell2);
-    *mxshell = MAX(*mxshell, shell3);
-    *mxshell = MAX(*mxshell, shell4);
-    case1 = *shellt % 2 == 1;
-    case2 = spheric && *mxshell + *mxshell > *shellt;
-    if (*atomic && (case1 || case2))
+    mxshell = MAX(shell1, shell2);
+    mxshell = MAX(mxshell, shell3);
+    mxshell = MAX(mxshell, shell4);
+    case1 = shellt % 2 == 1;
+    case2 = spheric && mxshell + mxshell > shellt;
+    if (atomic && (case1 || case2))
     {
         *empty = 1;
         return 0;
     }
-    atom12 = 0;
-    atom23 = 0;
-    atom34 = 0;
-    *atomic = 0;
 
 /*             ...determine csh equality between center pairs 1,2 */
 /*                and 3,4 in increasing order of complexity: */
 /*                 centers -> shells -> exponents -> ctr coefficients */
-    equal12 = atom12;
-    if (equal12)
-    {
-        equal12 = shell1 == shell2 && npgto1 == npgto2;
-        if (equal12)
-        {
-            for (i = 1; i <= npgto1; ++i)
-            {
-                equal12 = equal12 && exp1[i] == exp2[i];
-            }
-            if (equal12)
-            {
-                for (j = 1; j <= 1; ++j)
-                {
-                    if (equal12)
-                    {
-                        for (i = 1; i <= npgto1; ++i)
-                        {
-                            equal12 = equal12 && cc1[i + j * npgto1] ==
-                                cc2[i + j * npgto2];
-                        }
-                    }
-                }
-            }
-        }
-    }
-    equal34 = atom34;
-    if (equal34)
-    {
-        equal34 = shell3 == shell4 && npgto3 == npgto4;
-        if (equal34)
-        {
-            for (i = 1; i <= npgto3; ++i)
-            {
-                equal34 = equal34 && exp3[i] == exp4[i];
-            }
-            if (equal34)
-            {
-                for (j = 1; j <= 1; ++j)
-                {
-                    if (equal34)
-                    {
-                        for (i = 1; i <= npgto3; ++i)
-                        {
-                            equal34 = equal34 && cc3[i + j * npgto3] ==
-                                cc4[i + j * npgto4];
-                        }
-                    }
-                }
-            }
-        }
-    }
-
 /*             ...set the cartesian and spherical dimensions. In case */
 /*                no spherical transformations are wanted, set the */
 /*                corresponding dimensions equal to the cartesian ones. */
@@ -283,8 +204,8 @@ int erd__set_abcd (int npgto1, int npgto2, int npgto3, int npgto4,
     }
 
 /*             ...decide on the 1 <-> 2 and/or 3 <-> 4 swapping. */
-    *swap12 = shell1 < shell2;
-    *swap34 = shell3 < shell4;
+    swap12 = (shell1 < shell2);
+    swap34 = (shell3 < shell4);
 
 /*             ...calculate NXYZHRR for the two possible HRR */
 /*                and (if any) cartesian -> spherical transformation */
@@ -312,22 +233,22 @@ int erd__set_abcd (int npgto1, int npgto2, int npgto3, int npgto4,
     *shellc = MAX(shell3, shell4);
     *shelld = MIN(shell3, shell4);
     nxyze =
-        (*shellp + 1) * (*shellp + 2) * (*shellp + 3) / 6 -
+        (shellp + 1) * (shellp + 2) * (shellp + 3) / 6 -
         *shella * (*shella + 1) * (*shella + 2) / 6;
     nxyzf =
-        (*shellq + 1) * (*shellq + 2) * (*shellq + 3) / 6 -
+        (shellq + 1) * (shellq + 2) * (shellq + 3) / 6 -
         *shellc * (*shellc + 1) * (*shellc + 2) / 6;
     if (*shellb == 0 && *shelld == 0)
     {
         *nxyzhrr = nxyze * nxyzf;
-        *tr1234 = 0;
+        tr1234 = 0;
     }
     else
     {
         nhrr1st = MAX(nxyze * nxyz3 * nxyz4, nxyz1 * nxyz2 * nry3 * nry4);
         nhrr2nd = MAX(nxyzf * nxyz1 * nxyz2, nxyz3 * nxyz4 * nry1 * nry2);
         *nxyzhrr = MIN(nhrr1st, nhrr2nd);
-        *tr1234 = nhrr1st > nhrr2nd;
+        tr1234 = nhrr1st > nhrr2nd;
     }
 
 /*             ...according to the previously gathered info, set the */
@@ -339,15 +260,11 @@ int erd__set_abcd (int npgto1, int npgto2, int npgto3, int npgto4,
     ncc1 = npgto1;
     ncc2 = npgto2;
     ncc3 = npgto3;
-    if (!(*tr1234))
+    if (!tr1234)
     {
         *nxyzet = nxyze;
         *nxyzft = nxyzf;
-        *atomab = atom12;
-        *atomcd = atom34;
-        *equalab = equal12;
-        *equalcd = equal34;
-        if (!(*swap12))
+        if (!swap12)
         {
             *xa = x1;
             *ya = y1;
@@ -369,8 +286,6 @@ int erd__set_abcd (int npgto1, int npgto2, int npgto3, int npgto4,
             *lexpb = *lexpa + npgto1;
             *lcca = 0;
             *lccb = *lcca + ncc1;
-            *lccsega = 0;
-            *lccsegb = *lccsega + 1;
         }
         else
         {
@@ -394,10 +309,8 @@ int erd__set_abcd (int npgto1, int npgto2, int npgto3, int npgto4,
             *lexpa = *lexpb + npgto1;
             *lccb = 0;
             *lcca = *lccb + ncc1;
-            *lccsegb = 0;
-            *lccsega = *lccsegb + 1;
         }
-        if (!(*swap34))
+        if (!swap34)
         {
             *xc = x3;
             *yc = y3;
@@ -419,8 +332,6 @@ int erd__set_abcd (int npgto1, int npgto2, int npgto3, int npgto4,
             *lexpd = *lexpc + npgto3;
             *lccc = ncc1 + ncc2;
             *lccd = *lccc + ncc3;
-            *lccsegc = 2;
-            *lccsegd = *lccsegc + 1;
         }
         else
         {
@@ -444,19 +355,13 @@ int erd__set_abcd (int npgto1, int npgto2, int npgto3, int npgto4,
             *lexpc = *lexpd + npgto3;
             *lccd = ncc1 + ncc2;
             *lccc = *lccd + ncc3;
-            *lccsegd = 2;
-            *lccsegc = *lccsegd + 1;
         }
     }
     else
     {
         *nxyzet = nxyzf;
         *nxyzft = nxyze;
-        *atomab = atom34;
-        *atomcd = atom12;
-        *equalab = equal34;
-        *equalcd = equal12;
-        if (!(*swap12))
+        if (!swap12)
         {
             *xc = x1;
             *yc = y1;
@@ -478,8 +383,6 @@ int erd__set_abcd (int npgto1, int npgto2, int npgto3, int npgto4,
             *lexpd = *lexpc + npgto1;
             *lccc = 0;
             *lccd = *lccc + ncc1;
-            *lccsegc = 0;
-            *lccsegd = *lccsegc + 1;
         }
         else
         {
@@ -503,10 +406,8 @@ int erd__set_abcd (int npgto1, int npgto2, int npgto3, int npgto4,
             *lexpc = *lexpd + npgto1;
             *lccd = 0;
             *lccc = *lccd + ncc1;
-            *lccsegd = 0;
-            *lccsegc = *lccsegd + 1;
         }
-        if (!(*swap34))
+        if (!swap34)
         {
             *xa = x3;
             *ya = y3;
@@ -528,8 +429,6 @@ int erd__set_abcd (int npgto1, int npgto2, int npgto3, int npgto4,
             *lexpb = *lexpa + npgto3;
             *lcca = ncc1 + ncc2;
             *lccb = *lcca + ncc3;
-            *lccsega = 2;
-            *lccsegb = *lccsega + 1;
         }
         else
         {
@@ -553,126 +452,52 @@ int erd__set_abcd (int npgto1, int npgto2, int npgto3, int npgto4,
             *lexpa = *lexpb + npgto3;
             *lccb = ncc1 + ncc2;
             *lcca = *lccb + ncc3;
-            *lccsegb = 2;
-            *lccsega = *lccsegb + 1;
         }
     }
-
-
-/*             ...the new A,B,C,D shells are set. Calculate the */
-/*                following info: 1) control variables to be used */
-/*                during contraction, 2) total shell values for */
-/*                electrons 1 and 2 in [AB|CD], 3) their corresponding */
-/*                cartesian monomial sizes and 4) the overall norm */
-/*                factor SPNORM due to presence of s- or p-type shells. */
-/*                The latter is necessary, because for such shells */
-/*                there will be no calls to the cartesian normalization */
-/*                or spherical transformation routines. The contribution */
-/*                to SPNORM is very simple: each s-type shell -> * 1.0, */
-/*                each p-type shell -> * 2.0. */
-    *swaprs = *npgtoa > *npgtob;
-    *swaptu = *npgtoc > *npgtod;
-    *shellp = *shella + *shellb;
-    *shellq = *shellc + *shelld;
-    *nxyzp = (*shellp + 1) * (*shellp + 2) / 2;
-    *nxyzq = (*shellq + 1) * (*shellq + 2) / 2;
-    *spnorm = 1.;
-    if (*shella == 1)
+    abx = xa - xb;
+    aby = ya - yb;
+    abz = za - zb;
+    cdx = xc - xd;
+    cdy = yc - yd;
+    cdz = zc - zd;
+    *nabcoor = 3;
+    if (fabs(abx) == 0.0)
     {
-        *spnorm += *spnorm;
+        --(*nabcoor);
     }
-    if (*shellb == 1)
+    if (fabs(aby) == 0.0)
     {
-        *spnorm += *spnorm;
+        --(*nabcoor);
     }
-    if (*shellc == 1)
+    if (fabs(abz) == 0.0)
     {
-        *spnorm += *spnorm;
-    }
-    if (*shelld == 1)
+        --(*nabcoor);
+    }   
+    *ncdcoor = 3;
+    if (fabs(cdx) == 0.0)
     {
-        *spnorm += *spnorm;
+        --(*ncdcoor);
     }
-
-
-/*             ...calculate the coordinate differences between centers */
-/*                A and B and between centers C and D and calculate the */
-/*                square of the magnitude of the distances. Also */
-/*                determine the number of non-zero coordinate differences */
-/*                for each pair A,B and C,D. */
-    if (!(*atomab))
+    if (fabs(cdy) == 0.0)
     {
-        *abx = *xa - *xb;
-        *aby = *ya - *yb;
-        *abz = *za - *zb;
-        *rnabsq = *abx * *abx + *aby * *aby + *abz * *abz;
-        *nabcoor = 3;
-        if (abs (*abx) == 0.)
-        {
-            --(*nabcoor);
-        }
-        if (abs (*aby) == 0.)
-        {
-            --(*nabcoor);
-        }
-        if (abs (*abz) == 0.)
-        {
-            --(*nabcoor);
-        }
+        --(*ncdcoor);
     }
-    else
+    if (fabs(cdz) == 0.0)
     {
-        *abx = 0.;
-        *aby = 0.;
-        *abz = 0.;
-        *rnabsq = 0.;
-        *nabcoor = 0;
-    }
-    if (!(*atomcd))
-    {
-        *cdx = *xc - *xd;
-        *cdy = *yc - *yd;
-        *cdz = *zc - *zd;
-        *rncdsq = *cdx * *cdx + *cdy * *cdy + *cdz * *cdz;
-        *ncdcoor = 3;
-        if (abs (*cdx) == 0.)
-        {
-            --(*ncdcoor);
-        }
-        if (abs (*cdy) == 0.)
-        {
-            --(*ncdcoor);
-        }
-        if (abs (*cdz) == 0.)
-        {
-            --(*ncdcoor);
-        }
-    }
-    else
-    {
-        *cdx = 0.;
-        *cdy = 0.;
-        *cdz = 0.;
-        *rncdsq = 0.;
-        *ncdcoor = 0;
-    }
-
-/*             ...if HRR contractions are to be performed, calculate */
-/*                NCOLHRR (maximum # of HRR rotation matrix columns */
-/*                needed to generate the final HRR rotation matrices) and */
-/*                NROTHRR (maximum # of HRR rotation matrix elements). */
-/*                First find maximum values for the HRR on the AB-part. */
+        --(*ncdcoor);
+    }     
+    nxyzp = (shellp + 1) * (shellp + 2) / 2;
+    nxyzq = (shellq + 1) * (shellq + 2) / 2;
+    
     *ncolhrr = 0;
     *nrothrr = 0;
-    if (*shellb != 0)
+    if (shellb != 0)
     {
         ngh = *nxyzet;
-        nxyzg = *nxyzet;
-        nxyzh = 1;
         nxyzgo = *nxyzet;
         nxyzho = 1;
-        nxyzi = *nxyzp;
-        shellg = *shellp;
+        nxyzi = nxyzp;
+        shellg = shellp;
         nrow = 1;
         ncol = ngh;
         nrot = ngh;
@@ -697,26 +522,21 @@ int erd__set_abcd (int npgto1, int npgto2, int npgto3, int npgto4,
             ncol = MAX(ngho, ncol);
             nrot = MAX(nrow * ngho, nrot);
             ngh = ngho;
-            nxyzg = nxyzgo;
-            nxyzh = nxyzho;
             nxyzi = nxyzi - shellg - 1;
             --shellg;
         }
         *ncolhrr = ncol;
         *nrothrr = nrot;
     }
-
 /*             ...next find maximum values for the HRR on the CD-part */
 /*                and set overall maximum values. */
-    if (*shelld != 0)
+    if (shelld != 0)
     {
         ngh = *nxyzft;
-        nxyzg = *nxyzft;
-        nxyzh = 1;
         nxyzgo = *nxyzft;
         nxyzho = 1;
-        nxyzi = *nxyzq;
-        shellg = *shellq;
+        nxyzi = nxyzq;
+        shellg = shellq;
         nrow = 1;
         ncol = ngh;
         nrot = ngh;
@@ -741,14 +561,12 @@ int erd__set_abcd (int npgto1, int npgto2, int npgto3, int npgto4,
             ncol = MAX(ngho, ncol);
             nrot = MAX(nrow * ngho, nrot);
             ngh = ngho;
-            nxyzg = nxyzgo;
-            nxyzh = nxyzho;
             nxyzi = nxyzi - shellg - 1;
             --shellg;
         }
         *ncolhrr = MAX(ncol, *ncolhrr);
         *nrothrr = MAX(nrot, *nrothrr);
     }
-
+    
     return 0;
 }

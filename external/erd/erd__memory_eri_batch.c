@@ -69,7 +69,7 @@ int erd__memory_eri_batch_ (int * nalpha, int * ncoeff,
                            *shell1, *shell2, *shell3, *shell4,
                            *x1, *y1, *z1, *x2, *y2, *z2,
                            *x3, *y3, *z3, *x4, *y4, *z4,
-                           alpha, cc, *spheric, imin, iopt, zmin, zopt);
+                           *spheric, imin, iopt, zmin, zopt);
     }
 
     return 0;

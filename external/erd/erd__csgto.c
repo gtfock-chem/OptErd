@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <math.h>
 
 #include "erd.h"
 
@@ -163,126 +164,129 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
     int in;
     double xa, ya, za, xb, yb, zb, xc, yc, zc, xd, yd, zd;
     int zp, zq;
-    double abx;
     int zb00, zb01, zb10;
-    double aby;
     int nij;
-    double abz, cdx;
     int nkl;
-    double cdy, cdz;
-    int out, zpx, lcc1, lcc2, lcc3, lcc4, zpy, zpz, zqx, zqy, zqz,
+    int out, zpx, zpy, zpz, zqx, zqy, zqz,
         pos1, pos2, lcca, lccb, lccc, lccd;
-    int tr1234;
     int zc00x, ngqp, move, nmom, nrya, nryb, nryc, nryd,
         temp, zc00y, zc00z, zpax, zpay, zpaz, zqcx, zqcy, zqcz, zd00x,
         zd00y, zd00z;
-    int zrts, zwts;     
-    int lexp1, lexp2, lexp3, lexp4;
+    int zrts, zwts;
     int zbase;
     int ihscr, iused, lexpa, lexpb, lexpc;
-    int swap12;
     int lexpd, ixoff[4];
-    int swap34;
     int nrota, nrotb, nrotc, nrotd, ihrow, nrowa, zused, nrowb,
         nrowc, nrowd;
     int empty;
     int ztval, zhrot, nxyza, nxyzb, nxyzc, nxyzd, zwork, nint2d,
         nxyzp, nxyzq, nxyzt, zscpk2, zscqk2;
-    int atomab, atomcd;
     int indexa, indexb, indexc, indexd;
-    int atomic;
     int iprima, iprimb, iprimc, iprimd,
         isrowa, ihnrow,
         isrowb;
     int isrowc, isrowd, ngqscr;
-    int swaprs;
     int mxsize;
-    int swaptu;
     int npgtoa, npgtob, npgtoc, npgtod, npsize,
         shella, shellb, shellc, shelld, shellp, nxyzet, nxyzft, shellq,
         shellt, znorma, znormb, znormc, znormd, zcnorm, zrhoab, zrhocd,
         zgqscr, zsrota, zsrotb, zsrotc, zsrotd;
     double rnabsq, rncdsq, spnorm;
-    int zscpqk4, lccsega, lccsegb;
-    int lccsegc, lccsegd, zint2dx, zint2dy, zint2dz;
-    int equalab;
-    int equalcd;
+    int zscpqk4;
+    int zint2dx, zint2dy, zint2dz;
     int zcbatch, nabcoor, ncdcoor, npgtoab, zpbatch,
         npgtocd;
     int ncolhrr;
     int mxshell, isnrowa, isnrowb, isnrowc, isnrowd, zpinvhf,
         notmove, zqinvhf, nrothrr, nrowhrr;
     int zpqpinv;
-
+    double abx, aby, abz, cdx, cdy, cdz;
+    
     --icore;
     --zcore;
 /*             ...fix the A,B,C,D labels from the 1,2,3,4 ones. */
 /*                Calculate the relevant data for the A,B,C,D batch of */
 /*                integrals. */
-    lexp1 = 0;
-    lexp2 = lexp1 + npgto1;
-    lexp3 = lexp2 + npgto2;
-    lexp4 = lexp3 + npgto3;
-    lcc1 = 0;
-    lcc2 = lcc1 + npgto1;
-    lcc3 = lcc2 + npgto2;
-    lcc4 = lcc3 + npgto3;
     erd__set_abcd (npgto1, npgto2, npgto3, npgto4,
                    shell1, shell2, shell3, shell4,
                    x1, y1, z1, x2, y2, z2,
-                   x3, y3, z3, x4, y4, z4,
-                   &alpha[lexp1], &alpha[lexp2],
-                   &alpha[lexp3], &alpha[lexp4],
-                   &cc[lcc1], &cc[lcc2],
-                   &cc[lcc3], &cc[lcc4], spheric,
+                   x3, y3, z3, x4, y4, z4, spheric,
                    &npgtoa, &npgtob, &npgtoc, &npgtod,
                    &shella, &shellb, &shellc, &shelld,
-                   &shellp, &shellq, &shellt, &mxshell,
                    &xa, &ya, &za, &xb, &yb, &zb,
                    &xc, &yc, &zc, &xd, &yd, &zd,
-                   &atomic, &atomab, &atomcd,
-                   &equalab, &equalcd,
-                   &abx, &aby, &abz, &cdx, &cdy, &cdz,
-                   &nabcoor, &ncdcoor, &rnabsq, &rncdsq,
-                   &spnorm, &nxyza, &nxyzb, &nxyzc, &nxyzd,
-                   &nxyzet, &nxyzft, &nxyzp, &nxyzq,
+                   &nxyza, &nxyzb, &nxyzc, &nxyzd,
+                   &nxyzet, &nxyzft,
                    &nrya, &nryb, &nryc, &nryd,
                    &indexa, &indexb, &indexc, &indexd,
-                   &swap12, &swap34, &swaprs, &swaptu, &tr1234,
                    &lexpa, &lexpb, &lexpc, &lexpd,
                    &lcca, &lccb, &lccc, &lccd,
-                   &lccsega, &lccsegb, &lccsegc, &lccsegd,
-                   &nxyzhrr, &ncolhrr, &nrothrr, &empty);
+                   &nabcoor, &ncdcoor,
+                   &ncolhrr, &nrothrr, &nxyzhrr, &empty);
     if (empty)
     {
         *nbatch = 0;
         return 0;
     }
 
+    // initialize values
+    abx = xa - xb;
+    aby = ya - yb;
+    abz = za - zb;
+    cdx = xc - xd;
+    cdy = yc - yd;
+    cdz = zc - zd;
+/*             ...the new A,B,C,D shells are set. Calculate the */
+/*                following info: 1) control variables to be used */
+/*                during contraction, 2) total shell values for */
+/*                electrons 1 and 2 in [AB|CD], 3) their corresponding */
+/*                cartesian monomial sizes and 4) the overall norm */
+/*                factor SPNORM due to presence of s- or p-type shells. */
+/*                The latter is necessary, because for such shells */
+/*                there will be no calls to the cartesian normalization */
+/*                or spherical transformation routines. The contribution */
+/*                to SPNORM is very simple: each s-type shell -> * 1.0, */
+/*                each p-type shell -> * 2.0. */
+    shellp = shella + shellb;
+    shellq = shellc + shelld;
+    shellt = shellp + shellq;
+    mxshell = MAX(shell1, shell2);
+    mxshell = MAX(mxshell, shell3);
+    mxshell = MAX(mxshell, shell4);
+    nxyzp = (shellp + 1) * (shellp + 2) / 2;
+    nxyzq = (shellq + 1) * (shellq + 2) / 2;
+    // spnorm
+    spnorm = 1.;
+    if (shella == 1)
+    {
+        spnorm += spnorm;
+    }
+    if (shellb == 1)
+    {
+        spnorm += spnorm;
+    }
+    if (shellc == 1)
+    {
+        spnorm += spnorm;
+    }
+    if (shelld == 1)
+    {
+        spnorm += spnorm;
+    }
+    rnabsq = abx * abx + aby * aby + abz * abz;
+    rncdsq = cdx * cdx + cdy * cdy + cdz * cdz;
+
+   
 /*             ...enter the cartesian contracted (e0|f0) batch */
 /*                generation. Set the ij and kl primitive exponent */
 /*                pairs and the corresponding exponential prefactors. */
-    if (equalab)
-    {
-        npgtoab = npgtoa * (npgtoa + 1) / 2;
-    }
-    else
-    {
-        npgtoab = npgtoa * npgtob;
-    }
-    if (equalcd)
-    {
-        npgtocd = npgtoc * (npgtoc + 1) / 2;
-    }
-    else
-    {
-        npgtocd = npgtoc * npgtod;
-    }
+    npgtoab = npgtoa * npgtob;
+    npgtocd = npgtoc * npgtod;
     nxyzt = nxyzet * nxyzft;
     iprima = 1;
     iprimb = iprima + npgtoab;
     iprimc = iprimb + npgtoab;
-    iprimd = iprimc + npgtocd;
+    iprimd = iprimc + npgtocd;        
     erd__set_ij_kl_pairs (npgtoa, npgtob, npgtoc, npgtod,
                           xa, ya, za, xb, yb, zb,
                           xc, yc, zc, xd, yd, zd,
@@ -337,7 +341,7 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
 /*                (e0|f0). The keyword REORDER indicates, if the */
 /*                primitive [e0|f0] blocks need to be transposed */
 /*                before being contracted. */    
-    erd__e0f0_pcgto_block (atomab, atomcd, nij, nkl, ngqp, nmom,
+    erd__e0f0_pcgto_block (0, 0, nij, nkl, ngqp, nmom,
                            nxyzet, nxyzft, nxyzp, nxyzq,
                            shella, shellp, shellc, shellq,
                            xa, ya, za, xb, yb, zb,
@@ -373,7 +377,6 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
                            &icore[iprimb],
                            &icore[iprimc],
                            &icore[iprimd],
-                           equalab, equalcd, 1,
                            &zcore[zpbatch], &zcore[zwork], &zcore[zcbatch]);
 
 /*             ...the unnormalized cartesian (e0|f0) contracted batch is */

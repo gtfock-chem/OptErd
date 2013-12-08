@@ -97,13 +97,13 @@
 /*                    Y            =  contains the final half transformed */
 /*                                    integrals */
 /* ------------------------------------------------------------------------ */
-static int erd__ctr_half (int n, int mij, double *ccr, double *ccs,
-                          int *primr, int *prims,
-                          int equalrs, double *x, double *y)
+static int
+erd__ctr_half (int n, int mij, double *ccr, double *ccs,
+               int *primr, int *prims, double *x, double *y)
 {
     int i;
     int j;
-    int l;  
+    int l;
     double c1;
     double c2;
     int ij;
@@ -112,49 +112,24 @@ static int erd__ctr_half (int n, int mij, double *ccr, double *ccs,
     {
         y[l] = 0.0;
     }
-    
-    if (equalrs)
-    {
-/*             ...the R >= S case. Here we always have equal # of */
-/*                primitives I and J for both R and S. The primitives */
-/*                I >= J are ordered such that J varies fastest. */
-/*                Outer contraction is over S, inner over R. */              
-        for (ij = 0; ij < mij; ij++)
-        {
-            j = prims[ij];
-            i = primr[ij];
-            c1 = ccr[i - 1];
-            c2 = ccs[j - 1];
-            if (i != j)
-            {
-                c1 = 2.0 * c1;
-            }
-            for (l = 0; l < n; l++)
-            {
-                y[l] += c1 * c2 * x[l + ij * n];
-            }
-        }
-    }
-    else
-    {
+
 /*             ...the full RS case. Check the order of the two quarter */
 /*                transformations and proceed accordingly. */
 /*                The case: # of I primitives R > # of J primitives S */
 /*                The primitives I and J are ordered such that I varies */
-/*                fastest. Outer contraction is over R, inner over S. */     
-        for (ij = 0; ij < mij; ij++)
+/*                fastest. Outer contraction is over R, inner over S. */
+    for (ij = 0; ij < mij; ij++)
+    {
+        j = prims[ij];
+        i = primr[ij];
+        c1 = ccr[i - 1];
+        c2 = ccs[j - 1];
+        for (l = 0; l < n; l++)
         {
-            j = prims[ij];
-            i = primr[ij];
-            c1 = ccr[i - 1];
-            c2 = ccs[j - 1];
-            for (l = 0; l < n; l++)
-            {
-                y[l] += c1 * c2 * x[l + ij * n];
-            }
+            y[l] += c1 * c2 * x[l + ij * n];
         }
     }
-    
+
     return 0;
 }
 
@@ -279,35 +254,23 @@ static int erd__ctr_half (int n, int mij, double *ccr, double *ccs,
 /*                    CBATCH       =  the update batch of contracted */
 /*                                    integrals after contraction */
 /* ------------------------------------------------------------------------ */
-int erd__ctr_4index_block (int nxyzt, int mij, int mkl,
-                           double *ccr, double *ccs,
-                           double *cct, double *ccu,
-                           int *primr, int *prims,
-                           int *primt, int *primu,
-                           int equalrs, int equaltu, int ptrans,
-                           double *pbatch, double *work, double *cbatch)
+int
+erd__ctr_4index_block (int nxyzt, int mij, int mkl,
+                       double *ccr, double *ccs,
+                       double *cct, double *ccu,
+                       int *primr, int *prims,
+                       int *primt, int *primu,
+                       double *pbatch, double *work, double *cbatch)
 {
     int n;
     int mijkl;
 
     mijkl = mij * mkl;
     n = nxyzt * mkl;
-    
-    if (ptrans && mijkl > 1 && nxyzt > 1)
-    {
-        erd__transpose_batch (mijkl, nxyzt, pbatch, work);
-        erd__ctr_half (n, mij, ccr, ccs, primr, prims,
-                       equalrs, work, pbatch);
-        erd__ctr_half (nxyzt, mkl, cct, ccu, primt, primu,
-                       equaltu, pbatch, cbatch);
-    }
-    else
-    {
-        erd__ctr_half (n, mij, ccr, ccs, primr, prims,
-                       equalrs, pbatch, work);
-        erd__ctr_half (nxyzt, mkl, cct, ccu, primt, primu,
-                       equaltu, work, cbatch);
-    }
-   
+
+    erd__transpose_batch (mijkl, nxyzt, pbatch, work);
+    erd__ctr_half (n, mij, ccr, ccs, primr, prims, work, pbatch);
+    erd__ctr_half (nxyzt, mkl, cct, ccu, primt, primu, pbatch, cbatch);
+
     return 0;
 }
