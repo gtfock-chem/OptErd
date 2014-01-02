@@ -87,7 +87,6 @@ int main (int argc, char **argv)
 						continue;
 					totalcalls  = totalcalls + 1;
 					gettimeofday (&tv1, NULL);
-					
 					CInt_computeShellQuartet (basis, erd, M, N, P, Q, &integrals, &nints);
 				   
 					gettimeofday (&tv2, NULL);
