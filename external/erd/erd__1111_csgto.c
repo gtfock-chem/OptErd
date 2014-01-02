@@ -211,7 +211,6 @@ int erd__1111_csgto (int zmax, int npgto1, int npgto2,
         *nbatch = 0;
         return 0;
     }
-
 /*             ...decide on the primitive [12|34] block size and */
 /*                return array sizes and pointers for the primitive */
 /*                [12|34] generation. Perform also some preparation */

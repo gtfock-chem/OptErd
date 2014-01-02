@@ -42,7 +42,6 @@ set_pairs (int npgtoa, int npgtob, double rnabsq,
     for (int i = 0; i < npgtoa; i++)
     {
         const double a = alphaa[i];
-#pragma simd
         for (int j = 0; j < npgtob; j++)
         {
             __assume_aligned (alphab, 64);
