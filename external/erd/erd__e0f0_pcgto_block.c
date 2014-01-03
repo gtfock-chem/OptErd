@@ -1,10 +1,14 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdint.h>
 #include <assert.h>
 #include <math.h>
 
 
 #include "erd.h"
+
+uint64_t erd__int2d_ticks = 0;
+uint64_t erd__2d_pq_integrals_ticks = 0;
 
 
 /* ------------------------------------------------------------------------ */
@@ -219,7 +223,7 @@ int erd__e0f0_pcgto_block (int atomab, int atomcd,
     double cdy;
     double cdz;
     int mgqijkl;
-    
+    uint64_t start;    
     
 /*            ...predetermine 2D integral case. This is done in */
 /*               order to distinguish the P- and Q-shell combinations */
@@ -448,10 +452,14 @@ int erd__e0f0_pcgto_block (int atomab, int atomcd,
                            &case2d, &b00[1], &b01[1], &b10[1], &c00x[1],
                            &c00y[1], &c00z[1], &d00x[1], &d00y[1],
                            &d00z[1]);
+    start = __rdtsc();
     erd__2d_pq_integrals_ (&shellp, &shellq, &mgqijkl, &wts[1], &b00[1],
                            &b01[1], &b10[1], &c00x[1], &c00y[1],
                            &c00z[1], &d00x[1], &d00y[1], &d00z[1],
                            &case2d, &int2dx[1], &int2dy[1], &int2dz[1]);
+    erd__2d_pq_integrals_ticks += (__rdtsc() - start);
+
+    start = __rdtsc();
     if (shellq == 0)
     {
         erd__int2d_to_e000_ (&shella, &shellp, &ngqp, &nijkl, &mgqijkl,
@@ -473,7 +481,7 @@ int erd__e0f0_pcgto_block (int atomab, int atomcd,
                              &int2dx[1], &int2dy[1], &int2dz[1], &b00[1],
                              &b01[1], &scalepq[1], &batch[1]);
     }
-    
+    erd__int2d_ticks += (__rdtsc() - start); 
 
     return 0;
 }

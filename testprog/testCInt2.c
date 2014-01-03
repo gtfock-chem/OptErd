@@ -6,6 +6,8 @@
 #include "CInt.h"
 
 extern uint64_t erd__set_ij_kl_pairs_ticks;
+extern uint64_t erd__int2d_ticks;
+extern uint64_t erd__2d_pq_integrals_ticks;
 
 int main (int argc, char **argv) {
 	BasisSet_t basis;
@@ -109,6 +111,8 @@ int main (int argc, char **argv) {
 	printf ("Total ticks: %.3lf\n", (double)(total_ticks) * 1.0e-9);
 	printf ("Average time per call: %.3le us\n", 1000.0*1000.0*timepass/totalcalls[0]);
 	printf ("GigaTicks in erd__set_ij_kl_pairs: %.3lf\n", (double)(erd__set_ij_kl_pairs_ticks) * 1.0e-9);
+    printf ("GigaTicks in erd__int2d_ticks: %.3lf\n", (double)(erd__int2d_ticks) * 1.0e-9);
+    printf ("GigaTicks in erd__2d_pq_integrals: %.3lf\n", (double)(erd__2d_pq_integrals_ticks) * 1.0e-9);
 
 	for (i = 0; i < nthreads; i++)
 	{
