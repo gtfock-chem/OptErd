@@ -19,6 +19,7 @@ int main (int argc, char **argv) {
 	struct timeval tv1;
 	struct timeval tv2;
 	double timepass;
+    uint64_t total_ticks, ticks_start;
 
 	if (argc != 4) {
 		printf ("Usage: %s <basisset> <xyz> <nthreads>\n", argv[0]);
@@ -57,6 +58,7 @@ int main (int argc, char **argv) {
 	ns = CInt_getNumShells (basis);
 	timepass = 0.0;
 	gettimeofday (&tv1, NULL);
+    ticks_start = __rdtsc();
 	#pragma omp parallel
 	{
 		unsigned long long n;
@@ -95,6 +97,7 @@ int main (int argc, char **argv) {
 		totalcalls[0*64] = totalcalls[0*64] + totalcalls[i*64];
 		totalnintls[0*64] = totalnintls[0*64] + totalnintls[i*64];
 	}
+    total_ticks = (__rdtsc() - ticks_start);
 	gettimeofday (&tv2, NULL);
 	timepass = (tv2.tv_sec - tv1.tv_sec) +
 		(tv2.tv_usec - tv1.tv_usec) / 1000.0 / 1000.0;
@@ -103,6 +106,7 @@ int main (int argc, char **argv) {
 	printf ("Number of calls: %.6le, Number of integrals: %.6le\n",
 		totalcalls[0], totalnintls[0]);
 	printf ("Total time: %.4lf secs\n", timepass);
+	printf ("Total ticks: %.3lf\n", (double)(total_ticks) * 1.0e-9);
 	printf ("Average time per call: %.3le us\n", 1000.0*1000.0*timepass/totalcalls[0]);
 	printf ("GigaTicks in erd__set_ij_kl_pairs: %.3lf\n", (double)(erd__set_ij_kl_pairs_ticks) * 1.0e-9);
 
