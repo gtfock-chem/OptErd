@@ -54,8 +54,8 @@ SRC_REF = erd__1111_csgto.f \
 
 SRC_OPT = erd__1111_csgto.c \
 	erd__1111_def_blocks.c \
-	erd__2d_coefficients.f \
-	erd__2d_pq_integrals.f \
+	erd__2d_coefficients.c \
+	erd__2d_pq_integrals.c \
 	erd__cartesian_norms.c \
 	erd__csgto.c \
 	erd__ctr_4index_block.c \
@@ -67,7 +67,7 @@ SRC_OPT = erd__1111_csgto.c \
 	erd__hrr_step.c \
 	erd__hrr_transform.c \
 	erd__int2d_to_e000.f \
-	erd__int2d_to_e0f0.f \
+	erd__int2d_to_e0f0.c \
 	erd__map_ijkl_to_ikjl.c \
 	erd__memory_1111_csgto.c \
 	erd__memory_csgto.c \
