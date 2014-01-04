@@ -28,5 +28,5 @@ GA_LIBS = -lga -larmci
 ifeq "${arch}" "mic"
 OPTFLAGS = -mmic
 else
-OPTFLAGS = -xHost
+OPTFLAGS = -xHost -DUSE_AVX_INTRIN
 endif

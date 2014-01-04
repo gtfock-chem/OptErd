@@ -26,25 +26,23 @@
 /*  The GNU General Public License is included in this distribution */
 /*  in the file COPYRIGHT. */
 /* Subroutine */ int
-erd__int2d_to_e0f0_ (int * shella, int * shellp,
-                      int * shellc, int * shellq, int * ngqp,
-                      int * nexq, int * ngqexq, int * nxyzet,
-                      int * nxyzft, int * nxyzp, int * nxyzq,
+erd__int2d_to_e0f0_ (int shella, int shellp,
+                      int shellc, int shellq, int ngqp,
+                      int nexq, int ngqexq, int nxyzet,
+                      int nxyzft, int nxyzp, int nxyzq,
                       double * int2dx, double * int2dy,
                       double * int2dz, double * temp1,
                       double * temp2, double * scale,
                       double * batch)
 {
     /* System generated locals */
-    int batch_dim1, batch_dim2, batch_offset, int2dx_dim1, int2dx_dim2,
-        int2dx_offset, int2dy_dim1, int2dy_dim2, int2dy_offset,
-        int2dz_dim1, int2dz_dim2, int2dz_offset, i__1, i__2, i__3, i__4,
-        i__5, i__6, i__7, i__8;
-
-    int i__, j, k, m, n, se, sf, xe, ye, ze, xf, yf, zf, xep, xfp;
-    double sum;
+    int batch_dim1, batch_dim2, batch_offset, int2d_dim1, int2d_dim2;
+    double sum[SIMD_WIDTH];
+    int i, j, m, n, se, sf, xe, ye, ze, xf, yf, zf, xep, xfp;
     int xye, xyf, xyep, xyfp, seend, sfend, yeend, yfend, xemax,
         xfmax, nxyze, nxyzf;
+    int m1;
+    int ind;
 
 /* ------------------------------------------------------------------------ */
 /*  OPERATION   : ERD__INT2D_TO_E0F0 */
@@ -193,165 +191,151 @@ erd__int2d_to_e0f0_ (int * shella, int * shellp,
 
 
     /* Parameter adjustments */
-    --scale;
-    --temp2;
-    --temp1;
-    int2dz_dim1 = *ngqexq - 1 + 1;
-    int2dz_dim2 = *shellp - 0 + 1;
-    int2dz_offset = 1 + int2dz_dim1 * (0 + int2dz_dim2 * 0);
-    int2dz -= int2dz_offset;
-    int2dy_dim1 = *ngqexq - 1 + 1;
-    int2dy_dim2 = *shellp - 0 + 1;
-    int2dy_offset = 1 + int2dy_dim1 * (0 + int2dy_dim2 * 0);
-    int2dy -= int2dy_offset;
-    int2dx_dim1 = *ngqexq - 1 + 1;
-    int2dx_dim2 = *shellp - 0 + 1;
-    int2dx_offset = 1 + int2dx_dim1 * (0 + int2dx_dim2 * 0);
-    int2dx -= int2dx_offset;
-    batch_dim1 = *nexq - 1 + 1;
-    batch_dim2 = *nxyzet - 1 + 1;
+    int2d_dim1 = ngqexq;
+    int2d_dim2 = shellp + 1;
+    batch_dim1 = nexq;
+    batch_dim2 = nxyzet;
     batch_offset = 1 + batch_dim1 * (1 + batch_dim2 * 1);
     batch -= batch_offset;
-
-    switch (MIN (*ngqp, 10))
+    batch += 1;
+    //printf("ngqp = %d\n", ngqp);
+    //printf("%d, %d, %d\n", nexq, nxyzet, nxyzft);
+    //printf("%d, %d, %d, %d\n", shella, shellp, shellc, shellq);
+/*
+    switch (MIN (ngqp, 10))
     {
-    case 1:
-        goto L1;
-    case 2:
-        goto L2;
-    case 3:
-        goto L3;
-    case 4:
-        goto L4;
-    case 5:
-        goto L5;
-    case 6:
-        goto L6;
-    case 7:
-        goto L7;
-    case 8:
-        goto L8;
-    case 9:
-        goto L9;
-    case 10:
-        goto L10;
+        case 1:
+            goto L1;
+        case 2:
+            goto L2;
+        case 3:
+            goto L3;
+        case 4:
+            goto L4;
+        case 5:
+            goto L5;
+        case 6:
+            goto L6;
+        case 7:
+            goto L7;
+        case 8:
+            goto L8;
+        case 9:
+            goto L9;
+        case 10:
+            goto L10;
     }
+*/
 
-
+    goto L10;
 /*                       ******************** */
 /*                       *  # of roots = 1  * */
 /*                       ******************** */
 
 
   L1:
-    xfp = *nxyzft + 3;
-    i__1 = *shellq;
-    for (xf = 0; xf <= i__1; ++xf)
+    xfp = nxyzft + 3;
+    for (xf = 0; xf <= shellq; ++xf)
     {
         xfp = xfp + xf - 2;
-        xfmax = xf * *shellq;
-        yfend = *shellq - xf;
-        xep = *nxyzet + 3;
-        i__2 = *shellp;
-        for (xe = 0; xe <= i__2; ++xe)
+        xfmax = xf * shellq;
+        yfend = shellq - xf;
+        xep = nxyzet + 3;
+        for (xe = 0; xe <= shellp; ++xe)
         {
             xep = xep + xe - 2;
-            xemax = xe * *shellp;
-            yeend = *shellp - xe;
-            i__3 = *nexq;
-            for (m = 1; m <= i__3; ++m)
+            xemax = xe * shellp;
+            yeend = shellp - xe;
+            ind = (xe + xf * int2d_dim2) * int2d_dim1;
+            for (m = 0; m < ngqexq; m+=SIMD_WIDTH)
             {
-                temp1[m] = scale[m] * int2dx[m + (xe + xf * int2dx_dim2) *
-                                             int2dx_dim1];
+#pragma simd
+                for(m1 = 0; m1 < SIMD_WIDTH; m1++)
+                {
+                    temp1[m + m1] = scale[m + m1] * int2dx[m + m1 + ind];
+                }
             }
             xyfp = xfp - xfmax;
-            i__3 = yfend;
-            for (yf = 0; yf <= i__3; ++yf)
+            for (yf = 0; yf <= yfend; ++yf)
             {
                 xyf = xf + yf;
                 --xyfp;
-                sfend = max (*shellc, xyf);
+                sfend = max (shellc, xyf);
                 xyep = xep - xemax;
-                i__4 = yeend;
-                for (ye = 0; ye <= i__4; ++ye)
+                for (ye = 0; ye <= yeend; ++ye)
                 {
                     xye = xe + ye;
                     --xyep;
-                    seend = max (*shella, xye);
+                    seend = max (shella, xye);
                     if (ye + yf == 0)
                     {
-                        i__5 = *nexq;
-                        for (m = 1; m <= i__5; ++m)
+                        for (m = 0; m < ngqexq; m+=SIMD_WIDTH)
                         {
-                            temp2[m] = temp1[m];
+#pragma simd
+                            for(m1 = 0; m1 < SIMD_WIDTH; m1++)
+                            {
+                                temp2[m + m1] = temp1[m + m1];
+                            }
                         }
                     }
                     else
                     {
-                        i__5 = *nexq;
-                        for (m = 1; m <= i__5; ++m)
+                        ind = (ye + yf * int2d_dim2) * int2d_dim1;
+                        for (m = 0; m < ngqexq; m+=SIMD_WIDTH)
                         {
-                            temp2[m] = temp1[m] * int2dy[m + (ye + yf *
-                                                              int2dy_dim2) *
-                                                         int2dy_dim1];
+#pragma simd
+                            for(m1 = 0; m1 < SIMD_WIDTH; m1++)
+                            {
+                                temp2[m + m1] = temp1[m + m1] * int2dy[m + m1 + ind];
+                            }
                         }
                     }
                     j = xyfp;
-                    nxyzf = *nxyzq;
-                    i__5 = sfend;
-                    for (sf = *shellq; sf >= i__5; --sf)
+                    nxyzf = nxyzq;
+                    for (sf = shellq; sf >= sfend; --sf)
                     {
                         zf = sf - xyf;
-                        i__ = xyep;
-                        nxyze = *nxyzp;
-                        i__6 = seend;
-                        for (se = *shellp; se >= i__6; --se)
+                        i = xyep;
+                        nxyze = nxyzp;
+                        for (se = shellp; se >= seend; --se)
                         {
                             ze = se - xye;
                             if (ze + zf == 0)
                             {
-                                i__7 = *nexq;
-                                for (m = 1; m <= i__7; ++m)
+                                for (m = 0; m < nexq; m+=SIMD_WIDTH)
                                 {
-                                    batch[m + (i__ + j * batch_dim2) *
-                                          batch_dim1] = temp2[m];
+#pragma simd
+                                    for(m1 = 0; m1 < SIMD_WIDTH; m1++)
+                                    {
+                                        batch[m + m1 + (i + j * batch_dim2) * batch_dim1]
+                                            = temp2[m + m1];
+                                    }
                                 }
                             }
                             else
                             {
-                                i__7 = *nexq;
-                                for (m = 1; m <= i__7; ++m)
+                                ind = (ze + zf * int2d_dim2) * int2d_dim1;
+                                for (m = 0; m < nexq; m+=SIMD_WIDTH)
                                 {
-                                    batch[m + (i__ + j * batch_dim2) *
-                                          batch_dim1] = temp2[m] * int2dz[m
-                                                                          +
-                                                                          (ze
-                                                                           +
-                                                                           zf
-                                                                           *
-                                                                           int2dz_dim2)
-                                                                          *
-                                                                          int2dz_dim1];
+#pragma simd
+                                    for(m1 = 0; m1 < SIMD_WIDTH; m1++)
+                                    {
+                                        batch[m + m1 + (i + j * batch_dim2) * batch_dim1]
+                                            = temp2[m + m1] * int2dz[m + m1 + ind];
+                                    }
                                 }
                             }
-                            i__ = i__ - nxyze + xe;
+                            i = i - nxyze + xe;
                             nxyze = nxyze - se - 1;
-/* L122: */
                         }
                         j = j - nxyzf + xf;
                         nxyzf = nxyzf - sf - 1;
-/* L120: */
                     }
-/* L112: */
                 }
-/* L110: */
             }
-/* L102: */
         }
-/* L100: */
     }
     return 0;
-
 
 /*                       ******************** */
 /*                       *  # of roots = 2  * */
@@ -359,122 +343,107 @@ erd__int2d_to_e0f0_ (int * shella, int * shellp,
 
 
   L2:
-    xfp = *nxyzft + 3;
-    i__1 = *shellq;
-    for (xf = 0; xf <= i__1; ++xf)
+    xfp = nxyzft + 3;
+    for (xf = 0; xf <= shellq; ++xf)
     {
         xfp = xfp + xf - 2;
-        xfmax = xf * *shellq;
-        yfend = *shellq - xf;
-        xep = *nxyzet + 3;
-        i__2 = *shellp;
-        for (xe = 0; xe <= i__2; ++xe)
+        xfmax = xf * shellq;
+        yfend = shellq - xf;
+        xep = nxyzet + 3;
+        for (xe = 0; xe <= shellp; ++xe)
         {
             xep = xep + xe - 2;
-            xemax = xe * *shellp;
-            yeend = *shellp - xe;
-            i__3 = *ngqexq;
-            for (m = 1; m <= i__3; ++m)
+            xemax = xe * shellp;
+            yeend = shellp - xe;
+            ind = (xe + xf * int2d_dim2) * int2d_dim1;
+            for (m = 0; m < ngqexq; m+=SIMD_WIDTH)
             {
-                temp1[m] = scale[m] * int2dx[m + (xe + xf * int2dx_dim2) *
-                                             int2dx_dim1];
+#pragma simd
+                for(m1 = 0; m1 < SIMD_WIDTH; m1++)
+                {
+                    temp1[m + m1] = scale[m + m1] * int2dx[m + m1 + ind];
+                }
             }
             xyfp = xfp - xfmax;
-            i__3 = yfend;
-            for (yf = 0; yf <= i__3; ++yf)
+            for (yf = 0; yf <= yfend; ++yf)
             {
                 xyf = xf + yf;
                 --xyfp;
-                sfend = max (*shellc, xyf);
+                sfend = max (shellc, xyf);
                 xyep = xep - xemax;
-                i__4 = yeend;
-                for (ye = 0; ye <= i__4; ++ye)
+                for (ye = 0; ye <= yeend; ++ye)
                 {
                     xye = xe + ye;
                     --xyep;
-                    seend = max (*shella, xye);
+                    seend = max (shella, xye);
                     if (ye + yf == 0)
                     {
-                        i__5 = *ngqexq;
-                        for (n = 1; n <= i__5; ++n)
+                        for (m = 0; m < ngqexq; m+=SIMD_WIDTH)
                         {
-                            temp2[n] = temp1[n];
+#pragma simd
+                            for(m1 = 0; m1 < SIMD_WIDTH; m1++)
+                            {
+                                temp2[m + m1] = temp1[m + m1];
+                            }
                         }
                     }
                     else
                     {
-                        i__5 = *ngqexq;
-                        for (n = 1; n <= i__5; ++n)
+                        ind = (ye + yf * int2d_dim2) * int2d_dim1;
+                        for (m = 0; m < ngqexq; m+=SIMD_WIDTH)
                         {
-                            temp2[n] = temp1[n] * int2dy[n + (ye + yf *
-                                                              int2dy_dim2) *
-                                                         int2dy_dim1];
+#pragma simd
+                            for(m1 = 0; m1 < SIMD_WIDTH; m1++)
+                            {
+                                temp2[m + m1] = temp1[m + m1] * int2dy[m + m1 + ind];
+                            }
                         }
                     }
                     j = xyfp;
-                    nxyzf = *nxyzq;
-                    i__5 = sfend;
-                    for (sf = *shellq; sf >= i__5; --sf)
+                    nxyzf = nxyzq;
+                    for (sf = shellq; sf >= sfend; --sf)
                     {
                         zf = sf - xyf;
-                        i__ = xyep;
-                        nxyze = *nxyzp;
-                        i__6 = seend;
-                        for (se = *shellp; se >= i__6; --se)
+                        i = xyep;
+                        nxyze = nxyzp;
+                        for (se = shellp; se >= seend; --se)
                         {
                             ze = se - xye;
                             if (ze + zf == 0)
                             {
-                                k = 1;
-                                i__7 = *nexq;
-                                for (m = 1; m <= i__7; ++m)
+                                for (m = 0; m < nexq; m+=SIMD_WIDTH)
                                 {
-                                    batch[m + (i__ + j * batch_dim2) *
-                                          batch_dim1] = temp2[k] + temp2[k
-                                                                         + 1];
-                                    k += 2;
+#pragma simd
+                                    for(m1 = 0; m1 < SIMD_WIDTH; m1++)
+                                    {
+                                        batch[m + m1 + (i + j * batch_dim2) * batch_dim1]
+                                            = temp2[m + m1] + temp2[m + m1 + nexq];
+                                    }
                                 }
                             }
                             else
                             {
-                                k = 1;
-                                i__7 = *nexq;
-                                for (m = 1; m <= i__7; ++m)
+                                ind = (ze + zf * int2d_dim2) * int2d_dim1;
+                                for (m = 0; m < nexq; m+=SIMD_WIDTH)
                                 {
-                                    batch[m + (i__ + j * batch_dim2) *
-                                          batch_dim1] = temp2[k] * int2dz[k
-                                                                          +
-                                                                          (ze
-                                                                           +
-                                                                           zf
-                                                                           *
-                                                                           int2dz_dim2)
-                                                                          *
-                                                                          int2dz_dim1]
-                                        + temp2[k + 1] * int2dz[k + 1 +
-                                                                (ze +
-                                                                 zf *
-                                                                 int2dz_dim2)
-                                                                *
-                                                                int2dz_dim1];
-                                    k += 2;
+#pragma simd
+                                    for(m1 = 0; m1 < SIMD_WIDTH; m1++)
+                                    {
+                                        batch[m + m1 + (i + j * batch_dim2) * batch_dim1]
+                                            = temp2[m + m1] * int2dz[m + m1 + ind]
+                                            + temp2[m + m1 + nexq] * int2dz[m + m1 + nexq + ind];
+                                    }
                                 }
                             }
-                            i__ = i__ - nxyze + xe;
+                            i = i - nxyze + xe;
                             nxyze = nxyze - se - 1;
-/* L222: */
                         }
                         j = j - nxyzf + xf;
                         nxyzf = nxyzf - sf - 1;
-/* L220: */
                     }
-/* L212: */
                 }
-/* L210: */
             }
-/* L202: */
         }
-/* L200: */
     }
     return 0;
 
@@ -485,129 +454,108 @@ erd__int2d_to_e0f0_ (int * shella, int * shellp,
 
 
   L3:
-    xfp = *nxyzft + 3;
-    i__1 = *shellq;
-    for (xf = 0; xf <= i__1; ++xf)
+    xfp = nxyzft + 3;
+    for (xf = 0; xf <= shellq; ++xf)
     {
         xfp = xfp + xf - 2;
-        xfmax = xf * *shellq;
-        yfend = *shellq - xf;
-        xep = *nxyzet + 3;
-        i__2 = *shellp;
-        for (xe = 0; xe <= i__2; ++xe)
+        xfmax = xf * shellq;
+        yfend = shellq - xf;
+        xep = nxyzet + 3;
+        for (xe = 0; xe <= shellp; ++xe)
         {
             xep = xep + xe - 2;
-            xemax = xe * *shellp;
-            yeend = *shellp - xe;
-            i__3 = *ngqexq;
-            for (m = 1; m <= i__3; ++m)
+            xemax = xe * shellp;
+            yeend = shellp - xe;
+            ind = (xe + xf * int2d_dim2) * int2d_dim1;
+            for (m = 0; m < ngqexq; m+=SIMD_WIDTH)
             {
-                temp1[m] = scale[m] * int2dx[m + (xe + xf * int2dx_dim2) *
-                                             int2dx_dim1];
+#pragma simd
+                for(m1 = 0; m1 < SIMD_WIDTH; m1++)
+                {
+                    temp1[m + m1] = scale[m + m1] * int2dx[m + m1 + ind];
+                }
             }
             xyfp = xfp - xfmax;
-            i__3 = yfend;
-            for (yf = 0; yf <= i__3; ++yf)
+            for (yf = 0; yf <= yfend; ++yf)
             {
                 xyf = xf + yf;
                 --xyfp;
-                sfend = max (*shellc, xyf);
+                sfend = max (shellc, xyf);
                 xyep = xep - xemax;
-                i__4 = yeend;
-                for (ye = 0; ye <= i__4; ++ye)
+                for (ye = 0; ye <= yeend; ++ye)
                 {
                     xye = xe + ye;
                     --xyep;
-                    seend = max (*shella, xye);
+                    seend = max (shella, xye);
                     if (ye + yf == 0)
                     {
-                        i__5 = *ngqexq;
-                        for (n = 1; n <= i__5; ++n)
+                        for (m = 0; m < ngqexq; m+=SIMD_WIDTH)
                         {
-                            temp2[n] = temp1[n];
+#pragma simd
+                            for(m1 = 0; m1 < SIMD_WIDTH; m1++)
+                            {
+                                temp2[m + m1] = temp1[m + m1];
+                            }
                         }
                     }
                     else
                     {
-                        i__5 = *ngqexq;
-                        for (n = 1; n <= i__5; ++n)
+                        ind = (ye + yf * int2d_dim2) * int2d_dim1;
+                        for (m = 0; m < ngqexq; m+=SIMD_WIDTH)
                         {
-                            temp2[n] = temp1[n] * int2dy[n + (ye + yf *
-                                                              int2dy_dim2) *
-                                                         int2dy_dim1];
+#pragma simd
+                            for(m1 = 0; m1 < SIMD_WIDTH; m1++)
+                            {
+                                temp2[m + m1] = temp1[m + m1] * int2dy[m + m1 + ind];
+                            }
                         }
                     }
                     j = xyfp;
-                    nxyzf = *nxyzq;
-                    i__5 = sfend;
-                    for (sf = *shellq; sf >= i__5; --sf)
+                    nxyzf = nxyzq;
+                    for (sf = shellq; sf >= sfend; --sf)
                     {
                         zf = sf - xyf;
-                        i__ = xyep;
-                        nxyze = *nxyzp;
-                        i__6 = seend;
-                        for (se = *shellp; se >= i__6; --se)
+                        i = xyep;
+                        nxyze = nxyzp;
+                        for (se = shellp; se >= seend; --se)
                         {
                             ze = se - xye;
                             if (ze + zf == 0)
                             {
-                                k = 1;
-                                i__7 = *nexq;
-                                for (m = 1; m <= i__7; ++m)
+                                for (m = 0; m < nexq; m+=SIMD_WIDTH)
                                 {
-                                    batch[m + (i__ + j * batch_dim2) *
-                                          batch_dim1] = temp2[k] + temp2[k
-                                                                         +
-                                                                         1] +
-                                        temp2[k + 2];
-                                    k += 3;
+#pragma simd
+                                    for(m1 = 0; m1 < SIMD_WIDTH; m1++)
+                                    {
+                                        batch[m + m1 + (i + j * batch_dim2) * batch_dim1]
+                                            = temp2[m + m1] + temp2[m + m1 + nexq] + temp2[m + m1 + 2 * nexq];
+                                    }
                                 }
                             }
                             else
                             {
-                                k = 1;
-                                i__7 = *nexq;
-                                for (m = 1; m <= i__7; ++m)
+                                ind = (ze + zf * int2d_dim2) * int2d_dim1;
+                                for (m = 0; m < nexq; m+=SIMD_WIDTH)
                                 {
-                                    batch[m + (i__ + j * batch_dim2) *
-                                          batch_dim1] = temp2[k] * int2dz[k
-                                                                          +
-                                                                          (ze
-                                                                           +
-                                                                           zf
-                                                                           *
-                                                                           int2dz_dim2)
-                                                                          *
-                                                                          int2dz_dim1]
-                                        + temp2[k + 1] * int2dz[k + 1 +
-                                                                (ze +
-                                                                 zf *
-                                                                 int2dz_dim2)
-                                                                *
-                                                                int2dz_dim1] +
-                                        temp2[k + 2] * int2dz[k + 2 +
-                                                              (ze +
-                                                               zf *
-                                                               int2dz_dim2) *
-                                                              int2dz_dim1];
-                                    k += 3;
+#pragma simd
+                                    for(m1 = 0; m1 < SIMD_WIDTH; m1++)
+                                    {
+                                        batch[m + m1 + (i + j * batch_dim2) * batch_dim1]
+                                            = temp2[m + m1] * int2dz[m + m1 + ind]
+                                            + temp2[m + m1 + nexq] * int2dz[m + m1 + nexq + ind]
+                                            + temp2[m + m1 + 2 * nexq] * int2dz[m + m1 + 2 * nexq + ind];
+                                    }
                                 }
                             }
-                            i__ = i__ - nxyze + xe;
+                            i = i - nxyze + xe;
                             nxyze = nxyze - se - 1;
-/* L322: */
                         }
                         j = j - nxyzf + xf;
                         nxyzf = nxyzf - sf - 1;
-/* L320: */
                     }
-/* L312: */
                 }
-/* L310: */
             }
-/* L302: */
         }
-/* L300: */
     }
     return 0;
 
@@ -618,134 +566,110 @@ erd__int2d_to_e0f0_ (int * shella, int * shellp,
 
 
   L4:
-    xfp = *nxyzft + 3;
-    i__1 = *shellq;
-    for (xf = 0; xf <= i__1; ++xf)
+    xfp = nxyzft + 3;
+    for (xf = 0; xf <= shellq; ++xf)
     {
         xfp = xfp + xf - 2;
-        xfmax = xf * *shellq;
-        yfend = *shellq - xf;
-        xep = *nxyzet + 3;
-        i__2 = *shellp;
-        for (xe = 0; xe <= i__2; ++xe)
+        xfmax = xf * shellq;
+        yfend = shellq - xf;
+        xep = nxyzet + 3;
+        for (xe = 0; xe <= shellp; ++xe)
         {
             xep = xep + xe - 2;
-            xemax = xe * *shellp;
-            yeend = *shellp - xe;
-            i__3 = *ngqexq;
-            for (m = 1; m <= i__3; ++m)
+            xemax = xe * shellp;
+            yeend = shellp - xe;
+            ind = (xe + xf * int2d_dim2) * int2d_dim1;
+            for (m = 0; m < ngqexq; m+=SIMD_WIDTH)
             {
-                temp1[m] = scale[m] * int2dx[m + (xe + xf * int2dx_dim2) *
-                                             int2dx_dim1];
+#pragma simd
+                for(m1 = 0; m1 < SIMD_WIDTH; m1++)
+                {
+                    temp1[m + m1] = scale[m + m1] * int2dx[m + m1 + ind];
+                }
             }
             xyfp = xfp - xfmax;
-            i__3 = yfend;
-            for (yf = 0; yf <= i__3; ++yf)
+            for (yf = 0; yf <= yfend; ++yf)
             {
                 xyf = xf + yf;
                 --xyfp;
-                sfend = max (*shellc, xyf);
+                sfend = max (shellc, xyf);
                 xyep = xep - xemax;
-                i__4 = yeend;
-                for (ye = 0; ye <= i__4; ++ye)
+                for (ye = 0; ye <= yeend; ++ye)
                 {
                     xye = xe + ye;
                     --xyep;
-                    seend = max (*shella, xye);
+                    seend = max (shella, xye);
                     if (ye + yf == 0)
                     {
-                        i__5 = *ngqexq;
-                        for (n = 1; n <= i__5; ++n)
+                        for (m = 0; m < ngqexq; m+=SIMD_WIDTH)
                         {
-                            temp2[n] = temp1[n];
+#pragma simd
+                            for(m1 = 0; m1 < SIMD_WIDTH; m1++)
+                            {
+                                temp2[m + m1] = temp1[m + m1];
+                            }
                         }
                     }
                     else
                     {
-                        i__5 = *ngqexq;
-                        for (n = 1; n <= i__5; ++n)
+                        ind = (ye + yf * int2d_dim2) * int2d_dim1;
+                        for (m = 0; m < ngqexq; m+=SIMD_WIDTH)
                         {
-                            temp2[n] = temp1[n] * int2dy[n + (ye + yf *
-                                                              int2dy_dim2) *
-                                                         int2dy_dim1];
+#pragma simd
+                            for(m1 = 0; m1 < SIMD_WIDTH; m1++)
+                            {
+                                temp2[m + m1] = temp1[m + m1] * int2dy[m + m1 + ind];
+                            }
                         }
                     }
                     j = xyfp;
-                    nxyzf = *nxyzq;
-                    i__5 = sfend;
-                    for (sf = *shellq; sf >= i__5; --sf)
+                    nxyzf = nxyzq;
+                    for (sf = shellq; sf >= sfend; --sf)
                     {
                         zf = sf - xyf;
-                        i__ = xyep;
-                        nxyze = *nxyzp;
-                        i__6 = seend;
-                        for (se = *shellp; se >= i__6; --se)
+                        i = xyep;
+                        nxyze = nxyzp;
+                        for (se = shellp; se >= seend; --se)
                         {
                             ze = se - xye;
                             if (ze + zf == 0)
                             {
-                                k = 1;
-                                i__7 = *nexq;
-                                for (m = 1; m <= i__7; ++m)
+                                for (m = 0; m < nexq; m+=SIMD_WIDTH)
                                 {
-                                    batch[m + (i__ + j * batch_dim2) *
-                                          batch_dim1] = temp2[k] + temp2[k
-                                                                         +
-                                                                         1] +
-                                        temp2[k + 2] + temp2[k + 3];
-                                    k += 4;
+#pragma simd
+                                    for(m1 = 0; m1 < SIMD_WIDTH; m1++)
+                                    {
+                                        batch[m + m1 + (i + j * batch_dim2) * batch_dim1]
+                                            = temp2[m + m1] + temp2[m + m1 + nexq]
+                                            + temp2[m + m1 + 2 * nexq] + temp2[m + m1 + 3 * nexq];
+                                    }
                                 }
                             }
                             else
                             {
-                                k = 1;
-                                i__7 = *nexq;
-                                for (m = 1; m <= i__7; ++m)
+                                ind = (ze + zf * int2d_dim2) * int2d_dim1;
+                                for (m = 0; m < nexq; m+=SIMD_WIDTH)
                                 {
-                                    batch[m + (i__ + j * batch_dim2) *
-                                          batch_dim1] = temp2[k] * int2dz[k
-                                                                          +
-                                                                          (ze
-                                                                           +
-                                                                           zf
-                                                                           *
-                                                                           int2dz_dim2)
-                                                                          *
-                                                                          int2dz_dim1]
-                                        + temp2[k + 1] * int2dz[k + 1 +
-                                                                (ze +
-                                                                 zf *
-                                                                 int2dz_dim2)
-                                                                *
-                                                                int2dz_dim1] +
-                                        temp2[k + 2] * int2dz[k + 2 +
-                                                              (ze +
-                                                               zf *
-                                                               int2dz_dim2) *
-                                                              int2dz_dim1] +
-                                        temp2[k + 3] * int2dz[k + 3 +
-                                                              (ze +
-                                                               zf *
-                                                               int2dz_dim2) *
-                                                              int2dz_dim1];
-                                    k += 4;
+#pragma simd
+                                    for(m1 = 0; m1 < SIMD_WIDTH; m1++)
+                                    {
+                                        batch[m + m1 + (i + j * batch_dim2) * batch_dim1]
+                                            = temp2[m + m1] * int2dz[m + m1 + ind]
+                                            + temp2[m + m1 + nexq] * int2dz[m + m1 + nexq + ind]
+                                            + temp2[m + m1 + 2 * nexq] * int2dz[m + m1 + 2 * nexq + ind]
+                                            + temp2[m + m1 + 3 * nexq] * int2dz[m + m1 + 3 * nexq + ind];
+                                    }
                                 }
                             }
-                            i__ = i__ - nxyze + xe;
+                            i = i - nxyze + xe;
                             nxyze = nxyze - se - 1;
-/* L422: */
                         }
                         j = j - nxyzf + xf;
                         nxyzf = nxyzf - sf - 1;
-/* L420: */
                     }
-/* L412: */
                 }
-/* L410: */
             }
-/* L402: */
         }
-/* L400: */
     }
     return 0;
 
@@ -756,143 +680,116 @@ erd__int2d_to_e0f0_ (int * shella, int * shellp,
 
 
   L5:
-    xfp = *nxyzft + 3;
-    i__1 = *shellq;
-    for (xf = 0; xf <= i__1; ++xf)
+    xfp = nxyzft + 3;
+    for (xf = 0; xf <= shellq; ++xf)
     {
         xfp = xfp + xf - 2;
-        xfmax = xf * *shellq;
-        yfend = *shellq - xf;
-        xep = *nxyzet + 3;
-        i__2 = *shellp;
-        for (xe = 0; xe <= i__2; ++xe)
+        xfmax = xf * shellq;
+        yfend = shellq - xf;
+        xep = nxyzet + 3;
+        for (xe = 0; xe <= shellp; ++xe)
         {
             xep = xep + xe - 2;
-            xemax = xe * *shellp;
-            yeend = *shellp - xe;
-            i__3 = *ngqexq;
-            for (m = 1; m <= i__3; ++m)
+            xemax = xe * shellp;
+            yeend = shellp - xe;
+            ind = (xe + xf * int2d_dim2) * int2d_dim1;
+            for (m = 0; m < ngqexq; m+=SIMD_WIDTH)
             {
-                temp1[m] = scale[m] * int2dx[m + (xe + xf * int2dx_dim2) *
-                                             int2dx_dim1];
+#pragma simd
+                for(m1 = 0; m1 < SIMD_WIDTH; m1++)
+                {
+                    temp1[m + m1] = scale[m + m1] * int2dx[m + m1 + ind];
+                }
             }
             xyfp = xfp - xfmax;
-            i__3 = yfend;
-            for (yf = 0; yf <= i__3; ++yf)
+            for (yf = 0; yf <= yfend; ++yf)
             {
                 xyf = xf + yf;
                 --xyfp;
-                sfend = max (*shellc, xyf);
+                sfend = max (shellc, xyf);
                 xyep = xep - xemax;
-                i__4 = yeend;
-                for (ye = 0; ye <= i__4; ++ye)
+                for (ye = 0; ye <= yeend; ++ye)
                 {
                     xye = xe + ye;
                     --xyep;
-                    seend = max (*shella, xye);
+                    seend = max (shella, xye);
                     if (ye + yf == 0)
                     {
-                        i__5 = *ngqexq;
-                        for (n = 1; n <= i__5; ++n)
+                        for (m = 0; m < ngqexq; m+=SIMD_WIDTH)
                         {
-                            temp2[n] = temp1[n];
+#pragma simd
+                            for(m1 = 0; m1 < SIMD_WIDTH; m1++)
+                            {
+                                temp2[m + m1] = temp1[m + m1];
+                            }
                         }
                     }
                     else
                     {
-                        i__5 = *ngqexq;
-                        for (n = 1; n <= i__5; ++n)
+                        ind = (ye + yf * int2d_dim2) * int2d_dim1;
+                        for (m = 0; m < ngqexq; m+=SIMD_WIDTH)
                         {
-                            temp2[n] = temp1[n] * int2dy[n + (ye + yf *
-                                                              int2dy_dim2) *
-                                                         int2dy_dim1];
+#pragma simd
+                            for(m1 = 0; m1 < SIMD_WIDTH; m1++)
+                            {
+                                temp2[m + m1] = temp1[m + m1] * int2dy[m + m1 + ind];
+                            }
                         }
                     }
                     j = xyfp;
-                    nxyzf = *nxyzq;
-                    i__5 = sfend;
-                    for (sf = *shellq; sf >= i__5; --sf)
+                    nxyzf = nxyzq;
+                    for (sf = shellq; sf >= sfend; --sf)
                     {
                         zf = sf - xyf;
-                        i__ = xyep;
-                        nxyze = *nxyzp;
-                        i__6 = seend;
-                        for (se = *shellp; se >= i__6; --se)
+                        i = xyep;
+                        nxyze = nxyzp;
+                        for (se = shellp; se >= seend; --se)
                         {
                             ze = se - xye;
                             if (ze + zf == 0)
                             {
-                                k = 1;
-                                i__7 = *nexq;
-                                for (m = 1; m <= i__7; ++m)
+                                for (m = 0; m < nexq; m+=SIMD_WIDTH)
                                 {
-                                    batch[m + (i__ + j * batch_dim2) *
-                                          batch_dim1] = temp2[k] + temp2[k
-                                                                         +
-                                                                         1] +
-                                        temp2[k + 2] + temp2[k + 3] +
-                                        temp2[k + 4];
-                                    k += 5;
+#pragma simd
+                                    for(m1 = 0; m1 < SIMD_WIDTH; m1++)
+                                    {
+                                        batch[m + m1 + (i + j * batch_dim2) * batch_dim1]
+                                            = temp2[m + m1]
+                                            + temp2[m + m1 + nexq]
+                                            + temp2[m + m1 + 2 * nexq]
+                                            + temp2[m + m1 + 3 * nexq]
+                                            + temp2[m + m1 + 4 * nexq];
+                                    }
                                 }
                             }
                             else
                             {
-                                k = 1;
-                                i__7 = *nexq;
-                                for (m = 1; m <= i__7; ++m)
+                                ind = (ze + zf * int2d_dim2) * int2d_dim1;
+                                for (m = 0; m < nexq; m+=SIMD_WIDTH)
                                 {
-                                    batch[m + (i__ + j * batch_dim2) *
-                                          batch_dim1] = temp2[k] * int2dz[k
-                                                                          +
-                                                                          (ze
-                                                                           +
-                                                                           zf
-                                                                           *
-                                                                           int2dz_dim2)
-                                                                          *
-                                                                          int2dz_dim1]
-                                        + temp2[k + 1] * int2dz[k + 1 +
-                                                                (ze +
-                                                                 zf *
-                                                                 int2dz_dim2)
-                                                                *
-                                                                int2dz_dim1] +
-                                        temp2[k + 2] * int2dz[k + 2 +
-                                                              (ze +
-                                                               zf *
-                                                               int2dz_dim2) *
-                                                              int2dz_dim1] +
-                                        temp2[k + 3] * int2dz[k + 3 +
-                                                              (ze +
-                                                               zf *
-                                                               int2dz_dim2) *
-                                                              int2dz_dim1] +
-                                        temp2[k + 4] * int2dz[k + 4 +
-                                                              (ze +
-                                                               zf *
-                                                               int2dz_dim2) *
-                                                              int2dz_dim1];
-                                    k += 5;
+#pragma simd
+                                    for(m1 = 0; m1 < SIMD_WIDTH; m1++)
+                                    {
+                                        batch[m + m1 + (i + j * batch_dim2) * batch_dim1]
+                                            = temp2[m + m1] * int2dz[m + m1 + ind]
+                                            + temp2[m + m1 + nexq] * int2dz[m + m1 + nexq + ind]
+                                            + temp2[m + m1 + 2 * nexq] * int2dz[m + m1 + 2 * nexq + ind]
+                                            + temp2[m + m1 + 3 * nexq] * int2dz[m + m1 + 3 * nexq + ind]
+                                            + temp2[m + m1 + 4 * nexq] * int2dz[m + m1 + 4 * nexq + ind];
+                                    }
                                 }
                             }
-                            i__ = i__ - nxyze + xe;
+                            i = i - nxyze + xe;
                             nxyze = nxyze - se - 1;
-/* L522: */
                         }
                         j = j - nxyzf + xf;
                         nxyzf = nxyzf - sf - 1;
-/* L520: */
                     }
-/* L512: */
                 }
-/* L510: */
             }
-/* L502: */
         }
-/* L500: */
     }
     return 0;
-
 
 /*                       ******************** */
 /*                       *  # of roots = 6  * */
@@ -900,148 +797,118 @@ erd__int2d_to_e0f0_ (int * shella, int * shellp,
 
 
   L6:
-    xfp = *nxyzft + 3;
-    i__1 = *shellq;
-    for (xf = 0; xf <= i__1; ++xf)
+    xfp = nxyzft + 3;
+    for (xf = 0; xf <= shellq; ++xf)
     {
         xfp = xfp + xf - 2;
-        xfmax = xf * *shellq;
-        yfend = *shellq - xf;
-        xep = *nxyzet + 3;
-        i__2 = *shellp;
-        for (xe = 0; xe <= i__2; ++xe)
+        xfmax = xf * shellq;
+        yfend = shellq - xf;
+        xep = nxyzet + 3;
+        for (xe = 0; xe <= shellp; ++xe)
         {
             xep = xep + xe - 2;
-            xemax = xe * *shellp;
-            yeend = *shellp - xe;
-            i__3 = *ngqexq;
-            for (m = 1; m <= i__3; ++m)
+            xemax = xe * shellp;
+            yeend = shellp - xe;
+            ind = (xe + xf * int2d_dim2) * int2d_dim1;
+            for (m = 0; m < ngqexq; m+=SIMD_WIDTH)
             {
-                temp1[m] = scale[m] * int2dx[m + (xe + xf * int2dx_dim2) *
-                                             int2dx_dim1];
+#pragma simd
+                for(m1 = 0; m1 < SIMD_WIDTH; m1++)
+                {
+                    temp1[m + m1] = scale[m + m1] * int2dx[m + m1 + ind];
+                }
             }
             xyfp = xfp - xfmax;
-            i__3 = yfend;
-            for (yf = 0; yf <= i__3; ++yf)
+            for (yf = 0; yf <= yfend; ++yf)
             {
                 xyf = xf + yf;
                 --xyfp;
-                sfend = max (*shellc, xyf);
+                sfend = max (shellc, xyf);
                 xyep = xep - xemax;
-                i__4 = yeend;
-                for (ye = 0; ye <= i__4; ++ye)
+                for (ye = 0; ye <= yeend; ++ye)
                 {
                     xye = xe + ye;
                     --xyep;
-                    seend = max (*shella, xye);
+                    seend = max (shella, xye);
                     if (ye + yf == 0)
                     {
-                        i__5 = *ngqexq;
-                        for (n = 1; n <= i__5; ++n)
+                        for (m = 0; m < ngqexq; m+=SIMD_WIDTH)
                         {
-                            temp2[n] = temp1[n];
+#pragma simd
+                            for(m1 = 0; m1 < SIMD_WIDTH; m1++)
+                            {
+                                temp2[m + m1] = temp1[m + m1];
+                            }
                         }
                     }
                     else
                     {
-                        i__5 = *ngqexq;
-                        for (n = 1; n <= i__5; ++n)
+                        ind = (ye + yf * int2d_dim2) * int2d_dim1;
+                        for (m = 0; m < ngqexq; m+=SIMD_WIDTH)
                         {
-                            temp2[n] = temp1[n] * int2dy[n + (ye + yf *
-                                                              int2dy_dim2) *
-                                                         int2dy_dim1];
+#pragma simd
+                            for(m1 = 0; m1 < SIMD_WIDTH; m1++)
+                            {
+                                temp2[m + m1] = temp1[m + m1] * int2dy[m + m1 + ind];
+                            }
                         }
                     }
                     j = xyfp;
-                    nxyzf = *nxyzq;
-                    i__5 = sfend;
-                    for (sf = *shellq; sf >= i__5; --sf)
+                    nxyzf = nxyzq;
+                    for (sf = shellq; sf >= sfend; --sf)
                     {
                         zf = sf - xyf;
-                        i__ = xyep;
-                        nxyze = *nxyzp;
-                        i__6 = seend;
-                        for (se = *shellp; se >= i__6; --se)
+                        i = xyep;
+                        nxyze = nxyzp;
+                        for (se = shellp; se >= seend; --se)
                         {
                             ze = se - xye;
                             if (ze + zf == 0)
                             {
-                                k = 1;
-                                i__7 = *nexq;
-                                for (m = 1; m <= i__7; ++m)
+                                for (m = 0; m < nexq; m+=SIMD_WIDTH)
                                 {
-                                    batch[m + (i__ + j * batch_dim2) *
-                                          batch_dim1] = temp2[k] + temp2[k
-                                                                         +
-                                                                         1] +
-                                        temp2[k + 2] + temp2[k + 3] +
-                                        temp2[k + 4] + temp2[k + 5];
-                                    k += 6;
+#pragma simd
+                                    for(m1 = 0; m1 < SIMD_WIDTH; m1++)
+                                    {
+                                        batch[m + m1 + (i + j * batch_dim2) * batch_dim1]
+                                            = temp2[m + m1]
+                                            + temp2[m + m1 + nexq]
+                                            + temp2[m + m1 + 2 * nexq]
+                                            + temp2[m + m1 + 3 * nexq]
+                                            + temp2[m + m1 + 4 * nexq]
+                                            + temp2[m + m1 + 5 * nexq];
+                                    }
                                 }
                             }
                             else
                             {
-                                k = 1;
-                                i__7 = *nexq;
-                                for (m = 1; m <= i__7; ++m)
+                                ind = (ze + zf * int2d_dim2) * int2d_dim1;
+                                for (m = 0; m < nexq; m+=SIMD_WIDTH)
                                 {
-                                    batch[m + (i__ + j * batch_dim2) *
-                                          batch_dim1] = temp2[k] * int2dz[k
-                                                                          +
-                                                                          (ze
-                                                                           +
-                                                                           zf
-                                                                           *
-                                                                           int2dz_dim2)
-                                                                          *
-                                                                          int2dz_dim1]
-                                        + temp2[k + 1] * int2dz[k + 1 +
-                                                                (ze +
-                                                                 zf *
-                                                                 int2dz_dim2)
-                                                                *
-                                                                int2dz_dim1] +
-                                        temp2[k + 2] * int2dz[k + 2 +
-                                                              (ze +
-                                                               zf *
-                                                               int2dz_dim2) *
-                                                              int2dz_dim1] +
-                                        temp2[k + 3] * int2dz[k + 3 +
-                                                              (ze +
-                                                               zf *
-                                                               int2dz_dim2) *
-                                                              int2dz_dim1] +
-                                        temp2[k + 4] * int2dz[k + 4 +
-                                                              (ze +
-                                                               zf *
-                                                               int2dz_dim2) *
-                                                              int2dz_dim1] +
-                                        temp2[k + 5] * int2dz[k + 5 +
-                                                              (ze +
-                                                               zf *
-                                                               int2dz_dim2) *
-                                                              int2dz_dim1];
-                                    k += 6;
+#pragma simd
+                                    for(m1 = 0; m1 < SIMD_WIDTH; m1++)
+                                    {
+                                        batch[m + m1 + (i + j * batch_dim2) * batch_dim1]
+                                            = temp2[m + m1] * int2dz[m + m1 + ind]
+                                            + temp2[m + m1 + nexq] * int2dz[m + m1 + nexq + ind]
+                                            + temp2[m + m1 + 2 * nexq] * int2dz[m + m1 + 2 * nexq + ind]
+                                            + temp2[m + m1 + 3 * nexq] * int2dz[m + m1 + 3 * nexq + ind]
+                                            + temp2[m + m1 + 4 * nexq] * int2dz[m + m1 + 4 * nexq + ind]
+                                            + temp2[m + m1 + 5 * nexq] * int2dz[m + m1 + 5 * nexq + ind];
+                                    }
                                 }
                             }
-                            i__ = i__ - nxyze + xe;
+                            i = i - nxyze + xe;
                             nxyze = nxyze - se - 1;
-/* L622: */
                         }
                         j = j - nxyzf + xf;
                         nxyzf = nxyzf - sf - 1;
-/* L620: */
                     }
-/* L612: */
                 }
-/* L610: */
             }
-/* L602: */
         }
-/* L600: */
     }
     return 0;
-
 
 /*                       ******************** */
 /*                       *  # of roots = 7  * */
@@ -1049,154 +916,120 @@ erd__int2d_to_e0f0_ (int * shella, int * shellp,
 
 
   L7:
-    xfp = *nxyzft + 3;
-    i__1 = *shellq;
-    for (xf = 0; xf <= i__1; ++xf)
+    xfp = nxyzft + 3;
+    for (xf = 0; xf <= shellq; ++xf)
     {
         xfp = xfp + xf - 2;
-        xfmax = xf * *shellq;
-        yfend = *shellq - xf;
-        xep = *nxyzet + 3;
-        i__2 = *shellp;
-        for (xe = 0; xe <= i__2; ++xe)
+        xfmax = xf * shellq;
+        yfend = shellq - xf;
+        xep = nxyzet + 3;
+        for (xe = 0; xe <= shellp; ++xe)
         {
             xep = xep + xe - 2;
-            xemax = xe * *shellp;
-            yeend = *shellp - xe;
-            i__3 = *ngqexq;
-            for (m = 1; m <= i__3; ++m)
+            xemax = xe * shellp;
+            yeend = shellp - xe;
+            ind = (xe + xf * int2d_dim2) * int2d_dim1;
+            for (m = 0; m < ngqexq; m+=SIMD_WIDTH)
             {
-                temp1[m] = scale[m] * int2dx[m + (xe + xf * int2dx_dim2) *
-                                             int2dx_dim1];
+#pragma simd
+                for(m1 = 0; m1 < SIMD_WIDTH; m1++)
+                {
+                    temp1[m + m1] = scale[m + m1] * int2dx[m + m1 + ind];
+                }
             }
             xyfp = xfp - xfmax;
-            i__3 = yfend;
-            for (yf = 0; yf <= i__3; ++yf)
+            for (yf = 0; yf <= yfend; ++yf)
             {
                 xyf = xf + yf;
                 --xyfp;
-                sfend = max (*shellc, xyf);
+                sfend = max (shellc, xyf);
                 xyep = xep - xemax;
-                i__4 = yeend;
-                for (ye = 0; ye <= i__4; ++ye)
+                for (ye = 0; ye <= yeend; ++ye)
                 {
                     xye = xe + ye;
                     --xyep;
-                    seend = max (*shella, xye);
+                    seend = max (shella, xye);
                     if (ye + yf == 0)
                     {
-                        i__5 = *ngqexq;
-                        for (n = 1; n <= i__5; ++n)
+                        for (m = 0; m < ngqexq; m+=SIMD_WIDTH)
                         {
-                            temp2[n] = temp1[n];
+#pragma simd
+                            for(m1 = 0; m1 < SIMD_WIDTH; m1++)
+                            {
+                                temp2[m + m1] = temp1[m + m1];
+                            }
                         }
                     }
                     else
                     {
-                        i__5 = *ngqexq;
-                        for (n = 1; n <= i__5; ++n)
+                        ind = (ye + yf * int2d_dim2) * int2d_dim1;
+                        for (m = 0; m < ngqexq; m+=SIMD_WIDTH)
                         {
-                            temp2[n] = temp1[n] * int2dy[n + (ye + yf *
-                                                              int2dy_dim2) *
-                                                         int2dy_dim1];
+#pragma simd
+                            for(m1 = 0; m1 < SIMD_WIDTH; m1++)
+                            {
+                                temp2[m + m1] = temp1[m + m1] * int2dy[m + m1 + ind];
+                            }
                         }
                     }
                     j = xyfp;
-                    nxyzf = *nxyzq;
-                    i__5 = sfend;
-                    for (sf = *shellq; sf >= i__5; --sf)
+                    nxyzf = nxyzq;
+                    for (sf = shellq; sf >= sfend; --sf)
                     {
                         zf = sf - xyf;
-                        i__ = xyep;
-                        nxyze = *nxyzp;
-                        i__6 = seend;
-                        for (se = *shellp; se >= i__6; --se)
+                        i = xyep;
+                        nxyze = nxyzp;
+                        for (se = shellp; se >= seend; --se)
                         {
                             ze = se - xye;
                             if (ze + zf == 0)
                             {
-                                k = 1;
-                                i__7 = *nexq;
-                                for (m = 1; m <= i__7; ++m)
+                                for (m = 0; m < nexq; m+=SIMD_WIDTH)
                                 {
-                                    batch[m + (i__ + j * batch_dim2) *
-                                          batch_dim1] = temp2[k] + temp2[k
-                                                                         +
-                                                                         1] +
-                                        temp2[k + 2] + temp2[k + 3] +
-                                        temp2[k + 4] + temp2[k + 5] +
-                                        temp2[k + 6];
-                                    k += 7;
+#pragma simd
+                                    for(m1 = 0; m1 < SIMD_WIDTH; m1++)
+                                    {
+                                        batch[m + m1 + (i + j * batch_dim2) * batch_dim1]
+                                            = temp2[m + m1]
+                                            + temp2[m + m1 + nexq]
+                                            + temp2[m + m1 + 2 * nexq]
+                                            + temp2[m + m1 + 3 * nexq]
+                                            + temp2[m + m1 + 4 * nexq]
+                                            + temp2[m + m1 + 5 * nexq]
+                                            + temp2[m + m1 + 6 * nexq];
+                                    }
                                 }
                             }
                             else
                             {
-                                k = 1;
-                                i__7 = *nexq;
-                                for (m = 1; m <= i__7; ++m)
+                                ind = (ze + zf * int2d_dim2) * int2d_dim1;
+                                for (m = 0; m < nexq; m+=SIMD_WIDTH)
                                 {
-                                    batch[m + (i__ + j * batch_dim2) *
-                                          batch_dim1] = temp2[k] * int2dz[k
-                                                                          +
-                                                                          (ze
-                                                                           +
-                                                                           zf
-                                                                           *
-                                                                           int2dz_dim2)
-                                                                          *
-                                                                          int2dz_dim1]
-                                        + temp2[k + 1] * int2dz[k + 1 +
-                                                                (ze +
-                                                                 zf *
-                                                                 int2dz_dim2)
-                                                                *
-                                                                int2dz_dim1] +
-                                        temp2[k + 2] * int2dz[k + 2 +
-                                                              (ze +
-                                                               zf *
-                                                               int2dz_dim2) *
-                                                              int2dz_dim1] +
-                                        temp2[k + 3] * int2dz[k + 3 +
-                                                              (ze +
-                                                               zf *
-                                                               int2dz_dim2) *
-                                                              int2dz_dim1] +
-                                        temp2[k + 4] * int2dz[k + 4 +
-                                                              (ze +
-                                                               zf *
-                                                               int2dz_dim2) *
-                                                              int2dz_dim1] +
-                                        temp2[k + 5] * int2dz[k + 5 +
-                                                              (ze +
-                                                               zf *
-                                                               int2dz_dim2) *
-                                                              int2dz_dim1] +
-                                        temp2[k + 6] * int2dz[k + 6 +
-                                                              (ze +
-                                                               zf *
-                                                               int2dz_dim2) *
-                                                              int2dz_dim1];
-                                    k += 7;
+#pragma simd
+                                    for(m1 = 0; m1 < SIMD_WIDTH; m1++)
+                                    {
+                                        batch[m + m1 + (i + j * batch_dim2) * batch_dim1]
+                                            = temp2[m + m1] * int2dz[m + m1 + ind]
+                                            + temp2[m + m1 + nexq] * int2dz[m + m1 + nexq + ind]
+                                            + temp2[m + m1 + 2 * nexq] * int2dz[m + m1 + 2 * nexq + ind]
+                                            + temp2[m + m1 + 3 * nexq] * int2dz[m + m1 + 3 * nexq + ind]
+                                            + temp2[m + m1 + 4 * nexq] * int2dz[m + m1 + 4 * nexq + ind]
+                                            + temp2[m + m1 + 5 * nexq] * int2dz[m + m1 + 5 * nexq + ind]
+                                            + temp2[m + m1 + 6 * nexq] * int2dz[m + m1 + 6 * nexq + ind];
+                                    }
                                 }
                             }
-                            i__ = i__ - nxyze + xe;
+                            i = i - nxyze + xe;
                             nxyze = nxyze - se - 1;
-/* L722: */
                         }
                         j = j - nxyzf + xf;
                         nxyzf = nxyzf - sf - 1;
-/* L720: */
                     }
-/* L712: */
                 }
-/* L710: */
             }
-/* L702: */
         }
-/* L700: */
     }
     return 0;
-
 
 /*                       ******************** */
 /*                       *  # of roots = 8  * */
@@ -1204,159 +1037,122 @@ erd__int2d_to_e0f0_ (int * shella, int * shellp,
 
 
   L8:
-    xfp = *nxyzft + 3;
-    i__1 = *shellq;
-    for (xf = 0; xf <= i__1; ++xf)
+    xfp = nxyzft + 3;
+    for (xf = 0; xf <= shellq; ++xf)
     {
         xfp = xfp + xf - 2;
-        xfmax = xf * *shellq;
-        yfend = *shellq - xf;
-        xep = *nxyzet + 3;
-        i__2 = *shellp;
-        for (xe = 0; xe <= i__2; ++xe)
+        xfmax = xf * shellq;
+        yfend = shellq - xf;
+        xep = nxyzet + 3;
+        for (xe = 0; xe <= shellp; ++xe)
         {
             xep = xep + xe - 2;
-            xemax = xe * *shellp;
-            yeend = *shellp - xe;
-            i__3 = *ngqexq;
-            for (m = 1; m <= i__3; ++m)
+            xemax = xe * shellp;
+            yeend = shellp - xe;
+            ind = (xe + xf * int2d_dim2) * int2d_dim1;
+            for (m = 0; m < ngqexq; m+=SIMD_WIDTH)
             {
-                temp1[m] = scale[m] * int2dx[m + (xe + xf * int2dx_dim2) *
-                                             int2dx_dim1];
+#pragma simd
+                for(m1 = 0; m1 < SIMD_WIDTH; m1++)
+                {
+                    temp1[m + m1] = scale[m + m1] * int2dx[m + m1 + ind];
+                }
             }
             xyfp = xfp - xfmax;
-            i__3 = yfend;
-            for (yf = 0; yf <= i__3; ++yf)
+            for (yf = 0; yf <= yfend; ++yf)
             {
                 xyf = xf + yf;
                 --xyfp;
-                sfend = max (*shellc, xyf);
+                sfend = max (shellc, xyf);
                 xyep = xep - xemax;
-                i__4 = yeend;
-                for (ye = 0; ye <= i__4; ++ye)
+                for (ye = 0; ye <= yeend; ++ye)
                 {
                     xye = xe + ye;
                     --xyep;
-                    seend = max (*shella, xye);
+                    seend = max (shella, xye);
                     if (ye + yf == 0)
                     {
-                        i__5 = *ngqexq;
-                        for (n = 1; n <= i__5; ++n)
+                        for (m = 0; m < ngqexq; m+=SIMD_WIDTH)
                         {
-                            temp2[n] = temp1[n];
+#pragma simd
+                            for(m1 = 0; m1 < SIMD_WIDTH; m1++)
+                            {
+                                temp2[m + m1] = temp1[m + m1];
+                            }
                         }
                     }
                     else
                     {
-                        i__5 = *ngqexq;
-                        for (n = 1; n <= i__5; ++n)
+                        ind = (ye + yf * int2d_dim2) * int2d_dim1;
+                        for (m = 0; m < ngqexq; m+=SIMD_WIDTH)
                         {
-                            temp2[n] = temp1[n] * int2dy[n + (ye + yf *
-                                                              int2dy_dim2) *
-                                                         int2dy_dim1];
+#pragma simd
+                            for(m1 = 0; m1 < SIMD_WIDTH; m1++)
+                            {
+                                temp2[m + m1] = temp1[m + m1] * int2dy[m + m1 + ind];
+                            }
                         }
                     }
                     j = xyfp;
-                    nxyzf = *nxyzq;
-                    i__5 = sfend;
-                    for (sf = *shellq; sf >= i__5; --sf)
+                    nxyzf = nxyzq;
+                    for (sf = shellq; sf >= sfend; --sf)
                     {
                         zf = sf - xyf;
-                        i__ = xyep;
-                        nxyze = *nxyzp;
-                        i__6 = seend;
-                        for (se = *shellp; se >= i__6; --se)
+                        i = xyep;
+                        nxyze = nxyzp;
+                        for (se = shellp; se >= seend; --se)
                         {
                             ze = se - xye;
                             if (ze + zf == 0)
                             {
-                                k = 1;
-                                i__7 = *nexq;
-                                for (m = 1; m <= i__7; ++m)
+                                for (m = 0; m < nexq; m+=SIMD_WIDTH)
                                 {
-                                    batch[m + (i__ + j * batch_dim2) *
-                                          batch_dim1] = temp2[k] + temp2[k
-                                                                         +
-                                                                         1] +
-                                        temp2[k + 2] + temp2[k + 3] +
-                                        temp2[k + 4] + temp2[k + 5] +
-                                        temp2[k + 6] + temp2[k + 7];
-                                    k += 8;
+#pragma simd
+                                    for(m1 = 0; m1 < SIMD_WIDTH; m1++)
+                                    {
+                                        batch[m + m1 + (i + j * batch_dim2) * batch_dim1]
+                                            = temp2[m + m1]
+                                            + temp2[m + m1 + nexq]
+                                            + temp2[m + m1 + 2 * nexq]
+                                            + temp2[m + m1 + 3 * nexq]
+                                            + temp2[m + m1 + 4 * nexq]
+                                            + temp2[m + m1 + 5 * nexq]
+                                            + temp2[m + m1 + 6 * nexq]
+                                            + temp2[m + m1 + 7 * nexq];
+                                    }
                                 }
                             }
                             else
                             {
-                                k = 1;
-                                i__7 = *nexq;
-                                for (m = 1; m <= i__7; ++m)
+                                ind = (ze + zf * int2d_dim2) * int2d_dim1;
+                                for (m = 0; m < nexq; m+=SIMD_WIDTH)
                                 {
-                                    batch[m + (i__ + j * batch_dim2) *
-                                          batch_dim1] = temp2[k] * int2dz[k
-                                                                          +
-                                                                          (ze
-                                                                           +
-                                                                           zf
-                                                                           *
-                                                                           int2dz_dim2)
-                                                                          *
-                                                                          int2dz_dim1]
-                                        + temp2[k + 1] * int2dz[k + 1 +
-                                                                (ze +
-                                                                 zf *
-                                                                 int2dz_dim2)
-                                                                *
-                                                                int2dz_dim1] +
-                                        temp2[k + 2] * int2dz[k + 2 +
-                                                              (ze +
-                                                               zf *
-                                                               int2dz_dim2) *
-                                                              int2dz_dim1] +
-                                        temp2[k + 3] * int2dz[k + 3 +
-                                                              (ze +
-                                                               zf *
-                                                               int2dz_dim2) *
-                                                              int2dz_dim1] +
-                                        temp2[k + 4] * int2dz[k + 4 +
-                                                              (ze +
-                                                               zf *
-                                                               int2dz_dim2) *
-                                                              int2dz_dim1] +
-                                        temp2[k + 5] * int2dz[k + 5 +
-                                                              (ze +
-                                                               zf *
-                                                               int2dz_dim2) *
-                                                              int2dz_dim1] +
-                                        temp2[k + 6] * int2dz[k + 6 +
-                                                              (ze +
-                                                               zf *
-                                                               int2dz_dim2) *
-                                                              int2dz_dim1] +
-                                        temp2[k + 7] * int2dz[k + 7 +
-                                                              (ze +
-                                                               zf *
-                                                               int2dz_dim2) *
-                                                              int2dz_dim1];
-                                    k += 8;
+#pragma simd
+                                    for(m1 = 0; m1 < SIMD_WIDTH; m1++)
+                                    {
+                                        batch[m + m1 + (i + j * batch_dim2) * batch_dim1]
+                                            = temp2[m + m1] * int2dz[m + m1 + ind]
+                                            + temp2[m + m1 + nexq] * int2dz[m + m1 + nexq + ind]
+                                            + temp2[m + m1 + 2 * nexq] * int2dz[m + m1 + 2 * nexq + ind]
+                                            + temp2[m + m1 + 3 * nexq] * int2dz[m + m1 + 3 * nexq + ind]
+                                            + temp2[m + m1 + 4 * nexq] * int2dz[m + m1 + 4 * nexq + ind]
+                                            + temp2[m + m1 + 5 * nexq] * int2dz[m + m1 + 5 * nexq + ind]
+                                            + temp2[m + m1 + 6 * nexq] * int2dz[m + m1 + 6 * nexq + ind]
+                                            + temp2[m + m1 + 7 * nexq] * int2dz[m + m1 + 7 * nexq + ind];
+                                    }
                                 }
                             }
-                            i__ = i__ - nxyze + xe;
+                            i = i - nxyze + xe;
                             nxyze = nxyze - se - 1;
-/* L822: */
                         }
                         j = j - nxyzf + xf;
                         nxyzf = nxyzf - sf - 1;
-/* L820: */
                     }
-/* L812: */
                 }
-/* L810: */
             }
-/* L802: */
         }
-/* L800: */
     }
     return 0;
-
 
 /*                       ******************** */
 /*                       *  # of roots = 9  * */
@@ -1364,162 +1160,122 @@ erd__int2d_to_e0f0_ (int * shella, int * shellp,
 
 
   L9:
-    xfp = *nxyzft + 3;
-    i__1 = *shellq;
-    for (xf = 0; xf <= i__1; ++xf)
+    xfp = nxyzft + 3;
+    for (xf = 0; xf <= shellq; ++xf)
     {
         xfp = xfp + xf - 2;
-        xfmax = xf * *shellq;
-        yfend = *shellq - xf;
-        xep = *nxyzet + 3;
-        i__2 = *shellp;
-        for (xe = 0; xe <= i__2; ++xe)
+        xfmax = xf * shellq;
+        yfend = shellq - xf;
+        xep = nxyzet + 3;
+        for (xe = 0; xe <= shellp; ++xe)
         {
             xep = xep + xe - 2;
-            xemax = xe * *shellp;
-            yeend = *shellp - xe;
-            i__3 = *ngqexq;
-            for (m = 1; m <= i__3; ++m)
+            xemax = xe * shellp;
+            yeend = shellp - xe;
+            ind = (xe + xf * int2d_dim2) * int2d_dim1;
+            for (m = 0; m < ngqexq; m+=SIMD_WIDTH)
             {
-                temp1[m] = scale[m] * int2dx[m + (xe + xf * int2dx_dim2) *
-                                             int2dx_dim1];
+#pragma simd
+                for(m1 = 0; m1 < SIMD_WIDTH; m1++)
+                {
+                    temp1[m + m1] = scale[m + m1] * int2dx[m + m1 + ind];
+                }
             }
             xyfp = xfp - xfmax;
-            i__3 = yfend;
-            for (yf = 0; yf <= i__3; ++yf)
+            for (yf = 0; yf <= yfend; ++yf)
             {
                 xyf = xf + yf;
                 --xyfp;
-                sfend = max (*shellc, xyf);
+                sfend = max (shellc, xyf);
                 xyep = xep - xemax;
-                i__4 = yeend;
-                for (ye = 0; ye <= i__4; ++ye)
+                for (ye = 0; ye <= yeend; ++ye)
                 {
                     xye = xe + ye;
                     --xyep;
-                    seend = max (*shella, xye);
+                    seend = max (shella, xye);
                     if (ye + yf == 0)
                     {
-                        i__5 = *ngqexq;
-                        for (n = 1; n <= i__5; ++n)
+                        for (m = 0; m < ngqexq; m+=SIMD_WIDTH)
                         {
-                            temp2[n] = temp1[n];
+#pragma simd
+                            for(m1 = 0; m1 < SIMD_WIDTH; m1++)
+                            {
+                                temp2[m + m1] = temp1[m + m1];
+                            }
                         }
                     }
                     else
                     {
-                        i__5 = *ngqexq;
-                        for (n = 1; n <= i__5; ++n)
+                        ind = (ye + yf * int2d_dim2) * int2d_dim1;
+                        for (m = 0; m < ngqexq; m+=SIMD_WIDTH)
                         {
-                            temp2[n] = temp1[n] * int2dy[n + (ye + yf *
-                                                              int2dy_dim2) *
-                                                         int2dy_dim1];
+#pragma simd
+                            for(m1 = 0; m1 < SIMD_WIDTH; m1++)
+                            {
+                                temp2[m + m1] = temp1[m + m1] * int2dy[m + m1 + ind];
+                            }
                         }
                     }
                     j = xyfp;
-                    nxyzf = *nxyzq;
-                    i__5 = sfend;
-                    for (sf = *shellq; sf >= i__5; --sf)
+                    nxyzf = nxyzq;
+                    for (sf = shellq; sf >= sfend; --sf)
                     {
                         zf = sf - xyf;
-                        i__ = xyep;
-                        nxyze = *nxyzp;
-                        i__6 = seend;
-                        for (se = *shellp; se >= i__6; --se)
+                        i = xyep;
+                        nxyze = nxyzp;
+                        for (se = shellp; se >= seend; --se)
                         {
                             ze = se - xye;
                             if (ze + zf == 0)
                             {
-                                k = 1;
-                                i__7 = *nexq;
-                                for (m = 1; m <= i__7; ++m)
+                                for (m = 0; m < nexq; m+=SIMD_WIDTH)
                                 {
-                                    batch[m + (i__ + j * batch_dim2) *
-                                          batch_dim1] = temp2[k] + temp2[k
-                                                                         +
-                                                                         1] +
-                                        temp2[k + 2] + temp2[k + 3] +
-                                        temp2[k + 4] + temp2[k + 5] +
-                                        temp2[k + 6] + temp2[k + 7] +
-                                        temp2[k + 8];
-                                    k += 9;
+#pragma simd
+                                    for(m1 = 0; m1 < SIMD_WIDTH; m1++)
+                                    {
+                                        batch[m + m1 + (i + j * batch_dim2) * batch_dim1]
+                                            = temp2[m + m1]
+                                            + temp2[m + m1 + nexq]
+                                            + temp2[m + m1 + 2 * nexq]
+                                            + temp2[m + m1 + 3 * nexq]
+                                            + temp2[m + m1 + 4 * nexq]
+                                            + temp2[m + m1 + 5 * nexq]
+                                            + temp2[m + m1 + 6 * nexq]
+                                            + temp2[m + m1 + 7 * nexq]
+                                            + temp2[m + m1 + 8 * nexq];
+                                    }
                                 }
                             }
                             else
                             {
-                                k = 1;
-                                i__7 = *nexq;
-                                for (m = 1; m <= i__7; ++m)
+                                ind = (ze + zf * int2d_dim2) * int2d_dim1;
+                                for (m = 0; m < nexq; m+=SIMD_WIDTH)
                                 {
-                                    batch[m + (i__ + j * batch_dim2) *
-                                          batch_dim1] = temp2[k] * int2dz[k
-                                                                          +
-                                                                          (ze
-                                                                           +
-                                                                           zf
-                                                                           *
-                                                                           int2dz_dim2)
-                                                                          *
-                                                                          int2dz_dim1]
-                                        + temp2[k + 1] * int2dz[k + 1 +
-                                                                (ze +
-                                                                 zf *
-                                                                 int2dz_dim2)
-                                                                *
-                                                                int2dz_dim1] +
-                                        temp2[k + 2] * int2dz[k + 2 +
-                                                              (ze +
-                                                               zf *
-                                                               int2dz_dim2) *
-                                                              int2dz_dim1] +
-                                        temp2[k + 3] * int2dz[k + 3 +
-                                                              (ze +
-                                                               zf *
-                                                               int2dz_dim2) *
-                                                              int2dz_dim1] +
-                                        temp2[k + 4] * int2dz[k + 4 +
-                                                              (ze +
-                                                               zf *
-                                                               int2dz_dim2) *
-                                                              int2dz_dim1] +
-                                        temp2[k + 5] * int2dz[k + 5 +
-                                                              (ze +
-                                                               zf *
-                                                               int2dz_dim2) *
-                                                              int2dz_dim1] +
-                                        temp2[k + 6] * int2dz[k + 6 +
-                                                              (ze +
-                                                               zf *
-                                                               int2dz_dim2) *
-                                                              int2dz_dim1] +
-                                        temp2[k + 7] * int2dz[k + 7 +
-                                                              (ze +
-                                                               zf *
-                                                               int2dz_dim2) *
-                                                              int2dz_dim1] +
-                                        temp2[k + 8] * int2dz[k + 8 +
-                                                              (ze +
-                                                               zf *
-                                                               int2dz_dim2) *
-                                                              int2dz_dim1];
-                                    k += 9;
+#pragma simd
+                                    for(m1 = 0; m1 < SIMD_WIDTH; m1++)
+                                    {
+                                        batch[m + m1 + (i + j * batch_dim2) * batch_dim1]
+                                            = temp2[m + m1] * int2dz[m + m1 + ind]
+                                            + temp2[m + m1 + nexq] * int2dz[m + m1 + nexq + ind]
+                                            + temp2[m + m1 + 2 * nexq] * int2dz[m + m1 + 2 * nexq + ind]
+                                            + temp2[m + m1 + 3 * nexq] * int2dz[m + m1 + 3 * nexq + ind]
+                                            + temp2[m + m1 + 4 * nexq] * int2dz[m + m1 + 4 * nexq + ind]
+                                            + temp2[m + m1 + 5 * nexq] * int2dz[m + m1 + 5 * nexq + ind]
+                                            + temp2[m + m1 + 6 * nexq] * int2dz[m + m1 + 6 * nexq + ind]
+                                            + temp2[m + m1 + 7 * nexq] * int2dz[m + m1 + 7 * nexq + ind]
+                                            + temp2[m + m1 + 8 * nexq] * int2dz[m + m1 + 8 * nexq + ind];
+                                    }
                                 }
                             }
-                            i__ = i__ - nxyze + xe;
+                            i = i - nxyze + xe;
                             nxyze = nxyze - se - 1;
-/* L922: */
                         }
                         j = j - nxyzf + xf;
                         nxyzf = nxyzf - sf - 1;
-/* L920: */
                     }
-/* L912: */
                 }
-/* L910: */
             }
-/* L902: */
         }
-/* L900: */
     }
     return 0;
 
@@ -1534,157 +1290,151 @@ erd__int2d_to_e0f0_ (int * shella, int * shellp,
 
 
   L10:
-    xfp = *nxyzft + 3;
-    i__1 = *shellq;
-    for (xf = 0; xf <= i__1; ++xf)
+    xfp = nxyzft + 3;
+    for (xf = 0; xf <= shellq; ++xf)
     {
         xfp = xfp + xf - 2;
-        xfmax = xf * *shellq;
-        yfend = *shellq - xf;
-        xep = *nxyzet + 3;
-        i__2 = *shellp;
-        for (xe = 0; xe <= i__2; ++xe)
+        xfmax = xf * shellq;
+        yfend = shellq - xf;
+        xep = nxyzet + 3;
+        for (xe = 0; xe <= shellp; ++xe)
         {
             xep = xep + xe - 2;
-            xemax = xe * *shellp;
-            yeend = *shellp - xe;
-            i__3 = *ngqexq;
-            for (m = 1; m <= i__3; ++m)
+            xemax = xe * shellp;
+            yeend = shellp - xe;
+            ind = (xe + xf * int2d_dim2) * int2d_dim1;
+            for (m = 0; m < ngqexq; m+=SIMD_WIDTH)
             {
-                temp1[m] = scale[m] * int2dx[m + (xe + xf * int2dx_dim2) *
-                                             int2dx_dim1];
+#ifdef USE_AVX_INTRIN
+                __m256d scale_256 = _mm256_load_pd(&scale[m]);
+                __m256d int2dx_256 = _mm256_load_pd(&int2dx[m + ind]);
+                __m256d t256 = _mm256_mul_pd(scale_256, int2dx_256);
+                _mm256_store_pd(&temp1[m], t256);
+#else
+                #pragma simd
+                for(m1 = 0; m1 < SIMD_WIDTH; m1++)
+                {
+                    temp1[m + m1] = scale[m + m1] * int2dx[m + m1 + ind];
+                }
+#endif
             }
 
 
-/*             ...middle loops over y,y-pairs. Skip multiplication */
-/*                of y,y-contributions, if we have a 0,0-pair, as */
-/*                then the 2DY integral is equal to 1. */
+            /*             ...middle loops over y,y-pairs. Skip multiplication */
+            /*                of y,y-contributions, if we have a 0,0-pair, as */
+            /*                then the 2DY integral is equal to 1. */
 
 
             xyfp = xfp - xfmax;
-            i__3 = yfend;
-            for (yf = 0; yf <= i__3; ++yf)
+            for (yf = 0; yf <= yfend; ++yf)
             {
                 xyf = xf + yf;
                 --xyfp;
-                sfend = max (*shellc, xyf);
+                sfend = max (shellc, xyf);
                 xyep = xep - xemax;
-                i__4 = yeend;
-                for (ye = 0; ye <= i__4; ++ye)
+                for (ye = 0; ye <= yeend; ++ye)
                 {
                     xye = xe + ye;
                     --xyep;
-                    seend = max (*shella, xye);
-                    if (ye + yf == 0)
+                    seend = max (shella, xye);
+                    ind = (ye + yf * int2d_dim2) * int2d_dim1;
+                    
+                    for (m = 0; m < ngqexq; m+=SIMD_WIDTH)
                     {
-                        i__5 = *ngqexq;
-                        for (n = 1; n <= i__5; ++n)
+#ifdef USE_AVX_INTRIN
+                        __m256d temp1_256 = _mm256_load_pd(&temp1[m]);
+                        __m256d int2dy_256 = _mm256_load_pd(&int2dy[m + ind]);
+                        __m256d t256 = _mm256_mul_pd(temp1_256, int2dy_256);
+                        _mm256_store_pd(&temp2[m], t256);
+#else
+                        #pragma simd
+                        for(m1 = 0; m1 < SIMD_WIDTH; m1++)
                         {
-                            temp2[n] = temp1[n];
+                            temp2[m + m1] = temp1[m + m1] * int2dy[m + m1 + ind];
                         }
-                    }
-                    else
-                    {
-                        i__5 = *ngqexq;
-                        for (n = 1; n <= i__5; ++n)
-                        {
-                            temp2[n] = temp1[n] * int2dy[n + (ye + yf *
-                                                              int2dy_dim2) *
-                                                         int2dy_dim1];
-                        }
+#endif
                     }
 
 
-/*             ...inner loops over E,F-pairs. Skip multiplication */
-/*                of z,z-contributions, if we have a 0,0-pair, as */
-/*                then the 2DZ integral is equal to 1. */
+                    /*             ...inner loops over E,F-pairs. Skip multiplication */
+                    /*                of z,z-contributions, if we have a 0,0-pair, as */
+                    /*                then the 2DZ integral is equal to 1. */
 
 
                     j = xyfp;
-                    nxyzf = *nxyzq;
-                    i__5 = sfend;
-                    for (sf = *shellq; sf >= i__5; --sf)
+                    nxyzf = nxyzq;
+                    for (sf = shellq; sf >= sfend; --sf)
                     {
                         zf = sf - xyf;
-                        i__ = xyep;
-                        nxyze = *nxyzp;
-                        i__6 = seend;
-                        for (se = *shellp; se >= i__6; --se)
+                        i = xyep;
+                        nxyze = nxyzp;
+                        for (se = shellp; se >= seend; --se)
                         {
                             ze = se - xye;
 
 
-/*             ...all info concerning all three x,x-, y,y- and z,z-pairs */
-/*                have been collected for all exponent quadruplets at */
-/*                once. Sum up the 2D X,Y,Z integral products to the */
-/*                appropriate place of the [E0|F0] batch. */
+                            /*             ...all info concerning all three x,x-, y,y- and z,z-pairs */
+                            /*                have been collected for all exponent quadruplets at */
+                            /*                once. Sum up the 2D X,Y,Z integral products to the */
+                            /*                appropriate place of the [E0|F0] batch. */
 
 
-                            if (ze + zf == 0)
+                            ind = (ze + zf * int2d_dim2) * int2d_dim1;
+                            // The following loop expects that the int2dy is padded.
+                            for (m = 0; m < nexq; m+=SIMD_WIDTH)
                             {
-                                k = 0;
-                                i__7 = *nexq;
-                                for (m = 1; m <= i__7; ++m)
+                            //printf("hi");
+#ifdef USE_AVX_INTRIN
+                                __m256d sum_256 = _mm256_setzero_pd();
+                                for(n = 0; n < ngqp; n++)
                                 {
-                                    sum = 0.;
-                                    i__8 = *ngqp;
-                                    for (n = 1; n <= i__8; ++n)
-                                    {
-                                        sum += temp2[k + n];
-                                    }
-                                    k += *ngqp;
-                                    batch[m + (i__ + j * batch_dim2) *
-                                          batch_dim1] = sum;
+                                    __m256d temp2_256 = _mm256_load_pd(&temp2[n * nexq + (m)]);
+                                    __m256d int2dz_256 = _mm256_load_pd(&int2dz[n * nexq + (m) + ind]);
+                                    __m256d t256 = _mm256_mul_pd(temp2_256, int2dz_256);
+                                    sum_256 = _mm256_add_pd(sum_256, t256);
                                 }
-                            }
-                            else
-                            {
-                                k = 0;
-                                i__7 = *nexq;
-                                for (m = 1; m <= i__7; ++m)
+                                _mm256_store_pd(&batch[m + (i + j * batch_dim2) * batch_dim1], sum_256);
+#else
+                                #pragma simd
+                                for(m1 = 0; m1 < SIMD_WIDTH; m1++)
+                                    sum[m1] = 0.;
+                                for (n = 0; n < ngqp; ++n)
                                 {
-                                    sum = 0.;
-                                    i__8 = *ngqp;
-                                    for (n = 1; n <= i__8; ++n)
+                                    #pragma simd
+                                    for(m1 = 0; m1 < SIMD_WIDTH; m1++)
                                     {
-                                        sum +=
-                                            temp2[k + n] * int2dz[k + n +
-                                                                  (ze +
-                                                                   zf *
-                                                                   int2dz_dim2)
-                                                                  *
-                                                                  int2dz_dim1];
+                                        sum[m1] +=
+                                            temp2[n * nexq + (m + m1)] * int2dz[n * nexq + (m + m1) + ind];
                                     }
-                                    k += *ngqp;
-                                    batch[m + (i__ + j * batch_dim2) *
-                                          batch_dim1] = sum;
                                 }
+                                
+                                #pragma simd
+                                for(m1 = 0; m1 < SIMD_WIDTH; m1++)
+                                {
+                                    batch[m + m1 + (i + j * batch_dim2) *
+                                        batch_dim1] = sum[m1];
+                                    //printf("id = %d, sum = %lf\n", m + m1 + (i + j * batch_dim2) * batch_dim1, sum[m1]);
+                                }
+#endif
+                            //printf("hi");
                             }
 
+                            /*             ...next z,z-pair. */
 
-/*             ...next z,z-pair. */
 
-
-                            i__ = i__ - nxyze + xe;
+                            i = i - nxyze + xe;
                             nxyze = nxyze - se - 1;
-/* L1022: */
                         }
                         j = j - nxyzf + xf;
                         nxyzf = nxyzf - sf - 1;
-/* L1020: */
                     }
 
 
-/*             ...next y,y-pair and next x,x-pair. */
+                    /*             ...next y,y-pair and next x,x-pair. */
 
-
-/* L1012: */
                 }
-/* L1010: */
             }
-/* L1002: */
         }
-/* L1000: */
     }
 
     return 0;

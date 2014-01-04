@@ -1,13 +1,16 @@
 #ifndef __ERD_H__
 #define __ERD_H__
 
-
+#include <stdio.h>
+#include <string.h>
+#include <immintrin.h>
 #include <yepPredefines.h>
 
-
+#define SIMD_WIDTH 4
 #define MAX(a,b)    ((a) < (b) ? (b) : (a))
 #define MIN(a,b)    ((a) > (b) ? (b) : (a))
 #define PREFACT     9.027033336764101
+
 
 
 /*******************************************************************/
@@ -394,9 +397,9 @@ int erd__e0f0_pcgto_block_ (int *, int *,
                                                       double *,
                                                       double *,
                                                       double *);
-        int erd__int2d_to_e0f0_ (int *, int *, int *, int *,
-                              int *, int *, int *, int *,
-                              int *, int *, int *, double *,
+        int erd__int2d_to_e0f0_ (int , int , int , int ,
+                              int , int , int , int ,
+                              int , int , int , double *,
                               double *, double *, double *,
                               double *, double *, double *);
     int erd__2d_atom_coefficients_ (int *,
@@ -449,8 +452,8 @@ int erd__e0f0_pcgto_block_ (int *, int *,
                                                         double *,
                                                         double *,
                                                         double *);
-    int erd__2d_pq_integrals_ (int *, int *,
-                                                        int *,
+    int erd__2d_pq_integrals_ (int, int,
+                                                        int,
                                                         double *,
                                                         double *,
                                                         double *,
