@@ -4,9 +4,6 @@ libs:
 	make -C external
 	make -C libcint
 
-scf:
-	make -C pscf
-
 test:
 	make -C testprog
 

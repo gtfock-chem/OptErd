@@ -341,14 +341,13 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
 /*                (e0|f0). The keyword REORDER indicates, if the */
 /*                primitive [e0|f0] blocks need to be transposed */
 /*                before being contracted. */    
-    erd__e0f0_pcgto_block (0, 0, nij, nkl, ngqp, nmom,
+    erd__e0f0_pcgto_block (nij, nkl, ngqp, nmom,
                            nxyzet, nxyzft, nxyzp, nxyzq,
                            shella, shellp, shellc, shellq,
                            xa, ya, za, xb, yb, zb,
                            xc, yc, zc, xd, yd, zd,
                            &alpha[lexpa], &alpha[lexpb],
                            &alpha[lexpc], &alpha[lexpd],
-                           &cc[lcca], &cc[lccb], &cc[lccc],&cc[lccd],
                            ftable, mgrid, ngrid,
                            tmax, tstep, tvstep,
                            &icore[iprima], &icore[iprimb],

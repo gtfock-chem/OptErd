@@ -121,13 +121,7 @@ int erd__1111_def_blocks (int zmax, int npgto1, int npgto2,
     int mkl;
     int zone3;
     int zone4;
-    int mijkl;
     int zone12;
-    int mrskl;
-    int zone4b;
-    int zone4c;
-    int npsize;
-    int nwsize;
     int ncsize;
    
     zone3 = npgto1 + npgto2 + npgto3 + npgto4 + nij + nkl;
@@ -147,15 +141,9 @@ int erd__1111_def_blocks (int zmax, int npgto1, int npgto2,
     }
     else
     {
-/*             ...the actual fitting into the maximum memory given. */            
-        mijkl = mij * mkl;
-        mrskl = mkl;
-        npsize = nxyzt * (mijkl > mrskl ? mijkl : mrskl);
-        nwsize = npsize;
-        zone12 = npsize + ncsize;
-        zone4b = (mij + mkl) * 5;
-        zone4c = nwsize;
-        zone4 = zone4b > zone4c ? zone4b : zone4c;
+/*             ...the actual fitting into the maximum memory given. */ 
+        zone12 = ncsize;
+        zone4 = (mij + mkl) * 5;
         assert (zone12 + zone3 + zone4 <= zmax);
                      
 /*             ...generate the memory allocation pointers. */

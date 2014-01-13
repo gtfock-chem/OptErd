@@ -44,4 +44,4 @@ mic/%.o: %.F
 	${FC} ${FFLAGS} -c $< -o $@
 
 clean:
-	rm -f *.o mic/*.o *~ ${OEDLIB}
+	rm -f *.o mic/*.o *~ *.a

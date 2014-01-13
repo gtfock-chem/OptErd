@@ -63,33 +63,23 @@
 /*                                    cartesian components x=X,Y,Z) for */
 /*                                    shell expansion on center Q */
 /* ------------------------------------------------------------------------ */
-int erd__2d_coefficients_ (int * mij, int * mkl,
-                          int * mijkl, int * ngqp, int * mgqijkl,
-                          int * atomab, int * atomcd, double * p,
-                          double * q, double * px, double * py,
-                          double * pz, double * qx, double * qy,
-                          double * qz, double * pax, double * pay,
-                          double * paz, double * qcx, double * qcy,
-                          double * qcz, double * pinvhf,
-                          double * qinvhf, double * pqpinv,
-                          double * rts, int * case2d, double * b00,
-                          double * b01, double * b10, double * c00x,
-                          double * c00y, double * c00z,
-                          double * d00x, double * d00y,
-                          double * d00z)
+int erd__2d_coefficients (int mij, int mkl, int ngqp,
+                          double *p, double *q,
+                          double *px, double *py, double *pz,
+                          double *qx, double *qy, double *qz,
+                          double *pax, double *pay, double *paz,
+                          double *qcx, double *qcy, double *qcz,
+                          double *pinvhf, double *qinvhf, double *pqpinv,
+                          double *rts, int case2d,
+                          double *b00, double *b01, double *b10,
+                          double *c00x, double *c00y, double *c00z,
+                          double *d00x, double *d00y, double *d00z)
 {
-    int i__1, i__2, i__3;
     int m, n, ij, ng, kl;
     double pij, pqx, pqy, pqz, pxij, pyij, pzij, root, twop, twoq,
         paxij, payij, pazij, qcxkl, qcykl, qczkl, proot, qroot, twopq,
         pscale, qscale;
 
-/*             ...jump according to the 9 different cases that can arise: */
-/*                  P-shell = s- ,p- or higher angular momentum */
-/*                  Q-shell = s- ,p- or higher angular momentum */
-/*                each leading to simplifications in the VRR formulas. */
-/*                The case present has been evaluated outside this */
-/*                routine and is transmitted via argument. */
     --pinvhf;
     --paz;
     --pay;
@@ -119,7 +109,7 @@ int erd__2d_coefficients_ (int * mij, int * mkl,
     --rts;
 
     /* Function Body */
-    switch (*case2d)
+    switch (case2d)
     {
     case 1:
         goto L1;
@@ -151,42 +141,10 @@ int erd__2d_coefficients_ (int * mij, int * mkl,
 /*             ...the case P = p-shell and Q = s-shell. */
 /*                (no B00,B01,B10,D00) */
   L2:
-    if (*atomab)
     {
         m = 0;
         n = 0;
-        i__1 = *mij;
-        for (ij = 1; ij <= i__1; ++ij)
-        {
-            pxij = px[ij];
-            pyij = py[ij];
-            pzij = pz[ij];
-            i__2 = *mkl;
-            for (kl = 1; kl <= i__2; ++kl)
-            {
-                pqx = pxij - qx[kl];
-                pqy = pyij - qy[kl];
-                pqz = pzij - qz[kl];
-                ++m;
-                qscale = -q[kl] * pqpinv[m];
-                i__3 = *ngqp;
-                for (ng = 1; ng <= i__3; ++ng)
-                {
-                    ++n;
-                    qroot = qscale * rts[n];
-                    c00x[n] = qroot * pqx;
-                    c00y[n] = qroot * pqy;
-                    c00z[n] = qroot * pqz;
-                }
-            }
-        }
-    }
-    else
-    {
-        m = 0;
-        n = 0;
-        i__1 = *mij;
-        for (ij = 1; ij <= i__1; ++ij)
+        for (ij = 1; ij <= mij; ++ij)
         {
             pxij = px[ij];
             pyij = py[ij];
@@ -194,16 +152,14 @@ int erd__2d_coefficients_ (int * mij, int * mkl,
             paxij = pax[ij];
             payij = pay[ij];
             pazij = paz[ij];
-            i__2 = *mkl;
-            for (kl = 1; kl <= i__2; ++kl)
+            for (kl = 1; kl <= mkl; ++kl)
             {
                 pqx = pxij - qx[kl];
                 pqy = pyij - qy[kl];
                 pqz = pzij - qz[kl];
                 ++m;
                 qscale = q[kl] * pqpinv[m];
-                i__3 = *ngqp;
-                for (ng = 1; ng <= i__3; ++ng)
+                for (ng = 1; ng <= ngqp; ++ng)
                 {
                     ++n;
                     qroot = qscale * rts[n];
@@ -220,50 +176,16 @@ int erd__2d_coefficients_ (int * mij, int * mkl,
 /*             ...the case P = s-shell and Q = p-shell. */
 /*                (no B00,B01,B10,C00) */
   L3:
-    if (*atomcd)
     {
         m = 0;
         n = 0;
-        i__1 = *mij;
-        for (ij = 1; ij <= i__1; ++ij)
+        for (ij = 1; ij <= mij; ++ij)
         {
             pij = p[ij];
             pxij = px[ij];
             pyij = py[ij];
             pzij = pz[ij];
-            i__2 = *mkl;
-            for (kl = 1; kl <= i__2; ++kl)
-            {
-                pqx = pxij - qx[kl];
-                pqy = pyij - qy[kl];
-                pqz = pzij - qz[kl];
-                ++m;
-                pscale = pij * pqpinv[m];
-                i__3 = *ngqp;
-                for (ng = 1; ng <= i__3; ++ng)
-                {
-                    ++n;
-                    proot = pscale * rts[n];
-                    d00x[n] = proot * pqx;
-                    d00y[n] = proot * pqy;
-                    d00z[n] = proot * pqz;
-                }
-            }
-        }
-    }
-    else
-    {
-        m = 0;
-        n = 0;
-        i__1 = *mij;
-        for (ij = 1; ij <= i__1; ++ij)
-        {
-            pij = p[ij];
-            pxij = px[ij];
-            pyij = py[ij];
-            pzij = pz[ij];
-            i__2 = *mkl;
-            for (kl = 1; kl <= i__2; ++kl)
+            for (kl = 1; kl <= mkl; ++kl)
             {
                 qcxkl = qcx[kl];
                 qcykl = qcy[kl];
@@ -273,8 +195,7 @@ int erd__2d_coefficients_ (int * mij, int * mkl,
                 pqz = pzij - qz[kl];
                 ++m;
                 pscale = pij * pqpinv[m];
-                i__3 = *ngqp;
-                for (ng = 1; ng <= i__3; ++ng)
+                for (ng = 1; ng <= ngqp; ++ng)
                 {
                     ++n;
                     proot = pscale * rts[n];
@@ -291,58 +212,19 @@ int erd__2d_coefficients_ (int * mij, int * mkl,
 /*             ...the case P = p-shell and Q = p-shell. */
 /*                (no B01,B10) */
   L4:
-    if (*atomab && *atomcd)
     {
         m = 0;
         n = 0;
-        i__1 = *mij;
-        for (ij = 1; ij <= i__1; ++ij)
+        for (ij = 1; ij <= mij; ++ij)
         {
             pij = p[ij];
             pxij = px[ij];
             pyij = py[ij];
             pzij = pz[ij];
-            i__2 = *mkl;
-            for (kl = 1; kl <= i__2; ++kl)
-            {
-                pqx = pxij - qx[kl];
-                pqy = pyij - qy[kl];
-                pqz = pzij - qz[kl];
-                ++m;
-                twopq = pqpinv[m] * .5;
-                pscale = pij * pqpinv[m];
-                qscale = 1. - pscale;
-                i__3 = *ngqp;
-                for (ng = 1; ng <= i__3; ++ng)
-                {
-                    ++n;
-                    root = rts[n];
-                    proot = pscale * root;
-                    qroot = -qscale * root;
-                    b00[n] = root * twopq;
-                    c00x[n] = qroot * pqx;
-                    c00y[n] = qroot * pqy;
-                    c00z[n] = qroot * pqz;
-                    d00x[n] = proot * pqx;
-                    d00y[n] = proot * pqy;
-                    d00z[n] = proot * pqz;
-                }
-            }
-        }
-    }
-    else if (*atomab)
-    {
-        m = 0;
-        n = 0;
-        i__1 = *mij;
-        for (ij = 1; ij <= i__1; ++ij)
-        {
-            pij = p[ij];
-            pxij = px[ij];
-            pyij = py[ij];
-            pzij = pz[ij];
-            i__2 = *mkl;
-            for (kl = 1; kl <= i__2; ++kl)
+            paxij = pax[ij];
+            payij = pay[ij];
+            pazij = paz[ij];
+            for (kl = 1; kl <= mkl; ++kl)
             {
                 qcxkl = qcx[kl];
                 qcykl = qcy[kl];
@@ -354,95 +236,7 @@ int erd__2d_coefficients_ (int * mij, int * mkl,
                 twopq = pqpinv[m] * .5;
                 pscale = pij * pqpinv[m];
                 qscale = 1. - pscale;
-                i__3 = *ngqp;
-                for (ng = 1; ng <= i__3; ++ng)
-                {
-                    ++n;
-                    root = rts[n];
-                    proot = pscale * root;
-                    qroot = -qscale * root;
-                    b00[n] = root * twopq;
-                    c00x[n] = qroot * pqx;
-                    c00y[n] = qroot * pqy;
-                    c00z[n] = qroot * pqz;
-                    d00x[n] = qcxkl + proot * pqx;
-                    d00y[n] = qcykl + proot * pqy;
-                    d00z[n] = qczkl + proot * pqz;
-                }
-            }
-        }
-    }
-    else if (*atomcd)
-    {
-        m = 0;
-        n = 0;
-        i__1 = *mij;
-        for (ij = 1; ij <= i__1; ++ij)
-        {
-            pij = p[ij];
-            pxij = px[ij];
-            pyij = py[ij];
-            pzij = pz[ij];
-            paxij = pax[ij];
-            payij = pay[ij];
-            pazij = paz[ij];
-            i__2 = *mkl;
-            for (kl = 1; kl <= i__2; ++kl)
-            {
-                pqx = pxij - qx[kl];
-                pqy = pyij - qy[kl];
-                pqz = pzij - qz[kl];
-                ++m;
-                twopq = pqpinv[m] * .5;
-                pscale = pij * pqpinv[m];
-                qscale = 1. - pscale;
-                i__3 = *ngqp;
-                for (ng = 1; ng <= i__3; ++ng)
-                {
-                    ++n;
-                    root = rts[n];
-                    proot = pscale * root;
-                    qroot = qscale * root;
-                    b00[n] = root * twopq;
-                    c00x[n] = paxij - qroot * pqx;
-                    c00y[n] = payij - qroot * pqy;
-                    c00z[n] = pazij - qroot * pqz;
-                    d00x[n] = proot * pqx;
-                    d00y[n] = proot * pqy;
-                    d00z[n] = proot * pqz;
-                }
-            }
-        }
-    }
-    else
-    {
-        m = 0;
-        n = 0;
-        i__1 = *mij;
-        for (ij = 1; ij <= i__1; ++ij)
-        {
-            pij = p[ij];
-            pxij = px[ij];
-            pyij = py[ij];
-            pzij = pz[ij];
-            paxij = pax[ij];
-            payij = pay[ij];
-            pazij = paz[ij];
-            i__2 = *mkl;
-            for (kl = 1; kl <= i__2; ++kl)
-            {
-                qcxkl = qcx[kl];
-                qcykl = qcy[kl];
-                qczkl = qcz[kl];
-                pqx = pxij - qx[kl];
-                pqy = pyij - qy[kl];
-                pqz = pzij - qz[kl];
-                ++m;
-                twopq = pqpinv[m] * .5;
-                pscale = pij * pqpinv[m];
-                qscale = 1. - pscale;
-                i__3 = *ngqp;
-                for (ng = 1; ng <= i__3; ++ng)
+                for (ng = 1; ng <= ngqp; ++ng)
                 {
                     ++n;
                     root = rts[n];
@@ -465,45 +259,10 @@ int erd__2d_coefficients_ (int * mij, int * mkl,
 /*             ...the case P > p-shell and Q = s-shell. */
 /*                (no B00,B01,D00) */
   L5:
-    if (*atomab)
     {
         m = 0;
         n = 0;
-        i__1 = *mij;
-        for (ij = 1; ij <= i__1; ++ij)
-        {
-            pij = p[ij];
-            pxij = px[ij];
-            pyij = py[ij];
-            pzij = pz[ij];
-            twop = pinvhf[ij];
-            i__2 = *mkl;
-            for (kl = 1; kl <= i__2; ++kl)
-            {
-                pqx = pxij - qx[kl];
-                pqy = pyij - qy[kl];
-                pqz = pzij - qz[kl];
-                ++m;
-                qscale = 1. - pij * pqpinv[m];
-                i__3 = *ngqp;
-                for (ng = 1; ng <= i__3; ++ng)
-                {
-                    ++n;
-                    qroot = -qscale * rts[n];
-                    b10[n] = (qroot + 1.) * twop;
-                    c00x[n] = qroot * pqx;
-                    c00y[n] = qroot * pqy;
-                    c00z[n] = qroot * pqz;
-                }
-            }
-        }
-    }
-    else
-    {
-        m = 0;
-        n = 0;
-        i__1 = *mij;
-        for (ij = 1; ij <= i__1; ++ij)
+        for (ij = 1; ij <= mij; ++ij)
         {
             pij = p[ij];
             pxij = px[ij];
@@ -513,16 +272,14 @@ int erd__2d_coefficients_ (int * mij, int * mkl,
             payij = pay[ij];
             pazij = paz[ij];
             twop = pinvhf[ij];
-            i__2 = *mkl;
-            for (kl = 1; kl <= i__2; ++kl)
+            for (kl = 1; kl <= mkl; ++kl)
             {
                 pqx = pxij - qx[kl];
                 pqy = pyij - qy[kl];
                 pqz = pzij - qz[kl];
                 ++m;
                 qscale = 1. - pij * pqpinv[m];
-                i__3 = *ngqp;
-                for (ng = 1; ng <= i__3; ++ng)
+                for (ng = 1; ng <= ngqp; ++ng)
                 {
                     ++n;
                     qroot = qscale * rts[n];
@@ -540,52 +297,16 @@ int erd__2d_coefficients_ (int * mij, int * mkl,
 /*             ...the case P = s-shell and Q > p-shell. */
 /*                (no B00,B10,C00) */
   L6:
-    if (*atomcd)
     {
         m = 0;
         n = 0;
-        i__1 = *mij;
-        for (ij = 1; ij <= i__1; ++ij)
+        for (ij = 1; ij <= mij; ++ij)
         {
             pij = p[ij];
             pxij = px[ij];
             pyij = py[ij];
             pzij = pz[ij];
-            i__2 = *mkl;
-            for (kl = 1; kl <= i__2; ++kl)
-            {
-                twoq = qinvhf[kl];
-                pqx = pxij - qx[kl];
-                pqy = pyij - qy[kl];
-                pqz = pzij - qz[kl];
-                ++m;
-                pscale = pij * pqpinv[m];
-                i__3 = *ngqp;
-                for (ng = 1; ng <= i__3; ++ng)
-                {
-                    ++n;
-                    proot = pscale * rts[n];
-                    b01[n] = (1. - proot) * twoq;
-                    d00x[n] = proot * pqx;
-                    d00y[n] = proot * pqy;
-                    d00z[n] = proot * pqz;
-                }
-            }
-        }
-    }
-    else
-    {
-        m = 0;
-        n = 0;
-        i__1 = *mij;
-        for (ij = 1; ij <= i__1; ++ij)
-        {
-            pij = p[ij];
-            pxij = px[ij];
-            pyij = py[ij];
-            pzij = pz[ij];
-            i__2 = *mkl;
-            for (kl = 1; kl <= i__2; ++kl)
+            for (kl = 1; kl <= mkl; ++kl)
             {
                 qcxkl = qcx[kl];
                 qcykl = qcy[kl];
@@ -596,8 +317,7 @@ int erd__2d_coefficients_ (int * mij, int * mkl,
                 pqz = pzij - qz[kl];
                 ++m;
                 pscale = pij * pqpinv[m];
-                i__3 = *ngqp;
-                for (ng = 1; ng <= i__3; ++ng)
+                for (ng = 1; ng <= ngqp; ++ng)
                 {
                     ++n;
                     proot = pscale * rts[n];
@@ -615,61 +335,20 @@ int erd__2d_coefficients_ (int * mij, int * mkl,
 /*             ...the case P > p-shell and Q = p-shell. */
 /*                (no B01) */
   L7:
-    if (*atomab && *atomcd)
     {
         m = 0;
         n = 0;
-        i__1 = *mij;
-        for (ij = 1; ij <= i__1; ++ij)
+        for (ij = 1; ij <= mij; ++ij)
         {
             pij = p[ij];
             pxij = px[ij];
             pyij = py[ij];
             pzij = pz[ij];
+            paxij = pax[ij];
+            payij = pay[ij];
+            pazij = paz[ij];
             twop = pinvhf[ij];
-            i__2 = *mkl;
-            for (kl = 1; kl <= i__2; ++kl)
-            {
-                pqx = pxij - qx[kl];
-                pqy = pyij - qy[kl];
-                pqz = pzij - qz[kl];
-                ++m;
-                twopq = pqpinv[m] * .5;
-                pscale = pij * pqpinv[m];
-                qscale = 1. - pscale;
-                i__3 = *ngqp;
-                for (ng = 1; ng <= i__3; ++ng)
-                {
-                    ++n;
-                    root = rts[n];
-                    proot = pscale * root;
-                    qroot = -qscale * root;
-                    b00[n] = root * twopq;
-                    b10[n] = (qroot + 1.) * twop;
-                    c00x[n] = qroot * pqx;
-                    c00y[n] = qroot * pqy;
-                    c00z[n] = qroot * pqz;
-                    d00x[n] = proot * pqx;
-                    d00y[n] = proot * pqy;
-                    d00z[n] = proot * pqz;
-                }
-            }
-        }
-    }
-    else if (*atomab)
-    {
-        m = 0;
-        n = 0;
-        i__1 = *mij;
-        for (ij = 1; ij <= i__1; ++ij)
-        {
-            pij = p[ij];
-            pxij = px[ij];
-            pyij = py[ij];
-            pzij = pz[ij];
-            twop = pinvhf[ij];
-            i__2 = *mkl;
-            for (kl = 1; kl <= i__2; ++kl)
+            for (kl = 1; kl <= mkl; ++kl)
             {
                 qcxkl = qcx[kl];
                 qcykl = qcy[kl];
@@ -681,99 +360,7 @@ int erd__2d_coefficients_ (int * mij, int * mkl,
                 twopq = pqpinv[m] * .5;
                 pscale = pij * pqpinv[m];
                 qscale = 1. - pscale;
-                i__3 = *ngqp;
-                for (ng = 1; ng <= i__3; ++ng)
-                {
-                    ++n;
-                    root = rts[n];
-                    proot = pscale * root;
-                    qroot = -qscale * root;
-                    b00[n] = root * twopq;
-                    b10[n] = (qroot + 1.) * twop;
-                    c00x[n] = qroot * pqx;
-                    c00y[n] = qroot * pqy;
-                    c00z[n] = qroot * pqz;
-                    d00x[n] = qcxkl + proot * pqx;
-                    d00y[n] = qcykl + proot * pqy;
-                    d00z[n] = qczkl + proot * pqz;
-                }
-            }
-        }
-    }
-    else if (*atomcd)
-    {
-        m = 0;
-        n = 0;
-        i__1 = *mij;
-        for (ij = 1; ij <= i__1; ++ij)
-        {
-            pij = p[ij];
-            pxij = px[ij];
-            pyij = py[ij];
-            pzij = pz[ij];
-            paxij = pax[ij];
-            payij = pay[ij];
-            pazij = paz[ij];
-            twop = pinvhf[ij];
-            i__2 = *mkl;
-            for (kl = 1; kl <= i__2; ++kl)
-            {
-                pqx = pxij - qx[kl];
-                pqy = pyij - qy[kl];
-                pqz = pzij - qz[kl];
-                ++m;
-                twopq = pqpinv[m] * .5;
-                pscale = pij * pqpinv[m];
-                qscale = 1. - pscale;
-                i__3 = *ngqp;
-                for (ng = 1; ng <= i__3; ++ng)
-                {
-                    ++n;
-                    root = rts[n];
-                    proot = pscale * root;
-                    qroot = qscale * root;
-                    b00[n] = root * twopq;
-                    b10[n] = (1. - qroot) * twop;
-                    c00x[n] = paxij - qroot * pqx;
-                    c00y[n] = payij - qroot * pqy;
-                    c00z[n] = pazij - qroot * pqz;
-                    d00x[n] = proot * pqx;
-                    d00y[n] = proot * pqy;
-                    d00z[n] = proot * pqz;
-                }
-            }
-        }
-    }
-    else
-    {
-        m = 0;
-        n = 0;
-        i__1 = *mij;
-        for (ij = 1; ij <= i__1; ++ij)
-        {
-            pij = p[ij];
-            pxij = px[ij];
-            pyij = py[ij];
-            pzij = pz[ij];
-            paxij = pax[ij];
-            payij = pay[ij];
-            pazij = paz[ij];
-            twop = pinvhf[ij];
-            i__2 = *mkl;
-            for (kl = 1; kl <= i__2; ++kl)
-            {
-                qcxkl = qcx[kl];
-                qcykl = qcy[kl];
-                qczkl = qcz[kl];
-                pqx = pxij - qx[kl];
-                pqy = pyij - qy[kl];
-                pqz = pzij - qz[kl];
-                ++m;
-                twopq = pqpinv[m] * .5;
-                pscale = pij * pqpinv[m];
-                qscale = 1. - pscale;
-                i__3 = *ngqp;
-                for (ng = 1; ng <= i__3; ++ng)
+                for (ng = 1; ng <= ngqp; ++ng)
                 {
                     ++n;
                     root = rts[n];
@@ -797,60 +384,19 @@ int erd__2d_coefficients_ (int * mij, int * mkl,
 /*             ...the case P = p-shell and Q > p-shell. */
 /*                (no B10) */
   L8:
-    if (*atomab && *atomcd)
     {
         m = 0;
         n = 0;
-        i__1 = *mij;
-        for (ij = 1; ij <= i__1; ++ij)
+        for (ij = 1; ij <= mij; ++ij)
         {
             pij = p[ij];
             pxij = px[ij];
             pyij = py[ij];
             pzij = pz[ij];
-            i__2 = *mkl;
-            for (kl = 1; kl <= i__2; ++kl)
-            {
-                twoq = qinvhf[kl];
-                pqx = pxij - qx[kl];
-                pqy = pyij - qy[kl];
-                pqz = pzij - qz[kl];
-                ++m;
-                twopq = pqpinv[m] * .5;
-                pscale = pij * pqpinv[m];
-                qscale = 1. - pscale;
-                i__3 = *ngqp;
-                for (ng = 1; ng <= i__3; ++ng)
-                {
-                    ++n;
-                    root = rts[n];
-                    proot = pscale * root;
-                    qroot = -qscale * root;
-                    b00[n] = root * twopq;
-                    b01[n] = (1. - proot) * twoq;
-                    c00x[n] = qroot * pqx;
-                    c00y[n] = qroot * pqy;
-                    c00z[n] = qroot * pqz;
-                    d00x[n] = proot * pqx;
-                    d00y[n] = proot * pqy;
-                    d00z[n] = proot * pqz;
-                }
-            }
-        }
-    }
-    else if (*atomab)
-    {
-        m = 0;
-        n = 0;
-        i__1 = *mij;
-        for (ij = 1; ij <= i__1; ++ij)
-        {
-            pij = p[ij];
-            pxij = px[ij];
-            pyij = py[ij];
-            pzij = pz[ij];
-            i__2 = *mkl;
-            for (kl = 1; kl <= i__2; ++kl)
+            paxij = pax[ij];
+            payij = pay[ij];
+            pazij = paz[ij];
+            for (kl = 1; kl <= mkl; ++kl)
             {
                 qcxkl = qcx[kl];
                 qcykl = qcy[kl];
@@ -863,99 +409,7 @@ int erd__2d_coefficients_ (int * mij, int * mkl,
                 twopq = pqpinv[m] * .5;
                 pscale = pij * pqpinv[m];
                 qscale = 1. - pscale;
-                i__3 = *ngqp;
-                for (ng = 1; ng <= i__3; ++ng)
-                {
-                    ++n;
-                    root = rts[n];
-                    proot = pscale * root;
-                    qroot = -qscale * root;
-                    b00[n] = root * twopq;
-                    b01[n] = (1. - proot) * twoq;
-                    c00x[n] = qroot * pqx;
-                    c00y[n] = qroot * pqy;
-                    c00z[n] = qroot * pqz;
-                    d00x[n] = qcxkl + proot * pqx;
-                    d00y[n] = qcykl + proot * pqy;
-                    d00z[n] = qczkl + proot * pqz;
-                }
-            }
-        }
-    }
-    else if (*atomcd)
-    {
-        m = 0;
-        n = 0;
-        i__1 = *mij;
-        for (ij = 1; ij <= i__1; ++ij)
-        {
-            pij = p[ij];
-            pxij = px[ij];
-            pyij = py[ij];
-            pzij = pz[ij];
-            paxij = pax[ij];
-            payij = pay[ij];
-            pazij = paz[ij];
-            i__2 = *mkl;
-            for (kl = 1; kl <= i__2; ++kl)
-            {
-                twoq = qinvhf[kl];
-                pqx = pxij - qx[kl];
-                pqy = pyij - qy[kl];
-                pqz = pzij - qz[kl];
-                ++m;
-                twopq = pqpinv[m] * .5;
-                pscale = pij * pqpinv[m];
-                qscale = 1. - pscale;
-                i__3 = *ngqp;
-                for (ng = 1; ng <= i__3; ++ng)
-                {
-                    ++n;
-                    root = rts[n];
-                    proot = pscale * root;
-                    qroot = qscale * root;
-                    b00[n] = root * twopq;
-                    b01[n] = (1. - proot) * twoq;
-                    c00x[n] = paxij - qroot * pqx;
-                    c00y[n] = payij - qroot * pqy;
-                    c00z[n] = pazij - qroot * pqz;
-                    d00x[n] = proot * pqx;
-                    d00y[n] = proot * pqy;
-                    d00z[n] = proot * pqz;
-                }
-            }
-        }
-    }
-    else
-    {
-        m = 0;
-        n = 0;
-        i__1 = *mij;
-        for (ij = 1; ij <= i__1; ++ij)
-        {
-            pij = p[ij];
-            pxij = px[ij];
-            pyij = py[ij];
-            pzij = pz[ij];
-            paxij = pax[ij];
-            payij = pay[ij];
-            pazij = paz[ij];
-            i__2 = *mkl;
-            for (kl = 1; kl <= i__2; ++kl)
-            {
-                qcxkl = qcx[kl];
-                qcykl = qcy[kl];
-                qczkl = qcz[kl];
-                twoq = qinvhf[kl];
-                pqx = pxij - qx[kl];
-                pqy = pyij - qy[kl];
-                pqz = pzij - qz[kl];
-                ++m;
-                twopq = pqpinv[m] * .5;
-                pscale = pij * pqpinv[m];
-                qscale = 1. - pscale;
-                i__3 = *ngqp;
-                for (ng = 1; ng <= i__3; ++ng)
+                for (ng = 1; ng <= ngqp; ++ng)
                 {
                     ++n;
                     root = rts[n];
@@ -978,63 +432,20 @@ int erd__2d_coefficients_ (int * mij, int * mkl,
 
 /*             ...the case P > p-shell and Q > p-shell. */
   L9:
-    if (*atomab && *atomcd)
     {
         m = 0;
         n = 0;
-        i__1 = *mij;
-        for (ij = 1; ij <= i__1; ++ij)
+        for (ij = 1; ij <= mij; ++ij)
         {
             pij = p[ij];
             pxij = px[ij];
             pyij = py[ij];
             pzij = pz[ij];
+            paxij = pax[ij];
+            payij = pay[ij];
+            pazij = paz[ij];
             twop = pinvhf[ij];
-            i__2 = *mkl;
-            for (kl = 1; kl <= i__2; ++kl)
-            {
-                twoq = qinvhf[kl];
-                pqx = pxij - qx[kl];
-                pqy = pyij - qy[kl];
-                pqz = pzij - qz[kl];
-                ++m;
-                twopq = pqpinv[m] * .5;
-                pscale = pij * pqpinv[m];
-                qscale = 1. - pscale;
-                i__3 = *ngqp;
-                for (ng = 1; ng <= i__3; ++ng)
-                {
-                    ++n;
-                    root = rts[n];
-                    proot = pscale * root;
-                    qroot = -qscale * root;
-                    b00[n] = root * twopq;
-                    b01[n] = (1. - proot) * twoq;
-                    b10[n] = (qroot + 1.) * twop;
-                    c00x[n] = qroot * pqx;
-                    c00y[n] = qroot * pqy;
-                    c00z[n] = qroot * pqz;
-                    d00x[n] = proot * pqx;
-                    d00y[n] = proot * pqy;
-                    d00z[n] = proot * pqz;
-                }
-            }
-        }
-    }
-    else if (*atomab)
-    {
-        m = 0;
-        n = 0;
-        i__1 = *mij;
-        for (ij = 1; ij <= i__1; ++ij)
-        {
-            pij = p[ij];
-            pxij = px[ij];
-            pyij = py[ij];
-            pzij = pz[ij];
-            twop = pinvhf[ij];
-            i__2 = *mkl;
-            for (kl = 1; kl <= i__2; ++kl)
+            for (kl = 1; kl <= mkl; ++kl)
             {
                 qcxkl = qcx[kl];
                 qcykl = qcy[kl];
@@ -1047,103 +458,7 @@ int erd__2d_coefficients_ (int * mij, int * mkl,
                 twopq = pqpinv[m] * .5;
                 pscale = pij * pqpinv[m];
                 qscale = 1. - pscale;
-                i__3 = *ngqp;
-                for (ng = 1; ng <= i__3; ++ng)
-                {
-                    ++n;
-                    root = rts[n];
-                    proot = pscale * root;
-                    qroot = -qscale * root;
-                    b00[n] = root * twopq;
-                    b01[n] = (1. - proot) * twoq;
-                    b10[n] = (qroot + 1.) * twop;
-                    c00x[n] = qroot * pqx;
-                    c00y[n] = qroot * pqy;
-                    c00z[n] = qroot * pqz;
-                    d00x[n] = qcxkl + proot * pqx;
-                    d00y[n] = qcykl + proot * pqy;
-                    d00z[n] = qczkl + proot * pqz;
-                }
-            }
-        }
-    }
-    else if (*atomcd)
-    {
-        m = 0;
-        n = 0;
-        i__1 = *mij;
-        for (ij = 1; ij <= i__1; ++ij)
-        {
-            pij = p[ij];
-            pxij = px[ij];
-            pyij = py[ij];
-            pzij = pz[ij];
-            paxij = pax[ij];
-            payij = pay[ij];
-            pazij = paz[ij];
-            twop = pinvhf[ij];
-            i__2 = *mkl;
-            for (kl = 1; kl <= i__2; ++kl)
-            {
-                twoq = qinvhf[kl];
-                pqx = pxij - qx[kl];
-                pqy = pyij - qy[kl];
-                pqz = pzij - qz[kl];
-                ++m;
-                twopq = pqpinv[m] * .5;
-                pscale = pij * pqpinv[m];
-                qscale = 1. - pscale;
-                i__3 = *ngqp;
-                for (ng = 1; ng <= i__3; ++ng)
-                {
-                    ++n;
-                    root = rts[n];
-                    proot = pscale * root;
-                    qroot = qscale * root;
-                    b00[n] = root * twopq;
-                    b01[n] = (1. - proot) * twoq;
-                    b10[n] = (1. - qroot) * twop;
-                    c00x[n] = paxij - qroot * pqx;
-                    c00y[n] = payij - qroot * pqy;
-                    c00z[n] = pazij - qroot * pqz;
-                    d00x[n] = proot * pqx;
-                    d00y[n] = proot * pqy;
-                    d00z[n] = proot * pqz;
-                }
-            }
-        }
-    }
-    else
-    {
-        m = 0;
-        n = 0;
-        i__1 = *mij;
-        for (ij = 1; ij <= i__1; ++ij)
-        {
-            pij = p[ij];
-            pxij = px[ij];
-            pyij = py[ij];
-            pzij = pz[ij];
-            paxij = pax[ij];
-            payij = pay[ij];
-            pazij = paz[ij];
-            twop = pinvhf[ij];
-            i__2 = *mkl;
-            for (kl = 1; kl <= i__2; ++kl)
-            {
-                qcxkl = qcx[kl];
-                qcykl = qcy[kl];
-                qczkl = qcz[kl];
-                twoq = qinvhf[kl];
-                pqx = pxij - qx[kl];
-                pqy = pyij - qy[kl];
-                pqz = pzij - qz[kl];
-                ++m;
-                twopq = pqpinv[m] * .5;
-                pscale = pij * pqpinv[m];
-                qscale = 1. - pscale;
-                i__3 = *ngqp;
-                for (ng = 1; ng <= i__3; ++ng)
+                for (ng = 1; ng <= ngqp; ++ng)
                 {
                     ++n;
                     root = rts[n];

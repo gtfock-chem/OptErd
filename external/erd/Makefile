@@ -66,7 +66,7 @@ SRC_OPT = erd__1111_csgto.c \
 	erd__hrr_matrix.c \
 	erd__hrr_step.c \
 	erd__hrr_transform.c \
-	erd__int2d_to_e000.f \
+	erd__int2d_to_e000.c \
 	erd__int2d_to_e0f0.c \
 	erd__map_ijkl_to_ikjl.c \
 	erd__memory_1111_csgto.c \
@@ -113,7 +113,7 @@ FFLAGS += -reentrancy threaded -recursive
 FFLAGS += ${OPTFLAGS}
 
 CFLAGS = -O3 -fPIC -g -std=gnu99 -I../Yeppp/include
-CFLAGS += -Wall -w2 -Wunknown-pragmas -Wunused-variable -vec-report2 -no-vec
+CFLAGS += -Wall -w2 -Wunknown-pragmas -Wunused-variable
 CFLAGS += ${OPTFLAGS}
 
 all: ${ERDLIB_OPT} ${ERDLIB_REF}

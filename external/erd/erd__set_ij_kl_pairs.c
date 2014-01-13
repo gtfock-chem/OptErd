@@ -44,7 +44,7 @@ set_pairs (int npgtoa, int npgtob, double rnabsq,
         const double a = alphaa[i];
         for (int j = 0; j < npgtob; j++)
         {
-            __assume_aligned (alphab, 64);
+           // __assume_aligned (alphab, 64);
             const double b = alphab[j];
             const double p = a + b;
             const double ab = a * b;

@@ -1,14 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdint.h>
 #include <assert.h>
 #include <math.h>
 
 
 #include "erd.h"
 
-uint64_t erd__int2d_ticks = 0;
-uint64_t erd__2d_pq_integrals_ticks = 0;
 
 /* ------------------------------------------------------------------------ */
 /*  OPERATION   : ERD_E0F0_PCGTO_BLOCK */
@@ -169,8 +166,7 @@ uint64_t erd__2d_pq_integrals_ticks = 0;
 /*                    BATCH        =  current batch of primitive */
 /*                                    cartesian [E0|F0] integrals */
 /* ------------------------------------------------------------------------ */
-int erd__e0f0_pcgto_block (int atomab, int atomcd,
-                           int nij, int nkl,
+int erd__e0f0_pcgto_block (int nij, int nkl,
                            int ngqp, int nmom,
                            int nxyzet, int nxyzft,
                            int nxyzp, int nxyzq,
@@ -182,8 +178,6 @@ int erd__e0f0_pcgto_block (int atomab, int atomcd,
                            double xd, double yd, double zd,
                            double *alphaa, double *alphab,
                            double *alphac, double *alphad,
-                           double *cca, double *ccb,
-                           double *ccc, double *ccd,
                            double *ftable, int mgrid, int ngrid,
                            double tmax, double tstep, double tvstep,
                            int *prima, int *primb,
@@ -222,7 +216,7 @@ int erd__e0f0_pcgto_block (int atomab, int atomcd,
     double cdy;
     double cdz;
     int mgqijkl;
-    uint64_t start; 
+    
     
 /*            ...predetermine 2D integral case. This is done in */
 /*               order to distinguish the P- and Q-shell combinations */
@@ -420,8 +414,6 @@ int erd__e0f0_pcgto_block (int atomab, int atomcd,
     g050 = g040 + ngqp;
     g060 = g050 + nmom;
 
-    //printf("nijkl = %d, mgqijkl = %d, ngqp = %d, nmom = %d\n", nijkl, mgqijkl, ngqp, nmom);
-    //printf("nij = %d, nkl = %d\n", nij, nkl);
 /*             ...calculate all roots and weights. Array B00 is passed */
 /*                as a scratch array. */
     erd__rys_roots_weights_ (&nijkl, &mgqijkl, &ngqp, &nmom, &tval[1], &b00[1],
@@ -445,226 +437,39 @@ int erd__e0f0_pcgto_block (int atomab, int atomcd,
 /*                for the special s-shell cases. Note, that the case */
 /*                in which both P- and Q-shells are s-shells cannot */
 /*                arise, as this case is dealt with in separate routines. */
-    erd__2d_coefficients_ (&nij, &nkl, &nijkl, &ngqp, &mgqijkl, &atomab,
-                           &atomcd, &p[1], &q[1], &px[1], &py[1], &pz[1],
-                           &qx[1], &qy[1], &qz[1], &pax[1], &pay[1],
-                           &paz[1], &qcx[1], &qcy[1], &qcz[1],
-                           &pinvhf[1], &qinvhf[1], &pqpinv[1], &rts[1],
-                           &case2d, &b00[1], &b01[1], &b10[1], &c00x[1],
-                           &c00y[1], &c00z[1], &d00x[1], &d00y[1],
-                           &d00z[1]);
-
-    int nijkl_aligned = ((nijkl + SIMD_WIDTH - 1)/SIMD_WIDTH) * SIMD_WIDTH;
-    int mgqijkl_aligned = nijkl_aligned * ngqp;
-    //int mgqijkl_aligned = ((mgqijkl + SIMD_WIDTH - 1)/SIMD_WIDTH) * SIMD_WIDTH;
-    int int2d_size_aligned = mgqijkl_aligned * (shellp + 1) * (shellq + 1);
-    double rts_aligned[mgqijkl_aligned];
-    double wts_aligned[mgqijkl_aligned];
-    double b00_aligned[mgqijkl_aligned];
-    double b01_aligned[mgqijkl_aligned];
-    double b10_aligned[mgqijkl_aligned];
-    double c00x_aligned[mgqijkl_aligned];
-    double c00y_aligned[mgqijkl_aligned];
-    double c00z_aligned[mgqijkl_aligned];
-    double d00x_aligned[mgqijkl_aligned];
-    double d00y_aligned[mgqijkl_aligned];
-    double d00z_aligned[mgqijkl_aligned];
-    double scalepq_aligned[mgqijkl_aligned];
-    double int2dx_aligned[int2d_size_aligned];
-    double int2dy_aligned[int2d_size_aligned];
-    double int2dz_aligned[int2d_size_aligned];
-/*
-    memcpy(rts_aligned, &rts[1], mgqijkl * sizeof(double));
-    memcpy(wts_aligned, &wts[1], mgqijkl * sizeof(double));
-    memcpy(b00_aligned, &b00[1], mgqijkl * sizeof(double));
-    memcpy(b01_aligned, &b01[1], mgqijkl * sizeof(double));
-    memcpy(b10_aligned, &b10[1], mgqijkl * sizeof(double));
-    memcpy(c00x_aligned, &c00x[1], mgqijkl * sizeof(double));
-    memcpy(c00y_aligned, &c00y[1], mgqijkl * sizeof(double));
-    memcpy(c00z_aligned, &c00z[1], mgqijkl * sizeof(double));
-    memcpy(d00x_aligned, &d00x[1], mgqijkl * sizeof(double));
-    memcpy(d00y_aligned, &d00y[1], mgqijkl * sizeof(double));
-    memcpy(d00z_aligned, &d00z[1], mgqijkl * sizeof(double));
-
-    for(i = mgqijkl; i < mgqijkl_aligned; i++)
+    erd__2d_coefficients (nij, nkl, ngqp, &p[1], &q[1],
+                          &px[1], &py[1], &pz[1], &qx[1], &qy[1], &qz[1],
+                          &pax[1], &pay[1], &paz[1], &qcx[1], &qcy[1], &qcz[1],
+                          &pinvhf[1], &qinvhf[1], &pqpinv[1], &rts[1],
+                          case2d, &b00[1], &b01[1], &b10[1],
+                          &c00x[1], &c00y[1], &c00z[1],
+                          &d00x[1], &d00y[1], &d00z[1]);
+    erd__2d_pq_integrals (shellp, shellq, mgqijkl, &wts[1],
+                          &b00[1], &b01[1], &b10[1],
+                          &c00x[1], &c00y[1], &c00z[1], &d00x[1],
+                          &d00y[1], &d00z[1], case2d,
+                          &int2dx[1], &int2dy[1], &int2dz[1]);
+    if (shellq == 0)
     {
-        rts_aligned[i] = rts[mgqijkl];
-        wts_aligned[i] = wts[mgqijkl];
-        b00_aligned[i] = b00[mgqijkl];
-        b01_aligned[i] = b01[mgqijkl];
-        b10_aligned[i] = b10[mgqijkl];
-        c00x_aligned[i] = c00x[mgqijkl];
-        c00y_aligned[i] = c00y[mgqijkl];
-        c00z_aligned[i] = c00z[mgqijkl];
-        d00x_aligned[i] = d00x[mgqijkl];
-        d00y_aligned[i] = d00y[mgqijkl];
-        d00z_aligned[i] = d00z[mgqijkl];
-    }
-    */
-    for(j = 0; j < nijkl; j++)
-    {
-        for(k = 0; k < ngqp; k++)
-        {
-            rts_aligned[k * nijkl_aligned + j] = rts[1 + j * ngqp + k];
-            wts_aligned[k * nijkl_aligned + j] = wts[1 + j * ngqp + k];
-            b00_aligned[k * nijkl_aligned + j] = b00[1 + j * ngqp + k];
-            b01_aligned[k * nijkl_aligned + j] = b01[1 + j * ngqp + k];
-            b10_aligned[k * nijkl_aligned + j] = b10[1 + j * ngqp + k];
-            c00x_aligned[k * nijkl_aligned + j] = c00x[1 + j * ngqp + k];
-            c00y_aligned[k * nijkl_aligned + j] = c00y[1 + j * ngqp + k];
-            c00z_aligned[k * nijkl_aligned + j] = c00z[1 + j * ngqp + k];
-            d00x_aligned[k * nijkl_aligned + j] = d00x[1 + j * ngqp + k];
-            d00y_aligned[k * nijkl_aligned + j] = d00y[1 + j * ngqp + k];
-            d00z_aligned[k * nijkl_aligned + j] = d00z[1 + j * ngqp + k];
-            scalepq_aligned[k * nijkl_aligned + j] = scalepq[1 + j * ngqp + k];
-        }
-    }
-
-    start = __rdtsc();        
-    erd__2d_pq_integrals_ (shellp, shellq, mgqijkl_aligned, wts_aligned, b00_aligned,
-                           b01_aligned, b10_aligned, c00x_aligned, c00y_aligned,
-                           c00z_aligned, d00x_aligned, d00y_aligned, d00z_aligned,
-                           &case2d, int2dx_aligned, int2dy_aligned, int2dz_aligned);
-    erd__2d_pq_integrals_ticks += (__rdtsc() - start);
-    
-    /*for(i = 0; i < (shellp + 1) * (shellq + 1); i++)
-    {
-        for(j = 0; j < mgqijkl; j++)
-        {
-            int2dx[1 + i * mgqijkl + j] = int2dx_aligned[j * (shellp + 1) * (shellq + 1) + i];
-            int2dy[1 + i * mgqijkl + j] = int2dy_aligned[j * (shellp + 1) * (shellq + 1) + i];
-            int2dz[1 + i * mgqijkl + j] = int2dz_aligned[j * (shellp + 1) * (shellq + 1) + i];
-        }
-    }*/
-/*     
-    if(shellp >= shellq)
-    {
-        for(i = 0; i < (shellp + 1) * (shellq + 1); i++)
-        {
-            for(j = 0; j < mgqijkl_aligned; j++)
-            {
-                printf("%lf ", int2dx_aligned[i * mgqijkl_aligned + j]);
-            }
-            printf("\n");
-        }
-    }
-    printf("%d, %d, %d, %d, %d, %d\n", shellp, shellq, nijkl, nijkl_aligned, mgqijkl, mgqijkl_aligned);
-  */  
-  /*  int j1;
-    for(i = 0; i < (shellp + 1) * (shellq + 1); i++)
-    {
-        for(j = 0; j < mgqijkl - SIMD_WIDTH; j+=SIMD_WIDTH)
-        {
-            for(j1 = 0; j1 < SIMD_WIDTH; j1++)
-            {
-                int2dx[1 + i * mgqijkl + j + j1] = int2dx_aligned[j * (shellp + 1) * (shellq + 1) + i * SIMD_WIDTH + j1];
-                int2dy[1 + i * mgqijkl + j + j1] = int2dy_aligned[j * (shellp + 1) * (shellq + 1) + i * SIMD_WIDTH + j1];
-                int2dz[1 + i * mgqijkl + j + j1] = int2dz_aligned[j * (shellp + 1) * (shellq + 1) + i * SIMD_WIDTH + j1];
-            }
-        }
-        for(j1 = 0; (j + j1) < mgqijkl; j1++)
-        {
-                int2dx[1 + i * mgqijkl + j + j1] = int2dx_aligned[j * (shellp + 1) * (shellq + 1) + i * SIMD_WIDTH + j1];
-                int2dy[1 + i * mgqijkl + j + j1] = int2dy_aligned[j * (shellp + 1) * (shellq + 1) + i * SIMD_WIDTH + j1];
-                int2dz[1 + i * mgqijkl + j + j1] = int2dz_aligned[j * (shellp + 1) * (shellq + 1) + i * SIMD_WIDTH + j1];
-        }
-    }
-    */
-    /*for(i = 0; i < (shellp + 1) * (shellq + 1); i++)
-    {
-        memcpy(&int2dx[1] + i * mgqijkl, int2dx_aligned + i * mgqijkl_aligned, mgqijkl * sizeof(double));
-        memcpy(&int2dy[1] + i * mgqijkl, int2dy_aligned + i * mgqijkl_aligned, mgqijkl * sizeof(double));
-        memcpy(&int2dz[1] + i * mgqijkl, int2dz_aligned + i * mgqijkl_aligned, mgqijkl * sizeof(double));
-    }*/
-    
-
-    double int2dx_aligned_2[int2d_size_aligned];
-    double int2dy_aligned_2[int2d_size_aligned];
-    double int2dz_aligned_2[int2d_size_aligned];
-    double batch_aligned[nijkl_aligned * nxyzet * nxyzft];
-    /*for(i = 0; i < (shellp + 1) * (shellq + 1); i++)
-    {
-        //memcpy(int2dx_aligned_2 + i * mgqijkl_aligned, int2dx + 1 + i * mgqijkl, mgqijkl * sizeof(double));
-        //memcpy(int2dy_aligned_2 + i * mgqijkl_aligned, int2dy + 1 + i * mgqijkl, mgqijkl * sizeof(double));
-        //memcpy(int2dz_aligned_2 + i * mgqijkl_aligned, int2dz + 1 + i * mgqijkl, mgqijkl * sizeof(double));
-        for(j = 0; j < nijkl; j++)
-        {
-            for(k = 0; k < ngqp; k++)
-            {
-                int2dx_aligned_2[i * mgqijkl_aligned + j + k * nijkl_aligned] = int2dx[1 + i * mgqijkl + j * ngqp + k];
-                int2dy_aligned_2[i * mgqijkl_aligned + j + k * nijkl_aligned] = int2dy[1 + i * mgqijkl + j * ngqp + k];
-                int2dz_aligned_2[i * mgqijkl_aligned + j + k * nijkl_aligned] = int2dz[1 + i * mgqijkl + j * ngqp + k];
-            }
-        }
-    }*/
-
-/*
-    if(shellp >= shellq)
-    {
-        for(i = 0; i < (shellp + 1) * (shellq + 1); i++)
-        {
-            for(j = 0; j < mgqijkl; j++)
-            {
-                printf("%lf ", int2dx[1 + i * mgqijkl+ j]);
-            }
-            printf("\n");
-        }
-        exit(0);
-    }
-  */  
-    /*erd__2d_pq_integrals_ (shellp, shellq, mgqijkl, &wts[1], &b00[1],
-                           &b01[1], &b10[1], &c00x[1], &c00y[1],
-                           &c00z[1], &d00x[1], &d00y[1], &d00z[1],
-                           &case2d, &int2dx[1], &int2dy[1], &int2dz[1]);
-    */
-    /*if (shellq == 0)
-    {
-        erd__int2d_to_e000_ (&shella, &shellp, &ngqp, &nijkl, &mgqijkl,
-                             &nxyzet, &nxyzp, &int2dx[1], &int2dy[1],
-                             &int2dz[1], &b00[1], &b01[1], &scalepq[1],
-                             &batch[1]);
+        erd__int2d_to_e000 (shella, shellp, ngqp, nijkl, mgqijkl,
+                            nxyzet, nxyzp,
+                            &int2dx[1], &int2dy[1], &int2dz[1],
+                            &b00[1], &b01[1], &scalepq[1], &batch[1]);
     }
     else if (shellp == 0)
     {
-        erd__int2d_to_e000_ (&shellc, &shellq, &ngqp, &nijkl, &mgqijkl,
-                             &nxyzft, &nxyzq, &int2dx[1], &int2dy[1],
-                             &int2dz[1], &b00[1], &b01[1], &scalepq[1],
-                             &batch[1]);
+        erd__int2d_to_e000 (shellc, shellq, ngqp, nijkl, mgqijkl,
+                            nxyzft, nxyzq,
+                            &int2dx[1], &int2dy[1], &int2dz[1],
+                            &b00[1], &b01[1], &scalepq[1], &batch[1]);
     }
     else
-    {*/
-      /*  erd__int2d_to_e0f0_ (shella, shellp, shellc, shellq, ngqp, nijkl,
-                             mgqijkl, nxyzet, nxyzft, nxyzp, nxyzq,
-                             &int2dx[1], &int2dy[1], &int2dz[1], &b00[1],
-                             &b01[1], &scalepq[1], &batch[1]);
-      
-      printf("nijkl = %d, nxyzet = %d, nxyzft = %d, nijkl_aligned = %d\n", nijkl, nxyzet,  nxyzft, nijkl_aligned); 
-       for(i = 0; i < nxyzet * nxyzft; i++)
-       {
-           for(j = 0; j < nijkl; j++)
-               printf("%lf ", batch[1 + i * nijkl + j]);
-           printf("\n");
-       }*/
-
-        start = __rdtsc();        
-        erd__int2d_to_e0f0_ (shella, shellp, shellc, shellq, ngqp, nijkl_aligned,
-                             mgqijkl_aligned, nxyzet, nxyzft, nxyzp, nxyzq,
-                             int2dx_aligned, int2dy_aligned, int2dz_aligned, b00_aligned,
-                             b01_aligned, scalepq_aligned, batch_aligned);
-        erd__int2d_ticks += (__rdtsc() - start);
-        for(i = 0; i < nxyzet * nxyzft; i++)
-        {
-            memcpy(&batch[1] + i * nijkl, batch_aligned + i * nijkl_aligned, nijkl * sizeof(double));
-        }
-       /* printf("new code\n");
-       for(i = 0; i < nxyzet * nxyzft; i++)
-       {
-           for(j = 0; j < nijkl; j++)
-               printf("%lf ", batch_aligned[i * nijkl_aligned + j]);
-           printf("\n");
-       }*/
-    //}
+    {
+        erd__int2d_to_e0f0 (shella, shellp, shellc, shellq, ngqp,
+                            nijkl, mgqijkl, nxyzet, nxyzft, nxyzp, nxyzq,
+                            &int2dx[1], &int2dy[1], &int2dz[1],
+                            &b00[1], &b01[1], &scalepq[1], &batch[1]);
+    }
     
-
     return 0;
 }

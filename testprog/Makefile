@@ -1,16 +1,13 @@
 include ../make.in
 
 CFLAGS = -O3 -Wall -openmp -w2
-CFLAGS += -Wunknown-pragmas -Wunused-variable #-Wunused-function
+CFLAGS += -Wunknown-pragmas -Wunused-variable -Wunused-function
 CFLAGS += ${OPTFLAGS}
 
 INC = -I./             \
-      -I../include     \
-      -I${MPI_INCDIR}  \
-      -I${BLAS_INCDIR} \
-      -I${GA_INCDIR}
+      -I../include     
 
-LDFLAGS = -L./ -L${MPI_LIBDIR} -L${BLAS_LIBDIR}
+LDFLAGS = -L./
 
 LIBS =  -lifcore
 
@@ -23,9 +20,8 @@ UNIT_TEST_OPT_OBJS := mic/testCInt.opt.o
 PERF_TEST_OBJS := mic/testCInt2.o
 LIBS_CINT = ../lib/libcint_mic.a \
             ../lib/liboed_mic.a
-LIBS_REF = ../lib/liberd_ref_mic.a
+LIBS_REF = ../lib/liberd_ref_mic.a 
 LIBS_OPT = ../lib/liberd_opt_mic.a
-LIBS_TEST = ../lib/
 else
 UNIT_TEST_REF_EXE = Test.Ref
 UNIT_TEST_OPT_EXE = Test.Opt
@@ -69,4 +65,4 @@ mic/%.opt.o : %.c Makefile
 	$(CC) ${CFLAGS} -DOPTERD_TEST_OPTIMIZED ${INC} -c $< -o $@
 
 clean:
-	rm -f *.o *.s *.d *~ mic/* testCInt*.o testPFock
+	rm -f *.o *.s *.d *~ mic/*.o testCInt*.o Test.*

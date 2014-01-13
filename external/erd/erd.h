@@ -1,16 +1,13 @@
 #ifndef __ERD_H__
 #define __ERD_H__
 
-#include <stdio.h>
-#include <string.h>
-#include <immintrin.h>
+
 #include <yepPredefines.h>
 
-#define SIMD_WIDTH 4
+
 #define MAX(a,b)    ((a) < (b) ? (b) : (a))
 #define MIN(a,b)    ((a) > (b) ? (b) : (a))
 #define PREFACT     9.027033336764101
-
 
 
 /*******************************************************************/
@@ -320,8 +317,7 @@ int erd__normalize_cartesian (int m, int l, double *norm, double *batch);
 
 int erd__cartesian_norms (int l, double *norm);
 
-int erd__e0f0_pcgto_block (int atomab, int atomcd,
-                           int nij, int nkl,
+int erd__e0f0_pcgto_block (int nij, int nkl,
                            int ngqp, int nmom,
                            int nxyzet, int nxyzft,
                            int nxyzp, int nxyzq,
@@ -333,8 +329,6 @@ int erd__e0f0_pcgto_block (int atomab, int atomcd,
                            double xd, double yd, double zd,
                            double *alphaa, double *alphab,
                            double *alphac, double *alphad,
-                           double *cca, double *ccb,
-                           double *ccc, double *ccd,
                            double *ftable, int mgrid, int ngrid,
                            double tmax, double tstep, double tvstep,
                            int *prima, int *primb,
@@ -358,148 +352,41 @@ int erd__e0f0_pcgto_block (int atomab, int atomcd,
                            double *int2dx, double *int2dy,
                            double *int2dz, double *batch);
 
+int erd__2d_coefficients (int mij, int mkl, int ngqp,
+                          double *p, double *q,
+                          double *px, double *py, double *pz,
+                          double *qx, double *qy, double *qz,
+                          double *pax, double *pay, double *paz,
+                          double *qcx, double *qcy, double *qcz,
+                          double *pinvhf, double *qinvhf, double *pqpinv,
+                          double *rts, int case2d,
+                          double *b00, double *b01, double *b10,
+                          double *c00x, double *c00y, double *c00z,
+                          double *d00x, double *d00y, double *d00z);
+
+int erd__2d_pq_integrals (int shellp, int shellq, int ngqexq,
+                          double *wts, double *b00, double *b01, double *b10,
+                          double *c00x, double *c00y, double *c00z,
+                          double *d00x, double *d00y, double *d00z,
+                          int case2d, double *int2dx,
+                          double *int2dy, double *int2dz);
+
+int erd__int2d_to_e0f0 (int shella, int shellp, int shellc, int shellq,
+                        int ngqp, int nexq, int ngqexq,
+                        int nxyzet, int nxyzft, int nxyzp, int nxyzq,
+                        double *int2dx, double *int2dy, double *int2dz,
+                        double *temp1, double *temp2, double *scale,
+                        double *batch);
+
+int erd__int2d_to_e000 (int shella, int shellp, int ngqp, int nexq, int ngqexq,
+                        int nxyzet, int nxyzp,
+                        double *int2dx, double *int2dy, double *int2dz,
+                        double *temp1, double *temp2,
+                        double *scale, double *batch);
+
 
 /*******************************************************************/
 // Fortran functions
-
-int erd__e0f0_pcgto_block_ (int *, int *, 
-	    int *, int *, int *, int *, int *, int *, 
-	    int *, int *, int *, int *, int *, int *, 
-	    int *, int *, int *, int *, int *, int *, 
-	    int *, int *, int *, int *, int *, int *, 
-	    int *, int *, int *, int *, double *, 
-	    double *, double *, double *, double *, 
-	    double *, double *, double *, double *, 
-	    double *, double *, double *, double *, 
-	    double *, double *, double *, double *, 
-	    double *, double *, double *, double *, 
-	    double *, double *, int *, int *, double *, 
-	    double *, double *, int *, int *, int *, 
-	    int *, double *, double *, double *, double *,
-	     double *, double *, double *, double *, 
-	    double *, double *, double *, double *, 
-	    double *, double *, double *, double *, 
-	    double *, double *, double *, double *, 
-	    double *, double *, double *, double *, 
-	    double *, double *, double *, double *, 
-	    double *, double *, double *, double *, 
-	    double *, double *, double *, double *, 
-	    double *, double *, double *, double *, 
-	    double *, double *, double *);
-
-    int erd__int2d_to_e000_ (int *, int *,
-                                                      int *, int *,
-                                                      int *, int *,
-                                                      int *, double *,
-                                                      double *,
-                                                      double *,
-                                                      double *,
-                                                      double *,
-                                                      double *,
-                                                      double *);
-        int erd__int2d_to_e0f0_ (int , int , int , int ,
-                              int , int , int , int ,
-                              int , int , int , double *,
-                              double *, double *, double *,
-                              double *, double *, double *);
-    int erd__2d_atom_coefficients_ (int *,
-                                                             int *,
-                                                             int *,
-                                                             int *,
-                                                             int *,
-                                                             double *,
-                                                             double *,
-                                                             double *,
-                                                             double *,
-                                                             double *,
-                                                             int *,
-                                                             double *,
-                                                             double *,
-                                                             double *);
-        int erd__2d_atom_pq_integrals_ (int *, int *, int *,
-                                     double *, double *, double *,
-                                     double *, int *, double *,
-                                     double *, double *);
-    int erd__2d_coefficients_ (int *, int *,
-                                                        int *, int *,
-                                                        int *, int *,
-                                                        int *,
-                                                        double *,
-                                                        double *,
-                                                        double *,
-                                                        double *,
-                                                        double *,
-                                                        double *,
-                                                        double *,
-                                                        double *,
-                                                        double *,
-                                                        double *,
-                                                        double *,
-                                                        double *,
-                                                        double *,
-                                                        double *,
-                                                        double *,
-                                                        double *,
-                                                        double *,
-                                                        double *,
-                                                        int *,
-                                                        double *,
-                                                        double *,
-                                                        double *,
-                                                        double *,
-                                                        double *,
-                                                        double *,
-                                                        double *,
-                                                        double *,
-                                                        double *);
-    int erd__2d_pq_integrals_ (int, int,
-                                                        int,
-                                                        double *,
-                                                        double *,
-                                                        double *,
-                                                        double *,
-                                                        double *,
-                                                        double *,
-                                                        double *,
-                                                        double *,
-                                                        double *,
-                                                        double *,
-                                                        int *,
-                                                        double *,
-                                                        double *,
-                                                        double *);
-    int erd__atom_int2d_to_e000_ (int *,
-                                                           int *
-                                                           , int *,
-                                                           int *,
-                                                           int *,
-                                                           int *,
-                                                           int *,
-                                                           double *,
-                                                           double *,
-                                                           double *,
-                                                           double *,
-                                                           double *,
-                                                           double *,
-                                                           double *);
-    int erd__atom_int2d_to_e0f0_ (int *,
-                                                           int *
-                                                           , int *,
-                                                           int *,
-                                                           int *,
-                                                           int *,
-                                                           int *,
-                                                           int *,
-                                                           int *,
-                                                           int *,
-                                                           int *,
-                                                           double *,
-                                                           double *,
-                                                           double *,
-                                                           double *,
-                                                           double *,
-                                                           double *,
-                                                           double *);
     int erd__rys_roots_weights_ (int *,
                                                           int *,
                                                           int *,
