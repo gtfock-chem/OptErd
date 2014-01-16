@@ -238,6 +238,7 @@ int erd__set_abcd (int npgto1, int npgto2, int npgto3, int npgto4,
     nxyzf =
         (shellq + 1) * (shellq + 2) * (shellq + 3) / 6 -
         *shellc * (*shellc + 1) * (*shellc + 2) / 6;
+
     if (*shellb == 0 && *shelld == 0)
     {
         *nxyzhrr = nxyze * nxyzf;
@@ -485,7 +486,9 @@ int erd__set_abcd (int npgto1, int npgto2, int npgto3, int npgto4,
     if (fabs(cdz) == 0.0)
     {
         --(*ncdcoor);
-    }     
+    }
+    shellp = *shella + *shellb;
+    shellq = *shellc + *shelld;
     nxyzp = (shellp + 1) * (shellp + 2) / 2;
     nxyzq = (shellq + 1) * (shellq + 2) / 2;
     
@@ -567,6 +570,5 @@ int erd__set_abcd (int npgto1, int npgto2, int npgto3, int npgto4,
         *ncolhrr = MAX(ncol, *ncolhrr);
         *nrothrr = MAX(nrot, *nrothrr);
     }
-    
     return 0;
 }

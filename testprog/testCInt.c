@@ -3,6 +3,7 @@
 #include <assert.h>
 
 #include "CInt.h"
+#include "screening.h"
 
 #if (defined(OPTERD_TEST_REFERENCE) + defined(OPTERD_TEST_OPTIMIZED)) != 1
 #error Either OPTERD_TEST_REFERENCE or OPTERD_TEST_OPTIMIZED must be defined
@@ -34,6 +35,10 @@ int main (int argc, char **argv)
     int iP;
     int iQ;
     double ivalue;
+    int *shellptr;
+    int *shellid;
+    int *shellrid;
+    double *shellvalue;
     struct timeval tv1;
     struct timeval tv2;
     double timepass;   
@@ -64,6 +69,7 @@ int main (int argc, char **argv)
     // load basis set   
     CInt_createBasisSet (&basis);
     CInt_loadBasisSet (basis, argv[1], argv[2]);
+    schwartz_screening (basis, &shellptr, &shellid, &shellrid, &shellvalue);
 
     printf ("Molecule info:\n");
     printf ("  #Atoms\t= %d\n", CInt_getNumAtoms (basis));
@@ -77,16 +83,35 @@ int main (int argc, char **argv)
     printf ("Computing integrals ...\n");
     ns = CInt_getNumShells (basis);
     timepass = 0.0;
+    int i;
+    int j;
+    int start1;
+    int end1;
+    int start2;
+    int end2;
+    double value1;
+    double value2;
+    
     for (M = 0; M < ns; M++)
     {
-        for (N = 0; N < ns; N++)
+        start1 = shellptr[M];
+        end1 = shellptr[M + 1];       
+        for (i = start1; i < end1; i++)
         {
+            N = shellid[i];
+            value1 = shellvalue[i];
             for (P = 0; P < ns; P++)
             {
-                for (Q = 0; Q < ns; Q++)
+                start2 = shellptr[P];
+                end2 = shellptr[P + 1];              
+                for (j = start2; j < end2; j++)
                 {
+                    Q = shellid[j];
+                    value2 = shellvalue[j];
                     if (M > N || P > Q || (M + N) > (P + Q))
                         continue;
+                    if (fabs(value1 * value2) < TOLSRC * TOLSRC)
+                        continue;                        
                     totalcalls = totalcalls + 1;
                     gettimeofday (&tv1, NULL);
                     CInt_computeShellQuartet (basis, erd, M, N, P, Q,
@@ -195,6 +220,11 @@ int main (int argc, char **argv)
 
     CInt_destroyERD (erd);
     CInt_destroyBasisSet (basis);
+    free (shellptr);
+    free (shellid);
+    free (shellvalue);
+    free (shellrid);
+    
     fclose (ref_data_file);
     return 0;
 }

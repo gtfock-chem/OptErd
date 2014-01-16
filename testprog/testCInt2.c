@@ -4,6 +4,7 @@
 #include <stdint.h>
 
 #include "CInt.h"
+#include "screening.h"
 
 extern uint64_t erd__set_ij_kl_pairs_ticks;
 
@@ -17,7 +18,11 @@ main (int argc, char **argv)
     int nthreads;
     double *totalcalls = 0;
     double *totalnintls = 0;
-
+    int *shellptr;
+    int *shellid;
+    int *shellrid;
+    double *shellvalue;
+    
     struct timeval tv1;
     struct timeval tv2;
     double timepass;
@@ -33,7 +38,8 @@ main (int argc, char **argv)
     // load basis set
     CInt_createBasisSet (&basis);
     CInt_loadBasisSet (basis, argv[1], argv[2]);
-
+    schwartz_screening (basis, &shellptr, &shellid, &shellrid, &shellvalue);
+    
     printf ("Molecule info:\n");
     printf ("  #Atoms\t= %d\n", CInt_getNumAtoms (basis));
     printf ("  #Shells\t= %d\n", CInt_getNumShells (basis));
@@ -60,38 +66,56 @@ main (int argc, char **argv)
     ns = CInt_getNumShells (basis);
     timepass = 0.0;
     gettimeofday (&tv1, NULL);
+    int start;
+    int end;
+    start = 0;
+    end = shellptr[ns];
+    
 #pragma omp parallel
     {
-        unsigned long long n;
         int tid;
         int M;
         int N;
         int P;
         int Q;
+        int i;
+        int j;
         double *integrals;
         int nints;
+        double value1;
+        double value2;
+        int start2;
+        int end2;
 
         tid = omp_get_thread_num ();
 
 #pragma omp for schedule(dynamic)
-        for (n = 0; n < ns * ns * ns * ns; n++)
+        for (i = start; i < end; i++)
         {
-            M = n / (ns * ns * ns);
-            N = (n % (ns * ns * ns)) / (ns * ns);
-            P = ((n % (ns * ns * ns)) % (ns * ns)) / ns;
-            Q = ((n % (ns * ns * ns)) % (ns * ns)) % ns;
+            M = shellrid[i];
+            N = shellid[i];
+            value1 = shellvalue[i];
+            for (P = 0; P < ns; P++)
+            {                               
+                start2 = shellptr[P];
+                end2 = shellptr[P + 1];
+                for (j = start2; j < end2; j++)
+                {                
+                    Q = shellid[j];
+                    value2 = shellvalue[j];
+                    if (M > N || P > Q || (M + N) > (P + Q))
+                        continue;
+                    if (fabs(value1 * value2) < TOLSRC * TOLSRC)
+                        continue;
+                    totalcalls[tid * 64] = totalcalls[tid * 64] + 1;
 
-            if (M > N || P > Q || (M + N) > (P + Q))
-                continue;
+                    CInt_computeShellQuartet (basis, erd[tid], M, N, P, Q, &integrals,
+                                              &nints);
 
-            totalcalls[tid * 64] = totalcalls[tid * 64] + 1;
-
-            CInt_computeShellQuartet (basis, erd[tid], M, N, P, Q, &integrals,
-                                      &nints);
-
-            totalnintls[tid * 64] = totalnintls[tid * 64] + nints;
+                    totalnintls[tid * 64] = totalnintls[tid * 64] + nints;
+                }
+            }
         }
-
     }
 
     for (i = 1; i < nthreads; i++)
@@ -119,7 +143,11 @@ main (int argc, char **argv)
     free (erd);
     free (totalcalls);
     free (totalnintls);
-
+    free (shellptr);
+    free (shellid);
+    free (shellvalue);
+    free (shellrid);
+    
     CInt_destroyBasisSet (basis);
 
     return 0;

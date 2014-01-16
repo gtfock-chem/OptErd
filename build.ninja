@@ -746,12 +746,17 @@ build libcint/nhm/libcint/erd_integral.c.o : COMPILE_C libcint/erd_integral.c
   ARCH = NHM
 build lib/nhm/libcint.a : CREATE_STATIC_LIBRARY libcint/nhm/libcint/basisset.c.o libcint/nhm/libcint/oed_integral.c.o libcint/nhm/libcint/erd_integral.c.o
   ARCH = NHM
+build testprog/nhm/screening.c.o : COMPILE_C testprog/screening.c
+  DEP_FILE = testprog/nhm/screening.c.d
+  CC = $CC_NHM
+  CFLAGS = $CFLAGS -Iinclude -openmp
+  ARCH = NHM
 build testprog/nhm/testCInt.c.opt.o : COMPILE_C testprog/testCInt.c
   DEP_FILE = testprog/nhm/testCInt.c.opt.o.d
   CC = $CC_NHM
   CFLAGS = $CFLAGS -Iinclude -DOPTERD_TEST_OPTIMIZED
   ARCH = NHM
-build testprog/nhm/Test.Opt : LINK testprog/nhm/testCInt.c.opt.o lib/nhm/libcint.a lib/nhm/liboed.a lib/nhm/liberd_opt.a
+build testprog/nhm/Test.Opt : LINK testprog/nhm/testCInt.c.opt.o testprog/nhm/screening.c.o lib/nhm/libcint.a lib/nhm/liboed.a lib/nhm/liberd_opt.a
   CC = $CC_NHM
   ARCH = NHM
 build testprog/nhm/testCInt.c.ref.o : COMPILE_C testprog/testCInt.c
@@ -759,7 +764,7 @@ build testprog/nhm/testCInt.c.ref.o : COMPILE_C testprog/testCInt.c
   CC = $CC_NHM
   CFLAGS = $CFLAGS -Iinclude -DOPTERD_TEST_REFERENCE
   ARCH = NHM
-build testprog/nhm/Test.Ref : LINK testprog/nhm/testCInt.c.ref.o lib/nhm/libcint.a lib/nhm/liboed.a lib/nhm/liberd_ref.a
+build testprog/nhm/Test.Ref : LINK testprog/nhm/testCInt.c.ref.o testprog/nhm/screening.c.o lib/nhm/libcint.a lib/nhm/liboed.a lib/nhm/liberd_ref.a
   CC = $CC_NHM
   ARCH = NHM
 build testprog/nhm/testCInt2.c.o : COMPILE_C testprog/testCInt2.c
@@ -767,7 +772,7 @@ build testprog/nhm/testCInt2.c.o : COMPILE_C testprog/testCInt2.c
   CC = $CC_NHM
   CFLAGS = $CFLAGS -Iinclude -openmp
   ARCH = NHM
-build testprog/nhm/Test.Perf : LINK testprog/nhm/testCInt2.c.o lib/nhm/libcint.a lib/nhm/liboed.a lib/nhm/liberd_opt.a
+build testprog/nhm/Test.Perf : LINK testprog/nhm/testCInt2.c.o testprog/nhm/screening.c.o lib/nhm/libcint.a lib/nhm/liboed.a lib/nhm/liberd_opt.a
   CC = $CC_NHM
   ARCH = NHM
 build external/erd/snb/external/erd/erd__ssss_pcgto_block.f.o : COMPILE_F90 external/erd/erd__ssss_pcgto_block.f
@@ -1492,12 +1497,17 @@ build libcint/snb/libcint/erd_integral.c.o : COMPILE_C libcint/erd_integral.c
   ARCH = SNB
 build lib/snb/libcint.a : CREATE_STATIC_LIBRARY libcint/snb/libcint/basisset.c.o libcint/snb/libcint/oed_integral.c.o libcint/snb/libcint/erd_integral.c.o
   ARCH = SNB
+build testprog/snb/screening.c.o : COMPILE_C testprog/screening.c
+  DEP_FILE = testprog/snb/screening.c.d
+  CC = $CC_SNB
+  CFLAGS = $CFLAGS -Iinclude -openmp
+  ARCH = SNB
 build testprog/snb/testCInt.c.opt.o : COMPILE_C testprog/testCInt.c
   DEP_FILE = testprog/snb/testCInt.c.opt.o.d
   CC = $CC_SNB
   CFLAGS = $CFLAGS -Iinclude -DOPTERD_TEST_OPTIMIZED
   ARCH = SNB
-build testprog/snb/Test.Opt : LINK testprog/snb/testCInt.c.opt.o lib/snb/libcint.a lib/snb/liboed.a lib/snb/liberd_opt.a
+build testprog/snb/Test.Opt : LINK testprog/snb/testCInt.c.opt.o testprog/snb/screening.c.o lib/snb/libcint.a lib/snb/liboed.a lib/snb/liberd_opt.a
   CC = $CC_SNB
   ARCH = SNB
 build testprog/snb/testCInt.c.ref.o : COMPILE_C testprog/testCInt.c
@@ -1505,7 +1515,7 @@ build testprog/snb/testCInt.c.ref.o : COMPILE_C testprog/testCInt.c
   CC = $CC_SNB
   CFLAGS = $CFLAGS -Iinclude -DOPTERD_TEST_REFERENCE
   ARCH = SNB
-build testprog/snb/Test.Ref : LINK testprog/snb/testCInt.c.ref.o lib/snb/libcint.a lib/snb/liboed.a lib/snb/liberd_ref.a
+build testprog/snb/Test.Ref : LINK testprog/snb/testCInt.c.ref.o testprog/snb/screening.c.o lib/snb/libcint.a lib/snb/liboed.a lib/snb/liberd_ref.a
   CC = $CC_SNB
   ARCH = SNB
 build testprog/snb/testCInt2.c.o : COMPILE_C testprog/testCInt2.c
@@ -1513,7 +1523,7 @@ build testprog/snb/testCInt2.c.o : COMPILE_C testprog/testCInt2.c
   CC = $CC_SNB
   CFLAGS = $CFLAGS -Iinclude -openmp
   ARCH = SNB
-build testprog/snb/Test.Perf : LINK testprog/snb/testCInt2.c.o lib/snb/libcint.a lib/snb/liboed.a lib/snb/liberd_opt.a
+build testprog/snb/Test.Perf : LINK testprog/snb/testCInt2.c.o testprog/snb/screening.c.o lib/snb/libcint.a lib/snb/liboed.a lib/snb/liberd_opt.a
   CC = $CC_SNB
   ARCH = SNB
 build external/erd/mic/external/erd/erd__ssss_pcgto_block.f.o : COMPILE_F90 external/erd/erd__ssss_pcgto_block.f
@@ -2238,12 +2248,17 @@ build libcint/mic/libcint/erd_integral.c.o : COMPILE_C libcint/erd_integral.c
   ARCH = MIC
 build lib/mic/libcint.a : CREATE_STATIC_LIBRARY libcint/mic/libcint/basisset.c.o libcint/mic/libcint/oed_integral.c.o libcint/mic/libcint/erd_integral.c.o
   ARCH = MIC
+build testprog/mic/screening.c.o : COMPILE_C testprog/screening.c
+  DEP_FILE = testprog/mic/screening.c.d
+  CC = $CC_MIC
+  CFLAGS = $CFLAGS -Iinclude -openmp
+  ARCH = MIC
 build testprog/mic/testCInt.c.opt.o : COMPILE_C testprog/testCInt.c
   DEP_FILE = testprog/mic/testCInt.c.opt.o.d
   CC = $CC_MIC
   CFLAGS = $CFLAGS -Iinclude -DOPTERD_TEST_OPTIMIZED
   ARCH = MIC
-build testprog/mic/Test.Opt : LINK testprog/mic/testCInt.c.opt.o lib/mic/libcint.a lib/mic/liboed.a lib/mic/liberd_opt.a
+build testprog/mic/Test.Opt : LINK testprog/mic/testCInt.c.opt.o testprog/mic/screening.c.o lib/mic/libcint.a lib/mic/liboed.a lib/mic/liberd_opt.a
   CC = $CC_MIC
   ARCH = MIC
 build testprog/mic/testCInt.c.ref.o : COMPILE_C testprog/testCInt.c
@@ -2251,7 +2266,7 @@ build testprog/mic/testCInt.c.ref.o : COMPILE_C testprog/testCInt.c
   CC = $CC_MIC
   CFLAGS = $CFLAGS -Iinclude -DOPTERD_TEST_REFERENCE
   ARCH = MIC
-build testprog/mic/Test.Ref : LINK testprog/mic/testCInt.c.ref.o lib/mic/libcint.a lib/mic/liboed.a lib/mic/liberd_ref.a
+build testprog/mic/Test.Ref : LINK testprog/mic/testCInt.c.ref.o testprog/mic/screening.c.o lib/mic/libcint.a lib/mic/liboed.a lib/mic/liberd_ref.a
   CC = $CC_MIC
   ARCH = MIC
 build testprog/mic/testCInt2.c.o : COMPILE_C testprog/testCInt2.c
@@ -2259,6 +2274,6 @@ build testprog/mic/testCInt2.c.o : COMPILE_C testprog/testCInt2.c
   CC = $CC_MIC
   CFLAGS = $CFLAGS -Iinclude -openmp
   ARCH = MIC
-build testprog/mic/Test.Perf : LINK testprog/mic/testCInt2.c.o lib/mic/libcint.a lib/mic/liboed.a lib/mic/liberd_opt.a
+build testprog/mic/Test.Perf : LINK testprog/mic/testCInt2.c.o testprog/mic/screening.c.o lib/mic/libcint.a lib/mic/liboed.a lib/mic/liberd_opt.a
   CC = $CC_MIC
   ARCH = MIC

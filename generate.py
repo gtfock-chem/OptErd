@@ -121,6 +121,13 @@ with open('build.ninja', 'w') as makefile:
 		print('build lib/' + arch + '/libcint.a : CREATE_STATIC_LIBRARY ' + ' '.join(cint_objects), file = makefile)
 		print(tab + 'ARCH = %s' % arch.upper(), file = makefile)
 
+		screening_object_file = 'testprog/%s/screening.c.o' % arch
+		print('build %s : COMPILE_C testprog/screening.c' % screening_object_file, file = makefile)
+		print(tab + 'DEP_FILE = testprog/%s/screening.c.d' % arch, file = makefile)
+		print(tab + 'CC = $CC_%s' % arch.upper(), file = makefile)
+		print(tab + 'CFLAGS = $CFLAGS -Iinclude -openmp', file = makefile)
+		print(tab + 'ARCH = %s' % arch.upper(), file = makefile)
+
 		for variant in ['opt', 'ref']:
 			object_file = 'testprog/%s/testCInt.c.%s.o' % (arch, variant)
 			print('build %s : COMPILE_C testprog/testCInt.c' % object_file, file = makefile)
@@ -131,7 +138,7 @@ with open('build.ninja', 'w') as makefile:
 
 			binary_file = 'testprog/%s/Test.%s' % (arch, variant.title())
 			libs = " ".join(['lib/' + arch + '/lib' + lib + '.a' for lib in ['cint', 'oed', 'erd_' + variant]])
-			print('build %s : LINK %s %s' % (binary_file, object_file, libs), file = makefile)
+			print('build %s : LINK %s %s %s' % (binary_file, object_file, screening_object_file, libs), file = makefile)
 			print(tab + 'CC = $CC_%s' % arch.upper(), file = makefile)
 			print(tab + 'ARCH = %s' % arch.upper(), file = makefile)
 
@@ -144,6 +151,6 @@ with open('build.ninja', 'w') as makefile:
 
 		binary_file = 'testprog/%s/Test.Perf' % arch
 		libs = " ".join(['lib/' + arch + '/lib' + lib + '.a' for lib in ['cint', 'oed', 'erd_opt']])
-		print('build %s : LINK %s %s' % (binary_file, object_file, libs), file = makefile)
+		print('build %s : LINK %s %s %s' % (binary_file, object_file, screening_object_file, libs), file = makefile)
 		print(tab + 'CC = $CC_%s' % arch.upper(), file = makefile)
 		print(tab + 'ARCH = %s' % arch.upper(), file = makefile)
