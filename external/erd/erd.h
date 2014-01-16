@@ -77,7 +77,7 @@ int erd__1111_def_blocks (int zmax, int npgto1, int npgto2,
                           int *zscpk2, int *zq, int *zqx,
                           int *zqy, int *zqz, int *zscqk2);
 
-int erd__pppp_pcgto_block (int nij, int nkl,
+void erd__pppp_pcgto_block (int nij, int nkl,
                            double x1, double y1, double z1,
                            double x2, double y2, double z2,
                            double x3, double y3, double z3,
@@ -99,7 +99,7 @@ int erd__pppp_pcgto_block (int nij, int nkl,
                            double *qy, double *qz,
                            double *scaleq, double *cbatch);
 
-int erd__sppp_pcgto_block (int nij, int nkl,
+void erd__sppp_pcgto_block (int nij, int nkl,
                            int shell1, int shell3, int shellp,
                            double x1, double y1, double z1,
                            double x2, double y2, double z2,
@@ -122,7 +122,7 @@ int erd__sppp_pcgto_block (int nij, int nkl,
                            double *qy, double *qz,
                            double *scaleq, double *cbatch);
 
-int erd__sspp_pcgto_block (int nij, int nkl,
+void erd__sspp_pcgto_block (int nij, int nkl,
                            int shell1, int shell3, int shellp,
                            double x1, double y1, double z1,
                            double x2, double y2, double z2,
@@ -145,7 +145,7 @@ int erd__sspp_pcgto_block (int nij, int nkl,
                            double *qy, double *qz,
                            double *scaleq, double *cbatch);
 
-int erd__sssp_pcgto_block (int nij, int nkl,
+void erd__sssp_pcgto_block(int nij, int nkl,
                            int shell1, int shell3, int shellp,
                            double x1, double y1, double z1,
                            double x2, double y2, double z2,
@@ -168,7 +168,7 @@ int erd__sssp_pcgto_block (int nij, int nkl,
                            double *qy, double *qz,
                            double *scaleq, double *cbatch);
 
-int erd__ssss_pcgto_block (int nij, int nkl,
+void erd__ssss_pcgto_block (int nij, int nkl,
                            double x1, double y1, double z1,
                            double x2, double y2, double z2,
                            double x3, double y3, double z3,

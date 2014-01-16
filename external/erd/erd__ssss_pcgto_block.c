@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <math.h>
+#include <yepPredefines.h>
 #include "boys.h"
 //#define ERD_TABLE_FREE_BOYS_FUNCTIONS
 
@@ -104,128 +105,85 @@
 /*                    BATCH        =  current batch of primitive */
 /*                                    cartesian ssss integrals */
 /* ------------------------------------------------------------------------ */
-int erd__ssss_pcgto_block (int nij, int nkl,
+void erd__ssss_pcgto_block (int nij, int nkl,
                            double x1, double y1, double z1,
                            double x2, double y2, double z2,
                            double x3, double y3, double z3,
                            double x4, double y4, double z4,
-                           double *alpha1, double *alpha2,
-                           double *alpha3, double *alpha4,
-                           double *cc1, double *cc2,
-                           double *cc3, double *cc4,
-                           double *ftable, int mgrid,
+                           double *YEP_RESTRICT alpha1, double *YEP_RESTRICT alpha2,
+                           double *YEP_RESTRICT alpha3, double *YEP_RESTRICT alpha4,
+                           double *YEP_RESTRICT cc1, double *YEP_RESTRICT cc2,
+                           double *YEP_RESTRICT cc3, double *YEP_RESTRICT cc4,
+                           double *YEP_RESTRICT ftable, int mgrid,
                            double tmax, double tstep, double tvstep,
-                           int *prim1, int *prim2,
-                           int *prim3, int *prim4,
-                           double *norm1, double *norm2,
-                           double *norm3, double *norm4,
-                           double *rho12, double *rho34,
-                           double *p, double *px, double *py, double *pz,
-                           double *scalep, double *q, double *qx,
-                           double *qy, double *qz,
-                           double *scaleq, double *cbatch)
+                           int *YEP_RESTRICT prim1, int *YEP_RESTRICT prim2,
+                           int *YEP_RESTRICT prim3, int *YEP_RESTRICT prim4,
+                           double *YEP_RESTRICT norm1, double *YEP_RESTRICT norm2,
+                           double *YEP_RESTRICT norm3, double *YEP_RESTRICT norm4,
+                           double *YEP_RESTRICT rho12, double *YEP_RESTRICT rho34,
+                           double *YEP_RESTRICT p, double *YEP_RESTRICT px, double *YEP_RESTRICT py, double *YEP_RESTRICT pz,
+                           double *YEP_RESTRICT scalep, double *YEP_RESTRICT q, double *YEP_RESTRICT qx,
+                           double *YEP_RESTRICT qy, double *YEP_RESTRICT qz,
+                           double *YEP_RESTRICT scaleq, double *YEP_RESTRICT cbatch)
 {
-    int ftable_dim1, ftable_offset;
-
-    int i;
-    int j;
-    int k;
-    int l;
-    double t;
-    double f0;
-    int ij;
-    int kl;
-    double pqx;
-    double pqy;
-    double pqz;
-    double exp1;
-    double exp2;
-    double exp3;
-    double exp4;
-    double pval;
-    double qval;
-    double scale;
-    double delta;
-    int tgrid;
-    double pxval;
-    double pyval;
-    double pzval;
-    double pscale;
-    double pqmult;
-    double pqplus;
-    double x12;
-    double y12;
-    double z12;
-    double x34;
-    double y34;
-    double z34;
-
-    ftable_dim1 = mgrid + 1;
-    ftable_offset = 0 + ftable_dim1 * 0;
-    ftable -= ftable_offset;
-    x12 = x1 - x2;
-    y12 = y1 - y2;
-    z12 = z1 - z2;
-    x34 = x3 - x4;
-    y34 = y3 - y4;
-    z34 = z3 - z4;
+    const int ftable_dim1 = mgrid + 1;
+    const double x12 = x1 - x2;
+    const double y12 = y1 - y2;
+    const double z12 = z1 - z2;
+    const double x34 = x3 - x4;
+    const double y34 = y3 - y4;
+    const double z34 = z3 - z4;
     
-    for (ij = 0; ij < nij; ij++)
-    {
-        i = prim1[ij];
-        j = prim2[ij];
-        exp1 = alpha1[i - 1];
-        exp2 = alpha2[j - 1];
-        pval = exp1 + exp2;
+    for (int ij = 0; ij < nij; ij += 1) {
+        const int i = prim1[ij] - 1;
+        const int j = prim2[ij] - 1;
+        const double exp1 = alpha1[i];
+        const double exp2 = alpha2[j];
+        double pval = exp1 + exp2;
         p[ij] = pval;
         pval = exp1 / pval;
         px[ij] = pval * x12 + x2;
         py[ij] = pval * y12 + y2;
         pz[ij] = pval * z12 + z2;
-        scalep[ij] = cc1[i - 1] * cc2[j - 1] *
-            norm1[i - 1] * norm2[j - 1] * rho12[ij];
+        scalep[ij] = cc1[i] * cc2[j] * norm1[i] * norm2[j] * rho12[ij];
     }
 
-    for (kl = 0; kl < nkl; ++kl)
-    {
-        k = prim3[kl];
-        l = prim4[kl];
-        exp3 = alpha3[k - 1];
-        exp4 = alpha4[l - 1];
-        qval = exp3 + exp4;
+    for (int kl = 0; kl < nkl; kl += 1) {
+        const int k = prim3[kl] - 1;
+        const int l = prim4[kl] - 1;
+        const double exp3 = alpha3[k];
+        const double exp4 = alpha4[l];
+        double qval = exp3 + exp4;
         q[kl] = qval;
         qval = exp3 / qval;
         qx[kl] = qval * x34 + x4;
         qy[kl] = qval * y34 + y4;
         qz[kl] = qval * z34 + z4;
-        scaleq[kl] = cc3[k - 1] * cc4[l - 1] *
-            norm3[k - 1] * norm4[l - 1] * rho34[kl];
+        scaleq[kl] = cc3[k] * cc4[l] * norm3[k] * norm4[l] * rho34[kl];
     }
     
-    for (ij = 0; ij < nij; ++ij)
-    {
-        pval = p[ij];
-        pxval = px[ij];
-        pyval = py[ij];
-        pzval = pz[ij];
-        pscale = scalep[ij];
-        for (kl = 0; kl < nkl; ++kl)
-        {
-            qval = q[kl];
-            pqmult = pval * qval;
-            pqplus = pval + qval;
-            pqx = pxval - qx[kl];
-            pqy = pyval - qy[kl];
-            pqz = pzval - qz[kl];
-            t = (pqx * pqx + pqy * pqy + pqz * pqz) * pqmult / pqplus;
-            scale = pscale * scaleq[kl] / (pqmult * sqrt (pqplus));
+    for (int ij = 0; ij < nij; ij += 1) {
+        const double pval = p[ij];
+        const double pxval = px[ij];
+        const double pyval = py[ij];
+        const double pzval = pz[ij];
+        const double pscale = scalep[ij];
+        for (int kl = 0; kl < nkl; kl += 1) {
+            const double qval = q[kl];
+            const double pqmult = pval * qval;
+            const double pqplus = pval + qval;
+            const double pqx = pxval - qx[kl];
+            const double pqy = pyval - qy[kl];
+            const double pqz = pzval - qz[kl];
+            const double t = (pqx * pqx + pqy * pqy + pqz * pqz) * pqmult / pqplus;
+            const double scale = pscale * scaleq[kl] / (pqmult * __builtin_sqrt(pqplus));
 #ifdef ERD_TABLE_FREE_BOYS_FUNCTIONS
-            f0 = boys0(t);
+            const double f0 = boys0(t);
 #else
-            if (t <= tmax)
-            {
-                tgrid = (int) (t * tvstep + .5);
-                delta = tgrid * tstep - t;
+            double f0;
+            if (t <= tmax) {
+                const int tgrid = __builtin_lround(t * tvstep);
+                const double delta = tgrid * tstep - t;
                 f0 = (((((ftable[tgrid * ftable_dim1 + 6] * delta *
                           .166666666666667 + ftable[tgrid * ftable_dim1 +
                                                     5]) * delta * .2 +
@@ -235,15 +193,11 @@ int erd__ssss_pcgto_block (int nij, int nkl,
                        ftable[tgrid * ftable_dim1 + 2]) * delta * .5 +
                       ftable[tgrid * ftable_dim1 + 1]) * delta +
                     ftable[tgrid * ftable_dim1];
-            }
-            else
-            {
-                f0 = sqrt (M_PI / t) * .5;
+            } else {
+                f0 = __builtin_sqrt(M_PI / t) * .5;
             }
 #endif
             cbatch[0] += scale * f0; 
         }
     }
-
-    return 0;
 }
