@@ -71,9 +71,6 @@ int erd__2d_pq_integrals (int shellp, int shellq, int ngqexq,
                           int case2d, double *int2dx,
                           double *int2dy, double *int2dz)
 {
-    int int2dx_dim1, int2dx_dim2, int2dx_offset, int2dy_dim1, int2dy_dim2,
-        int2dy_offset, int2dz_dim1, int2dz_dim2, int2dz_offset;
-
     double f;
     int i, k, n;
     double b0, b1, f1, f2;
@@ -86,31 +83,6 @@ int erd__2d_pq_integrals (int shellp, int shellq, int ngqexq,
 /*                each leading to simplifications in the VRR formulas. */
 /*                The case present has been evaluated outside this */
 /*                routine and is transmitted via argument. */
-    /* Parameter adjustments */
-    int2dz_dim1 = ngqexq - 1 + 1;
-    int2dz_dim2 = shellp - 0 + 1;
-    int2dz_offset = 1 + int2dz_dim1 * (0 + int2dz_dim2 * 0);
-    int2dz -= int2dz_offset;
-    int2dy_dim1 = ngqexq - 1 + 1;
-    int2dy_dim2 = shellp - 0 + 1;
-    int2dy_offset = 1 + int2dy_dim1 * (0 + int2dy_dim2 * 0);
-    int2dy -= int2dy_offset;
-    int2dx_dim1 = ngqexq - 1 + 1;
-    int2dx_dim2 = shellp - 0 + 1;
-    int2dx_offset = 1 + int2dx_dim1 * (0 + int2dx_dim2 * 0);
-    int2dx -= int2dx_offset;
-    --d00z;
-    --d00y;
-    --d00x;
-    --c00z;
-    --c00y;
-    --c00x;
-    --b10;
-    --b01;
-    --b00;
-    --wts;
-
-    /* Function Body */
     switch (case2d)
     {
     case 1:
@@ -136,7 +108,7 @@ int erd__2d_pq_integrals (int shellp, int shellq, int ngqexq,
 
 /*             ...the case P = s-shell and Q = s-shell. */
   L1:
-    for (n = 1; n <= ngqexq; ++n)
+    for (n = 0; n < ngqexq; ++n)
     {
         int2dx[n] = wts[n];
         int2dy[n] = 1.;
@@ -148,15 +120,15 @@ int erd__2d_pq_integrals (int shellp, int shellq, int ngqexq,
 /*             ...the cases P = s-shell and Q >= p-shell. */
 /*                Evaluate I=0 and K=0,1. */
   L2:
-    for (n = 1; n <= ngqexq; ++n)
+    for (n = 0; n < ngqexq; ++n)
     {
         weight = wts[n];
         int2dx[n] = weight;
-        int2dx[n + int2dx_dim2 * int2dx_dim1] = d00x[n] * weight;
+        int2dx[n + (shellp + 1) * ngqexq] = d00x[n] * weight;
         int2dy[n] = 1.;
-        int2dy[n + int2dy_dim2 * int2dy_dim1] = d00y[n];
+        int2dy[n + (shellp + 1) * ngqexq] = d00y[n];
         int2dz[n] = 1.;
-        int2dz[n + int2dz_dim2 * int2dz_dim1] = d00z[n];
+        int2dz[n + (shellp + 1) * ngqexq] = d00z[n];
     }
 
 
@@ -166,18 +138,18 @@ int erd__2d_pq_integrals (int shellp, int shellq, int ngqexq,
     {
         k1 = k - 1;
         k2 = k - 2;
-        for (n = 1; n <= ngqexq; ++n)
+        for (n = 0; n < ngqexq; ++n)
         {
             b1 = f * b01[n];
-            int2dx[n + k * int2dx_dim2 * int2dx_dim1] =
-                b1 * int2dx[n + k2 * int2dx_dim2 * int2dx_dim1]
-                + d00x[n] * int2dx[n + k1 * int2dx_dim2 * int2dx_dim1];
-            int2dy[n + k * int2dy_dim2 * int2dy_dim1] =
-                b1 * int2dy[n + k2 * int2dy_dim2 * int2dy_dim1] +
-                d00y[n] * int2dy[n + k1 * int2dy_dim2 * int2dy_dim1];
-            int2dz[n + k * int2dz_dim2 * int2dz_dim1] =
-                b1 * int2dz[n + k2 * int2dz_dim2 * int2dz_dim1] +
-                d00z[n] * int2dz[n + k1 * int2dz_dim2 * int2dz_dim1];
+            int2dx[n + k * (shellp + 1) * ngqexq] =
+                b1 * int2dx[n + k2 * (shellp + 1) * ngqexq]
+                + d00x[n] * int2dx[n + k1 * (shellp + 1) * ngqexq];
+            int2dy[n + k * (shellp + 1) * ngqexq] =
+                b1 * int2dy[n + k2 * (shellp + 1) * ngqexq] +
+                d00y[n] * int2dy[n + k1 * (shellp + 1) * ngqexq];
+            int2dz[n + k * (shellp + 1) * ngqexq] =
+                b1 * int2dz[n + k2 * (shellp + 1) * ngqexq] +
+                d00z[n] * int2dz[n + k1 * (shellp + 1) * ngqexq];
         }
         f += 1.;
     }
@@ -187,15 +159,15 @@ int erd__2d_pq_integrals (int shellp, int shellq, int ngqexq,
 /*             ...the cases P >= p-shell and Q = s-shell. */
 /*                Evaluate I=0,1 and K=0. */
   L3:
-    for (n = 1; n <= ngqexq; ++n)
+    for (n = 0; n < ngqexq; ++n)
     {
         weight = wts[n];
         int2dx[n] = weight;
-        int2dx[n + int2dx_dim1] = c00x[n] * weight;
+        int2dx[n + ngqexq] = c00x[n] * weight;
         int2dy[n] = 1.;
-        int2dy[n + int2dy_dim1] = c00y[n];
+        int2dy[n + ngqexq] = c00y[n];
         int2dz[n] = 1.;
-        int2dz[n + int2dz_dim1] = c00z[n];
+        int2dz[n + ngqexq] = c00z[n];
     }
 
 
@@ -205,15 +177,15 @@ int erd__2d_pq_integrals (int shellp, int shellq, int ngqexq,
     {
         i1 = i - 1;
         i2 = i - 2;
-        for (n = 1; n <= ngqexq; ++n)
+        for (n = 0; n < ngqexq; ++n)
         {
             b1 = f * b10[n];
-            int2dx[n + i * int2dx_dim1] = b1 * int2dx[n + i2 * int2dx_dim1]
-                + c00x[n] * int2dx[n + i1 * int2dx_dim1];
-            int2dy[n + i * int2dy_dim1] = b1 * int2dy[n + i2 * int2dy_dim1]
-                + c00y[n] * int2dy[n + i1 * int2dy_dim1];
-            int2dz[n + i * int2dz_dim1] = b1 * int2dz[n + i2 * int2dz_dim1]
-                + c00z[n] * int2dz[n + i1 * int2dz_dim1];
+            int2dx[n + i * ngqexq] = b1 * int2dx[n + i2 * ngqexq]
+                + c00x[n] * int2dx[n + i1 * ngqexq];
+            int2dy[n + i * ngqexq] = b1 * int2dy[n + i2 * ngqexq]
+                + c00y[n] * int2dy[n + i1 * ngqexq];
+            int2dz[n + i * ngqexq] = b1 * int2dz[n + i2 * ngqexq]
+                + c00z[n] * int2dz[n + i1 * ngqexq];
         }
         f += 1.;
     }
@@ -224,33 +196,33 @@ int erd__2d_pq_integrals (int shellp, int shellq, int ngqexq,
 /*                Evaluate I=0,SHELLP       I=0 */
 /*                         K=0        and   K=0,SHELLQ */
   L4:
-    for (n = 1; n <= ngqexq; ++n)
+    for (n = 0; n < ngqexq; ++n)
     {
         weight = wts[n];
         int2dx[n] = weight;
-        int2dx[n + int2dx_dim1] = c00x[n] * weight;
-        int2dx[n + int2dx_dim2 * int2dx_dim1] = d00x[n] * weight;
+        int2dx[n + ngqexq] = c00x[n] * weight;
+        int2dx[n + (shellp + 1) * ngqexq] = d00x[n] * weight;
         int2dy[n] = 1.;
-        int2dy[n + int2dy_dim1] = c00y[n];
-        int2dy[n + int2dy_dim2 * int2dy_dim1] = d00y[n];
+        int2dy[n + ngqexq] = c00y[n];
+        int2dy[n + (shellp + 1) * ngqexq] = d00y[n];
         int2dz[n] = 1.;
-        int2dz[n + int2dz_dim1] = c00z[n];
-        int2dz[n + int2dz_dim2 * int2dz_dim1] = d00z[n];
+        int2dz[n + ngqexq] = c00z[n];
+        int2dz[n + (shellp + 1) * ngqexq] = d00z[n];
     }
     f = 1.;
     for (i = 2; i <= shellp; ++i)
     {
         i1 = i - 1;
         i2 = i - 2;
-        for (n = 1; n <= ngqexq; ++n)
+        for (n = 0; n < ngqexq; ++n)
         {
             b1 = f * b10[n];
-            int2dx[n + i * int2dx_dim1] = b1 * int2dx[n + i2 * int2dx_dim1]
-                + c00x[n] * int2dx[n + i1 * int2dx_dim1];
-            int2dy[n + i * int2dy_dim1] = b1 * int2dy[n + i2 * int2dy_dim1]
-                + c00y[n] * int2dy[n + i1 * int2dy_dim1];
-            int2dz[n + i * int2dz_dim1] = b1 * int2dz[n + i2 * int2dz_dim1]
-                + c00z[n] * int2dz[n + i1 * int2dz_dim1];
+            int2dx[n + i * ngqexq] = b1 * int2dx[n + i2 * ngqexq]
+                + c00x[n] * int2dx[n + i1 * ngqexq];
+            int2dy[n + i * ngqexq] = b1 * int2dy[n + i2 * ngqexq]
+                + c00y[n] * int2dy[n + i1 * ngqexq];
+            int2dz[n + i * ngqexq] = b1 * int2dz[n + i2 * ngqexq]
+                + c00z[n] * int2dz[n + i1 * ngqexq];
         }
         f += 1.;
     }
@@ -259,18 +231,18 @@ int erd__2d_pq_integrals (int shellp, int shellq, int ngqexq,
     {
         k1 = k - 1;
         k2 = k - 2;
-        for (n = 1; n <= ngqexq; ++n)
+        for (n = 0; n < ngqexq; ++n)
         {
             b1 = f * b01[n];
-            int2dx[n + k * int2dx_dim2 * int2dx_dim1] = b1 *
-                int2dx[n + k2 * int2dx_dim2 * int2dx_dim1]
-                + d00x[n] * int2dx[n + k1 * int2dx_dim2 * int2dx_dim1];
-            int2dy[n + k * int2dy_dim2 * int2dy_dim1] =
-                b1 * int2dy[n + k2 * int2dy_dim2 * int2dy_dim1] +
-                d00y[n] * int2dy[n + k1 * int2dy_dim2 * int2dy_dim1];
-            int2dz[n + k * int2dz_dim2 * int2dz_dim1] =
-                b1 * int2dz[n + k2 * int2dz_dim2 * int2dz_dim1] +
-                d00z[n] * int2dz[n + k1 * int2dz_dim2 * int2dz_dim1];
+            int2dx[n + k * (shellp + 1) * ngqexq] = b1 *
+                int2dx[n + k2 * (shellp + 1) * ngqexq]
+                + d00x[n] * int2dx[n + k1 * (shellp + 1) * ngqexq];
+            int2dy[n + k * (shellp + 1) * ngqexq] =
+                b1 * int2dy[n + k2 * (shellp + 1) * ngqexq] +
+                d00y[n] * int2dy[n + k1 * (shellp + 1) * ngqexq];
+            int2dz[n + k * (shellp + 1) * ngqexq] =
+                b1 * int2dz[n + k2 * (shellp + 1) * ngqexq] +
+                d00z[n] * int2dz[n + k1 * (shellp + 1) * ngqexq];
         }
         f += 1.;
     }
@@ -284,40 +256,40 @@ int erd__2d_pq_integrals (int shellp, int shellq, int ngqexq,
         for (k = 1; k <= shellq; ++k)
         {
             k1 = k - 1;
-            for (n = 1; n <= ngqexq; ++n)
+            for (n = 0; n < ngqexq; ++n)
             {
                 b0 = f1 * b00[n];
-                int2dx[n + (k * int2dx_dim2 + 1) * int2dx_dim1] =
-                    b0 * int2dx[n + k1 * int2dx_dim2 * int2dx_dim1] +
-                    c00x[n] * int2dx[n + k * int2dx_dim2 * int2dx_dim1];
-                int2dy[n + (k * int2dy_dim2 + 1) * int2dy_dim1] =
-                    b0 * int2dy[n + k1 * int2dy_dim2 * int2dy_dim1] +
-                    c00y[n] * int2dy[n + k * int2dy_dim2 * int2dy_dim1];
-                int2dz[n + (k * int2dz_dim2 + 1) * int2dz_dim1] =
-                    b0 * int2dz[n + k1 * int2dz_dim2 * int2dz_dim1] +
-                    c00z[n] * int2dz[n + k * int2dz_dim2 * int2dz_dim1];
+                int2dx[n + (k * (shellp + 1) + 1) * ngqexq] =
+                    b0 * int2dx[n + k1 * (shellp + 1) * ngqexq] +
+                    c00x[n] * int2dx[n + k * (shellp + 1) * ngqexq];
+                int2dy[n + (k * (shellp + 1) + 1) * ngqexq] =
+                    b0 * int2dy[n + k1 * (shellp + 1) * ngqexq] +
+                    c00y[n] * int2dy[n + k * (shellp + 1) * ngqexq];
+                int2dz[n + (k * (shellp + 1) + 1) * ngqexq] =
+                    b0 * int2dz[n + k1 * (shellp + 1) * ngqexq] +
+                    c00z[n] * int2dz[n + k * (shellp + 1) * ngqexq];
             }
             f2 = 1.;
             for (i = 2; i <= shellp; ++i)
             {
                 i1 = i - 1;
                 i2 = i - 2;
-                for (n = 1; n <= ngqexq; ++n)
+                for (n = 0; n < ngqexq; ++n)
                 {
                     b0 = f1 * b00[n];
                     b1 = f2 * b10[n];
-                    int2dx[n + (i + k * int2dx_dim2) * int2dx_dim1] =
-                        b0 * int2dx[n + (i1 + k1 * int2dx_dim2) * int2dx_dim1] +
-                        b1 * int2dx[n + (i2 + k * int2dx_dim2) * int2dx_dim1] +
-                        c00x[n] * int2dx[n + (i1 + k * int2dx_dim2) * int2dx_dim1];
-                    int2dy[n + (i + k * int2dy_dim2) * int2dy_dim1] =
-                        b0 * int2dy[n + (i1 + k1 * int2dy_dim2) * int2dy_dim1] +
-                        b1 * int2dy[n + (i2 + k * int2dy_dim2) * int2dy_dim1] +
-                        c00y[n] * int2dy[n + (i1 + k * int2dy_dim2) * int2dy_dim1];
-                    int2dz[n + (i + k * int2dz_dim2) * int2dz_dim1] =
-                        b0 * int2dz[n + (i1 + k1 * int2dz_dim2) * int2dz_dim1] +
-                        b1 * int2dz[n + (i2 + k * int2dz_dim2) * int2dz_dim1] +
-                        c00z[n] * int2dz[n + (i1 + k * int2dz_dim2) * int2dz_dim1];
+                    int2dx[n + (i + k * (shellp + 1)) * ngqexq] =
+                        b0 * int2dx[n + (i1 + k1 * (shellp + 1)) * ngqexq] +
+                        b1 * int2dx[n + (i2 + k * (shellp + 1)) * ngqexq] +
+                        c00x[n] * int2dx[n + (i1 + k * (shellp + 1)) * ngqexq];
+                    int2dy[n + (i + k * (shellp + 1)) * ngqexq] =
+                        b0 * int2dy[n + (i1 + k1 * (shellp + 1)) * ngqexq] +
+                        b1 * int2dy[n + (i2 + k * (shellp + 1)) * ngqexq] +
+                        c00y[n] * int2dy[n + (i1 + k * (shellp + 1)) * ngqexq];
+                    int2dz[n + (i + k * (shellp + 1)) * ngqexq] =
+                        b0 * int2dz[n + (i1 + k1 * (shellp + 1)) * ngqexq] +
+                        b1 * int2dz[n + (i2 + k * (shellp + 1)) * ngqexq] +
+                        c00z[n] * int2dz[n + (i1 + k * (shellp + 1)) * ngqexq];
                 }
                 f2 += 1.;
             }
@@ -330,40 +302,40 @@ int erd__2d_pq_integrals (int shellp, int shellq, int ngqexq,
         for (i = 1; i <= shellp; ++i)
         {
             i1 = i - 1;
-            for (n = 1; n <= ngqexq; ++n)
+            for (n = 0; n < ngqexq; ++n)
             {
                 b0 = f1 * b00[n];
-                int2dx[n + (i + int2dx_dim2) * int2dx_dim1] =
-                    b0 * int2dx[n + i1 * int2dx_dim1]
-                    + d00x[n] * int2dx[n + i * int2dx_dim1];
-                int2dy[n + (i + int2dy_dim2) * int2dy_dim1] =
-                    b0 * int2dy[n + i1 * int2dy_dim1]
-                    + d00y[n] * int2dy[n + i * int2dy_dim1];
-                int2dz[n + (i + int2dz_dim2) * int2dz_dim1] =
-                    b0 * int2dz[n + i1 * int2dz_dim1]
-                    + d00z[n] * int2dz[n + i * int2dz_dim1];
+                int2dx[n + (i + (shellp + 1)) * ngqexq] =
+                    b0 * int2dx[n + i1 * ngqexq]
+                    + d00x[n] * int2dx[n + i * ngqexq];
+                int2dy[n + (i + (shellp + 1)) * ngqexq] =
+                    b0 * int2dy[n + i1 * ngqexq]
+                    + d00y[n] * int2dy[n + i * ngqexq];
+                int2dz[n + (i + (shellp + 1)) * ngqexq] =
+                    b0 * int2dz[n + i1 * ngqexq]
+                    + d00z[n] * int2dz[n + i * ngqexq];
             }
             f2 = 1.;
             for (k = 2; k <= shellq; ++k)
             {
                 k1 = k - 1;
                 k2 = k - 2;
-                for (n = 1; n <= ngqexq; ++n)
+                for (n = 0; n < ngqexq; ++n)
                 {
                     b0 = f1 * b00[n];
                     b1 = f2 * b01[n];
-                    int2dx[n + (i + k * int2dx_dim2) * int2dx_dim1] =
-                        b0 * int2dx[n + (i1 + k1 * int2dx_dim2) * int2dx_dim1] +
-                        b1 * int2dx[n + (i + k2 * int2dx_dim2) * int2dx_dim1] +
-                        d00x[n] * int2dx[n + (i + k1 * int2dx_dim2) * int2dx_dim1];
-                    int2dy[n + (i + k * int2dy_dim2) * int2dy_dim1] =
-                        b0 * int2dy[n + (i1 + k1 * int2dy_dim2) * int2dy_dim1] +
-                        b1 * int2dy[n + (i + k2 * int2dy_dim2) * int2dy_dim1] +
-                        d00y[n] * int2dy[n + (i + k1 * int2dy_dim2) * int2dy_dim1];
-                    int2dz[n + (i + k * int2dz_dim2) * int2dz_dim1] =
-                        b0 * int2dz[n + (i1 + k1 * int2dz_dim2) * int2dz_dim1] +
-                        b1 * int2dz[n + (i + k2 * int2dz_dim2) * int2dz_dim1] +
-                        d00z[n] * int2dz[n + (i + k1 * int2dz_dim2) * int2dz_dim1];
+                    int2dx[n + (i + k * (shellp + 1)) * ngqexq] =
+                        b0 * int2dx[n + (i1 + k1 * (shellp + 1)) * ngqexq] +
+                        b1 * int2dx[n + (i + k2 * (shellp + 1)) * ngqexq] +
+                        d00x[n] * int2dx[n + (i + k1 * (shellp + 1)) * ngqexq];
+                    int2dy[n + (i + k * (shellp + 1)) * ngqexq] =
+                        b0 * int2dy[n + (i1 + k1 * (shellp + 1)) * ngqexq] +
+                        b1 * int2dy[n + (i + k2 * (shellp + 1)) * ngqexq] +
+                        d00y[n] * int2dy[n + (i + k1 * (shellp + 1)) * ngqexq];
+                    int2dz[n + (i + k * (shellp + 1)) * ngqexq] =
+                        b0 * int2dz[n + (i1 + k1 * (shellp + 1)) * ngqexq] +
+                        b1 * int2dz[n + (i + k2 * (shellp + 1)) * ngqexq] +
+                        d00z[n] * int2dz[n + (i + k1 * (shellp + 1)) * ngqexq];
                 }
                 f2 += 1.;
             }
