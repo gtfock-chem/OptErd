@@ -15,9 +15,9 @@ ifeq "${arch}" "mic"
 UNIT_TEST_REF_EXE = Test.Ref.MIC
 UNIT_TEST_OPT_EXE = Test.Opt.MIC
 PERF_TEST_EXE = Test.Perf.MIC
-UNIT_TEST_REF_OBJS := mic/testCInt.ref.o
-UNIT_TEST_OPT_OBJS := mic/testCInt.opt.o
-PERF_TEST_OBJS := mic/testCInt2.o
+UNIT_TEST_REF_OBJS := mic/testCInt.ref.o mic/screening.ref.o
+UNIT_TEST_OPT_OBJS := mic/testCInt.opt.o mic/screening.opt.o
+PERF_TEST_OBJS := mic/testCInt2.o mic/screening.o
 LIBS_CINT = ../lib/libcint_mic.a \
             ../lib/liboed_mic.a
 LIBS_REF = ../lib/liberd_ref_mic.a 
@@ -26,9 +26,9 @@ else
 UNIT_TEST_REF_EXE = Test.Ref
 UNIT_TEST_OPT_EXE = Test.Opt
 PERF_TEST_EXE = Test.Perf
-UNIT_TEST_REF_OBJS := testCInt.ref.o
-UNIT_TEST_OPT_OBJS := testCInt.opt.o
-PERF_TEST_OBJS := testCInt2.o
+UNIT_TEST_REF_OBJS := testCInt.ref.o screening.ref.o
+UNIT_TEST_OPT_OBJS := testCInt.opt.o screening.opt.o
+PERF_TEST_OBJS := testCInt2.o screening.o
 LIBS_CINT = ../lib/libcint.a \
             ../lib/liboed.a
 LIBS_REF = ../lib/liberd_ref.a
