@@ -80,35 +80,6 @@ int erd__2d_coefficients (int mij, int mkl, int ngqp,
         paxij, payij, pazij, qcxkl, qcykl, qczkl, proot, qroot, twopq,
         pscale, qscale;
 
-    --pinvhf;
-    --paz;
-    --pay;
-    --pax;
-    --pz;
-    --py;
-    --px;
-    --p;
-    --qinvhf;
-    --qcz;
-    --qcy;
-    --qcx;
-    --qz;
-    --qy;
-    --qx;
-    --q;
-    --pqpinv;
-    --d00z;
-    --d00y;
-    --d00x;
-    --c00z;
-    --c00y;
-    --c00x;
-    --b10;
-    --b01;
-    --b00;
-    --rts;
-
-    /* Function Body */
     switch (case2d)
     {
     case 1:
@@ -144,7 +115,7 @@ int erd__2d_coefficients (int mij, int mkl, int ngqp,
     {
         m = 0;
         n = 0;
-        for (ij = 1; ij <= mij; ++ij)
+        for (ij = 0; ij < mij; ++ij)
         {
             pxij = px[ij];
             pyij = py[ij];
@@ -152,20 +123,20 @@ int erd__2d_coefficients (int mij, int mkl, int ngqp,
             paxij = pax[ij];
             payij = pay[ij];
             pazij = paz[ij];
-            for (kl = 1; kl <= mkl; ++kl)
+            for (kl = 0; kl < mkl; ++kl)
             {
                 pqx = pxij - qx[kl];
                 pqy = pyij - qy[kl];
-                pqz = pzij - qz[kl];
-                ++m;
+                pqz = pzij - qz[kl];           
                 qscale = q[kl] * pqpinv[m];
-                for (ng = 1; ng <= ngqp; ++ng)
-                {
-                    ++n;
+                ++m;
+                for (ng = 0; ng < ngqp; ++ng)
+                {   
                     qroot = qscale * rts[n];
                     c00x[n] = paxij - qroot * pqx;
                     c00y[n] = payij - qroot * pqy;
                     c00z[n] = pazij - qroot * pqz;
+                    ++n;
                 }
             }
         }
@@ -179,13 +150,13 @@ int erd__2d_coefficients (int mij, int mkl, int ngqp,
     {
         m = 0;
         n = 0;
-        for (ij = 1; ij <= mij; ++ij)
+        for (ij = 0; ij < mij; ++ij)
         {
             pij = p[ij];
             pxij = px[ij];
             pyij = py[ij];
             pzij = pz[ij];
-            for (kl = 1; kl <= mkl; ++kl)
+            for (kl = 0; kl < mkl; ++kl)
             {
                 qcxkl = qcx[kl];
                 qcykl = qcy[kl];
@@ -193,15 +164,15 @@ int erd__2d_coefficients (int mij, int mkl, int ngqp,
                 pqx = pxij - qx[kl];
                 pqy = pyij - qy[kl];
                 pqz = pzij - qz[kl];
-                ++m;
                 pscale = pij * pqpinv[m];
-                for (ng = 1; ng <= ngqp; ++ng)
+                ++m;
+                for (ng = 0; ng < ngqp; ++ng)
                 {
-                    ++n;
                     proot = pscale * rts[n];
                     d00x[n] = qcxkl + proot * pqx;
                     d00y[n] = qcykl + proot * pqy;
                     d00z[n] = qczkl + proot * pqz;
+                    ++n;
                 }
             }
         }
@@ -215,7 +186,7 @@ int erd__2d_coefficients (int mij, int mkl, int ngqp,
     {
         m = 0;
         n = 0;
-        for (ij = 1; ij <= mij; ++ij)
+        for (ij = 0; ij < mij; ++ij)
         {
             pij = p[ij];
             pxij = px[ij];
@@ -224,7 +195,7 @@ int erd__2d_coefficients (int mij, int mkl, int ngqp,
             paxij = pax[ij];
             payij = pay[ij];
             pazij = paz[ij];
-            for (kl = 1; kl <= mkl; ++kl)
+            for (kl = 0; kl < mkl; ++kl)
             {
                 qcxkl = qcx[kl];
                 qcykl = qcy[kl];
@@ -232,13 +203,12 @@ int erd__2d_coefficients (int mij, int mkl, int ngqp,
                 pqx = pxij - qx[kl];
                 pqy = pyij - qy[kl];
                 pqz = pzij - qz[kl];
-                ++m;
                 twopq = pqpinv[m] * .5;
                 pscale = pij * pqpinv[m];
                 qscale = 1. - pscale;
-                for (ng = 1; ng <= ngqp; ++ng)
+                ++m;
+                for (ng = 0; ng < ngqp; ++ng)
                 {
-                    ++n;
                     root = rts[n];
                     proot = pscale * root;
                     qroot = qscale * root;
@@ -249,6 +219,7 @@ int erd__2d_coefficients (int mij, int mkl, int ngqp,
                     d00x[n] = qcxkl + proot * pqx;
                     d00y[n] = qcykl + proot * pqy;
                     d00z[n] = qczkl + proot * pqz;
+                    ++n;
                 }
             }
         }
@@ -262,7 +233,7 @@ int erd__2d_coefficients (int mij, int mkl, int ngqp,
     {
         m = 0;
         n = 0;
-        for (ij = 1; ij <= mij; ++ij)
+        for (ij = 0; ij < mij; ++ij)
         {
             pij = p[ij];
             pxij = px[ij];
@@ -272,21 +243,21 @@ int erd__2d_coefficients (int mij, int mkl, int ngqp,
             payij = pay[ij];
             pazij = paz[ij];
             twop = pinvhf[ij];
-            for (kl = 1; kl <= mkl; ++kl)
+            for (kl = 0; kl < mkl; ++kl)
             {
                 pqx = pxij - qx[kl];
                 pqy = pyij - qy[kl];
                 pqz = pzij - qz[kl];
-                ++m;
                 qscale = 1. - pij * pqpinv[m];
-                for (ng = 1; ng <= ngqp; ++ng)
+                ++m;               
+                for (ng = 0; ng < ngqp; ++ng)
                 {
-                    ++n;
                     qroot = qscale * rts[n];
                     b10[n] = (1. - qroot) * twop;
                     c00x[n] = paxij - qroot * pqx;
                     c00y[n] = payij - qroot * pqy;
                     c00z[n] = pazij - qroot * pqz;
+                    ++n;
                 }
             }
         }
@@ -300,13 +271,13 @@ int erd__2d_coefficients (int mij, int mkl, int ngqp,
     {
         m = 0;
         n = 0;
-        for (ij = 1; ij <= mij; ++ij)
+        for (ij = 0; ij < mij; ++ij)
         {
             pij = p[ij];
             pxij = px[ij];
             pyij = py[ij];
             pzij = pz[ij];
-            for (kl = 1; kl <= mkl; ++kl)
+            for (kl = 0; kl < mkl; ++kl)
             {
                 qcxkl = qcx[kl];
                 qcykl = qcy[kl];
@@ -315,16 +286,16 @@ int erd__2d_coefficients (int mij, int mkl, int ngqp,
                 pqx = pxij - qx[kl];
                 pqy = pyij - qy[kl];
                 pqz = pzij - qz[kl];
-                ++m;
                 pscale = pij * pqpinv[m];
-                for (ng = 1; ng <= ngqp; ++ng)
+                ++m;
+                for (ng = 0; ng < ngqp; ++ng)
                 {
-                    ++n;
                     proot = pscale * rts[n];
                     b01[n] = (1. - proot) * twoq;
                     d00x[n] = qcxkl + proot * pqx;
                     d00y[n] = qcykl + proot * pqy;
                     d00z[n] = qczkl + proot * pqz;
+                    ++n;
                 }
             }
         }
@@ -338,7 +309,7 @@ int erd__2d_coefficients (int mij, int mkl, int ngqp,
     {
         m = 0;
         n = 0;
-        for (ij = 1; ij <= mij; ++ij)
+        for (ij = 0; ij < mij; ++ij)
         {
             pij = p[ij];
             pxij = px[ij];
@@ -348,7 +319,7 @@ int erd__2d_coefficients (int mij, int mkl, int ngqp,
             payij = pay[ij];
             pazij = paz[ij];
             twop = pinvhf[ij];
-            for (kl = 1; kl <= mkl; ++kl)
+            for (kl = 0; kl < mkl; ++kl)
             {
                 qcxkl = qcx[kl];
                 qcykl = qcy[kl];
@@ -356,13 +327,12 @@ int erd__2d_coefficients (int mij, int mkl, int ngqp,
                 pqx = pxij - qx[kl];
                 pqy = pyij - qy[kl];
                 pqz = pzij - qz[kl];
-                ++m;
                 twopq = pqpinv[m] * .5;
                 pscale = pij * pqpinv[m];
                 qscale = 1. - pscale;
-                for (ng = 1; ng <= ngqp; ++ng)
+                ++m;
+                for (ng = 0; ng < ngqp; ++ng)
                 {
-                    ++n;
                     root = rts[n];
                     proot = pscale * root;
                     qroot = qscale * root;
@@ -374,6 +344,7 @@ int erd__2d_coefficients (int mij, int mkl, int ngqp,
                     d00x[n] = qcxkl + proot * pqx;
                     d00y[n] = qcykl + proot * pqy;
                     d00z[n] = qczkl + proot * pqz;
+                    ++n;
                 }
             }
         }
@@ -387,7 +358,7 @@ int erd__2d_coefficients (int mij, int mkl, int ngqp,
     {
         m = 0;
         n = 0;
-        for (ij = 1; ij <= mij; ++ij)
+        for (ij = 0; ij < mij; ++ij)
         {
             pij = p[ij];
             pxij = px[ij];
@@ -396,7 +367,7 @@ int erd__2d_coefficients (int mij, int mkl, int ngqp,
             paxij = pax[ij];
             payij = pay[ij];
             pazij = paz[ij];
-            for (kl = 1; kl <= mkl; ++kl)
+            for (kl = 0; kl < mkl; ++kl)
             {
                 qcxkl = qcx[kl];
                 qcykl = qcy[kl];
@@ -405,13 +376,12 @@ int erd__2d_coefficients (int mij, int mkl, int ngqp,
                 pqx = pxij - qx[kl];
                 pqy = pyij - qy[kl];
                 pqz = pzij - qz[kl];
-                ++m;
                 twopq = pqpinv[m] * .5;
                 pscale = pij * pqpinv[m];
                 qscale = 1. - pscale;
-                for (ng = 1; ng <= ngqp; ++ng)
+                ++m;
+                for (ng = 0; ng < ngqp; ++ng)
                 {
-                    ++n;
                     root = rts[n];
                     proot = pscale * root;
                     qroot = qscale * root;
@@ -423,6 +393,7 @@ int erd__2d_coefficients (int mij, int mkl, int ngqp,
                     d00x[n] = qcxkl + proot * pqx;
                     d00y[n] = qcykl + proot * pqy;
                     d00z[n] = qczkl + proot * pqz;
+                    ++n;
                 }
             }
         }
@@ -435,7 +406,7 @@ int erd__2d_coefficients (int mij, int mkl, int ngqp,
     {
         m = 0;
         n = 0;
-        for (ij = 1; ij <= mij; ++ij)
+        for (ij = 0; ij < mij; ++ij)
         {
             pij = p[ij];
             pxij = px[ij];
@@ -445,7 +416,7 @@ int erd__2d_coefficients (int mij, int mkl, int ngqp,
             payij = pay[ij];
             pazij = paz[ij];
             twop = pinvhf[ij];
-            for (kl = 1; kl <= mkl; ++kl)
+            for (kl = 0; kl < mkl; ++kl)
             {
                 qcxkl = qcx[kl];
                 qcykl = qcy[kl];
@@ -454,13 +425,12 @@ int erd__2d_coefficients (int mij, int mkl, int ngqp,
                 pqx = pxij - qx[kl];
                 pqy = pyij - qy[kl];
                 pqz = pzij - qz[kl];
-                ++m;
                 twopq = pqpinv[m] * .5;
                 pscale = pij * pqpinv[m];
                 qscale = 1. - pscale;
-                for (ng = 1; ng <= ngqp; ++ng)
+                ++m;
+                for (ng = 0; ng < ngqp; ++ng)
                 {
-                    ++n;
                     root = rts[n];
                     proot = pscale * root;
                     qroot = qscale * root;
@@ -473,6 +443,7 @@ int erd__2d_coefficients (int mij, int mkl, int ngqp,
                     d00x[n] = qcxkl + proot * pqx;
                     d00y[n] = qcykl + proot * pqy;
                     d00z[n] = qczkl + proot * pqz;
+                    ++n;
                 }
             }
         }

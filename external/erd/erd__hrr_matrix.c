@@ -66,23 +66,18 @@ int erd__hrr_matrix (int nrothrr, int ncolhrr,
     int nxyzg, nxyzh, nxyzi, shellg, shellh, nrowin, nxyzgo,
         nxyzho;
 
-    --t;
-    --row;
-    --nrow;
-    --work;
-
 /* ------------------------------------------------------------------------ */
 /*             ...accumulate T. */
-    *in1 = 1;
-    *in2 = 1;
+    *in1 = 0;
+    *in2 = 0;
     out1 = *in1 + ncolhrr;
     out2 = *in2 + nrothrr;
 
 /*             ...form initial 'unit' T. */
-    for (i = 1; i <= nxyzet; ++i)
+    for (i = 0; i < nxyzet; ++i)
     {
         nrow[i] = 1;
-        row[i] = i;
+        row[i] = i + 1;
         t[i] = 1.0;
     }
 /*             ...build up the HRR transformation matrix + data. */
@@ -117,7 +112,7 @@ int erd__hrr_matrix (int nrothrr, int ncolhrr,
                        nxyza, nxyzi, nxyzg, nxyzh, nxyzgo,
                        shella, shellg, shellh - 1,
                        abx, aby, abz,
-                       &work[1], &nrow[*in1], &row[*in2], &t[*in2],
+                       work, &nrow[*in1], &row[*in2], &t[*in2],
                        &nrow[out1], &row[out2], &t[out2]);
         nxyzh = nxyzho;
         if (shellh != shellb)
@@ -146,13 +141,13 @@ int erd__hrr_matrix (int nrothrr, int ncolhrr,
     l = 1;
     m = 0;
     n = 0;
-    base1 = *in1 - 1;
-    base2 = *in2 - 1;
+    base1 = *in1;
+    base2 = *in2;
     tleap = *nrowout * nxyza;
-    for (j = 1; j <= nxyzh; ++j)
+    for (j = 0; j < nxyzh; ++j)
     {
         nrow[base1 + j] = nrow[base1 + l];
-        for (i = 1; i <= *nrowout; ++i)
+        for (i = 0; i < *nrowout; ++i)
         {
             t[base2 + m + i] = t[base2 + n + i];
         }
@@ -161,5 +156,7 @@ int erd__hrr_matrix (int nrothrr, int ncolhrr,
         n += tleap;
     }
 
+    *in1 = *in1 + 1;
+    *in2 = *in2 + 1;
     return 0;
 }
