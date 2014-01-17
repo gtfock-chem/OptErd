@@ -122,8 +122,8 @@ erd__ctr_half (int n, int mij, double *ccr, double *ccs,
     {
         j = prims[ij];
         i = primr[ij];
-        c1 = ccr[i - 1];
-        c2 = ccs[j - 1];
+        c1 = ccr[i];
+        c2 = ccs[j];
         for (l = 0; l < n; l++)
         {
             y[l] += c1 * c2 * x[l + ij * n];

@@ -135,8 +135,8 @@ void erd__ssss_pcgto_block (int nij, int nkl,
     const double z34 = z3 - z4;
     
     for (int ij = 0; ij < nij; ij += 1) {
-        const int i = prim1[ij] - 1;
-        const int j = prim2[ij] - 1;
+        const int i = prim1[ij];
+        const int j = prim2[ij];
         const double exp1 = alpha1[i];
         const double exp2 = alpha2[j];
         double pval = exp1 + exp2;
@@ -149,8 +149,8 @@ void erd__ssss_pcgto_block (int nij, int nkl,
     }
 
     for (int kl = 0; kl < nkl; kl += 1) {
-        const int k = prim3[kl] - 1;
-        const int l = prim4[kl] - 1;
+        const int k = prim3[kl];
+        const int l = prim4[kl];
         const double exp3 = alpha3[k];
         const double exp4 = alpha4[l];
         double qval = exp3 + exp4;

@@ -277,14 +277,6 @@ int erd__e0f0_pcgto_block (int nij, int nkl,
     --scalepq;
     --wts;
     --rts;
-    --norma;
-    --alphaa;
-    --normb;
-    --alphab;
-    --normc;
-    --alphac;
-    --normd;
-    --alphad;
     
 /*             ...predetermine in 'K2' loops the quantities associated */
 /*                with the A,B-part and C,D-part. Set the atom equality */

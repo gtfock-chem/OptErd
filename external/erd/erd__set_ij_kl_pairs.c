@@ -54,8 +54,8 @@ static YEP_NOINLINE void set_pairs(
         for (int j = 0; j < npgtob; j += 1) {
             if (ssss1[j] >= TOL) {
                 rho[nij] = ssss2[j];
-                prima[nij] = i + 1;
-                primb[nij] = j + 1;
+                prima[nij] = i;
+                primb[nij] = j;
                 nij += 1;
             }
         }
@@ -94,8 +94,8 @@ int erd__set_ij_kl_pairs(
             for (int j = 0; j < npgtob; j += 1) {
                 const double b = alphab[j];
                 rho[nij] = __builtin_exp(-a * b * rnabsq / (a + b));
-                prima[nij] = i + 1;
-                primb[nij] = j + 1;
+                prima[nij] = i;
+                primb[nij] = j;
                 nij += 1;
             }
         }
@@ -105,8 +105,8 @@ int erd__set_ij_kl_pairs(
             for (int l = 0; l < npgtod; l += 1) {
                 const double d = alphad[l];
                 rho[nij + nkl] = __builtin_exp(-c * d * rncdsq / (c + d));
-                primc[nkl] = k + 1;
-                primd[nkl] = l + 1;
+                primc[nkl] = k;
+                primd[nkl] = l;
                 nkl += 1;
             }
         }
