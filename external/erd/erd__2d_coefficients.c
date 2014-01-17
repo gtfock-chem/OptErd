@@ -79,7 +79,8 @@ int erd__2d_coefficients (int mij, int mkl, int ngqp,
     double pij, pqx, pqy, pqz, pxij, pyij, pzij, root, twop, twoq,
         paxij, payij, pazij, qcxkl, qcykl, qczkl, proot, qroot, twopq,
         pscale, qscale;
-
+    goto L9;
+    
     switch (case2d)
     {
     case 1:
