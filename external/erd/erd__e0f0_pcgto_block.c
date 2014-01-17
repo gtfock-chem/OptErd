@@ -178,6 +178,8 @@ int erd__e0f0_pcgto_block (int nij, int nkl,
                            double xd, double yd, double zd,
                            double *alphaa, double *alphab,
                            double *alphac, double *alphad,
+                           double *cca, double *ccb,
+                           double *ccc, double *ccd,
                            double *ftable, int mgrid, int ngrid,
                            double tmax, double tstep, double tvstep,
                            int *prima, int *primb,
@@ -315,6 +317,7 @@ int erd__e0f0_pcgto_block (int nij, int nkl,
         pz[ij] = paz[ij] + za;
         pinvhf[ij] = pinv * 0.5;
         scalep[ij] = norma[i] * normb[j] * rhoab[ij];
+        scalep[ij] *= cca[i] * ccb[j];
     }
 
     for (kl = 1; kl <= nkl; ++kl)
@@ -335,6 +338,7 @@ int erd__e0f0_pcgto_block (int nij, int nkl,
         qz[kl] = qcz[kl] + zc;
         qinvhf[kl] = qinv * 0.5;
         scaleq[kl] = normc[k] * normd[l] * rhocd[kl];
+        scaleq[kl] *= ccc[k] * ccd[l];
     }
 
 /*             ...the 'K4' loop over all ij- and kl-exponent pairs */

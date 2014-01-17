@@ -179,7 +179,7 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
     int nrota, nrotb, nrotc, nrotd, ihrow, nrowa, zused, nrowb,
         nrowc, nrowd;
     int empty;
-    int ztval, zhrot, nxyza, nxyzb, nxyzc, nxyzd, zwork, nint2d,
+    int ztval, zhrot, nxyza, nxyzb, nxyzc, nxyzd, nint2d,
         nxyzp, nxyzq, nxyzt, zscpk2, zscqk2;
     int indexa, indexb, indexc, indexd;
     int iprima, iprimb, iprimc, iprimd,
@@ -187,14 +187,14 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
         isrowb;
     int isrowc, isrowd, ngqscr;
     int mxsize;
-    int npgtoa, npgtob, npgtoc, npgtod, npsize,
+    int npgtoa, npgtob, npgtoc, npgtod,
         shella, shellb, shellc, shelld, shellp, nxyzet, nxyzft, shellq,
         shellt, znorma, znormb, znormc, znormd, zcnorm, zrhoab, zrhocd,
         zgqscr, zsrota, zsrotb, zsrotc, zsrotd;
     double rnabsq, rncdsq, spnorm;
     int zscpqk4;
     int zint2dx, zint2dy, zint2dz;
-    int zcbatch, nabcoor, ncdcoor, npgtoab, zpbatch,
+    int zcbatch, nabcoor, ncdcoor, npgtoab,
         npgtocd;
     int ncolhrr;
     int mxshell, isnrowa, isnrowb, isnrowc, isnrowd, zpinvhf,
@@ -314,8 +314,8 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
     erd__e0f0_def_blocks (zmax, npgtoa, npgtob, npgtoc, npgtod,
                           shellp, shellq, nij, nkl,
                           ngqp, ngqscr, nxyzt, 0,
-                          &npsize, &nint2d, &zcbatch, &zpbatch,
-                          &zwork, &znorma, &znormb, &znormc, &znormd,
+                          &nint2d, &zcbatch,
+                          &znorma, &znormb, &znormc, &znormd,
                           &zrhoab, &zrhocd, &zp, &zpx, &zpy, &zpz, &zpax,
                           &zpay, &zpaz, &zpinvhf, &zscpk2,
                           &zq, &zqx, &zqy, &zqz, &zqcx, &zqcy,
@@ -348,6 +348,8 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
                            xc, yc, zc, xd, yd, zd,
                            &alpha[lexpa], &alpha[lexpb],
                            &alpha[lexpc], &alpha[lexpd],
+                           &cc[lcca], &cc[lccb],
+                           &cc[lccc], &cc[lccd],
                            ftable, mgrid, ngrid,
                            tmax, tstep, tvstep,
                            &icore[iprima], &icore[iprimb],
@@ -368,16 +370,7 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
                            &zcore[zc00x], &zcore[zc00y], &zcore[zc00z],
                            &zcore[zd00x], &zcore[zd00y], &zcore[zd00z],
                            &zcore[zint2dx], &zcore[zint2dy], &zcore[zint2dz],
-                           &zcore[zpbatch]);
-
-    erd__ctr_4index_block (nxyzt, nij, nkl,
-                           &cc[lcca], &cc[lccb], &cc[lccc],&cc[lccd],
-                           &icore[iprima],
-                           &icore[iprimb],
-                           &icore[iprimc],
-                           &icore[iprimd],
-                           &zcore[zpbatch], &zcore[zwork], &zcore[zcbatch]);
-
+                           &zcore[zcbatch]);
 /*             ...the unnormalized cartesian (e0|f0) contracted batch is */
 /*                ready. Expand the contraction indices (if necessary): */
 /*                   batch (nxyzt,r>=s,t>=u) --> batch (nxyzt,r,s,t,u) */

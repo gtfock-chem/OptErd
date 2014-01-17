@@ -190,6 +190,7 @@ int erd__int2d_to_e0f0 (int shella, int shellp, int shellc, int shellq,
 /*                have been collected for all exponent quadruplets at */
 /*                once. Sum up the 2D X,Y,Z integral products to the */
 /*                appropriate place of the [E0|F0] batch. */
+                            batch[i + j * nxyzet] = 0.0;
                             if (ze + zf == 0)
                             {
                                 k = 0;
@@ -201,7 +202,7 @@ int erd__int2d_to_e0f0 (int shella, int shellp, int shellc, int shellq,
                                         sum += temp2[k + n];
                                     }
                                     k += ngqp;
-                                    batch[m + (i + j * nxyzet) * nexq] = sum;
+                                    batch[i + j * nxyzet] += sum;
                                 }
                             }
                             else
@@ -216,7 +217,7 @@ int erd__int2d_to_e0f0 (int shella, int shellp, int shellc, int shellq,
                                           int2dz[k + n + (ze + zf * (shellp + 1)) * ngqexq];
                                     }
                                     k += ngqp;
-                                    batch[m + (i + j * nxyzet) * nexq] = sum;
+                                    batch[i + j * nxyzet] += sum;
                                 }
                             }
                             i = i - nxyze + xe;

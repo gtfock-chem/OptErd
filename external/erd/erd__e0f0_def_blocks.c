@@ -143,9 +143,7 @@ int erd__e0f0_def_blocks (int zmax, int npgtoa, int npgtob,
                           int npgtoc, int npgtod,
                           int shellp, int shellq,
                           int nij, int nkl, int ngqp, int ngqscr,
-                          int nxyzt, int memory, int *npsize,
-                          int *nint2d, int *zcbatch,
-                          int *zpbatch, int *zwork,
+                          int nxyzt, int memory, int *nint2d, int *zcbatch,
                           int *znorma, int *znormb, int *znormc,
                           int *znormd, int *zrhoab, int *zrhocd,
                           int *zp, int *zpx, int *zpy,
@@ -165,12 +163,9 @@ int erd__e0f0_def_blocks (int zmax, int npgtoa, int npgtob,
     int zone4;
     int mijkl;
     int zone12;
-    int mrskl;
-    int zone4b;
-    int zone4c;
     int mgqijkl;
-    int nwsize;
     int ncsize; 
+
   
     zone3 = npgtoa + npgtob + npgtoc + npgtod + nij + nkl;
 
@@ -183,16 +178,11 @@ int erd__e0f0_def_blocks (int zmax, int npgtoa, int npgtob,
         ncsize = nxyzt;
         mijkl = nij * nkl;
         mgqijkl = ngqp * mijkl;
-        mrskl = nkl;
-        *npsize = nxyzt * MAX (mijkl, mrskl);
-        nwsize = *npsize;
-        zone12 = *npsize + ncsize;
-        zone4b = ngqscr + mijkl * 2 +
+        zone12 = ncsize;
+        zone4 = ngqscr + mijkl * 2 +
             (nij + nkl) * 9 + mgqijkl * 12 +
             (mgqijkl * (shellp + 1) * (shellq + 1)) * 3;
-        zone4c = nwsize;
-        zone4 = MAX (zone4b, zone4c);
-        *npsize = zone12 + zone3 + zone4;
+        *nint2d = zone12 + zone3 + zone4;
     }
     else
     {
@@ -200,22 +190,16 @@ int erd__e0f0_def_blocks (int zmax, int npgtoa, int npgtob,
         mijkl = nij * nkl;
         mgqijkl = ngqp * mijkl;
         *nint2d = mgqijkl * (shellp + 1) * (shellq + 1);
-        mrskl = nkl;
-        *npsize = nxyzt * MAX (mijkl, mrskl);
-        nwsize = *npsize;
-        zone12 = *npsize + ncsize;
-        zone4b = ngqscr + mijkl * 2 +
-                 (nij + nkl) * 9 +
-                 mgqijkl * 12 +
-                 *nint2d * 3;
-        zone4c = nwsize;
-        zone4 = MAX (zone4b, zone4c);
+        zone12 = ncsize;
+        zone4 = ngqscr + mijkl * 2 +
+                (nij + nkl) * 9 +
+                mgqijkl * 12 +
+                *nint2d * 3;
         assert (zone12 + zone3 + zone4 <= zmax);
         
 /*             ...generate the memory allocation pointers. */
         *zcbatch = 1;
-        *zpbatch = ncsize + 1;
-        *znorma = *zpbatch + *npsize;
+        *znorma = *zcbatch + ncsize;
         *znormb = *znorma + npgtoa;
         *znormc = *znormb + npgtob;
         *znormd = *znormc + npgtoc;
@@ -257,7 +241,6 @@ int erd__e0f0_def_blocks (int zmax, int npgtoa, int npgtob,
         *zint2dx = *zd00z + mgqijkl;
         *zint2dy = *zint2dx + *nint2d;
         *zint2dz = *zint2dy + *nint2d;
-        *zwork = *zp;
     }
 
     return 0;

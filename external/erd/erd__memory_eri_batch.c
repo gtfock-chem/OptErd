@@ -71,6 +71,6 @@ int erd__memory_eri_batch_ (int * nalpha, int * ncoeff,
                            *x3, *y3, *z3, *x4, *y4, *z4,
                            *spheric, imin, iopt, zmin, zopt);
     }
-
+    printf ("%d %d\n", *zopt, *iopt);
     return 0;
 }
