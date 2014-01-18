@@ -63,6 +63,10 @@ main (int argc, char **argv)
     }
 
     printf ("Computing integrals ...\n");
+
+    //printf ("max memory footprint per thread = %lf KB\n",
+    //    CInt_getMaxMemory (erd[0])/1024.0);
+    
     ns = CInt_getNumShells (basis);
     timepass = 0.0;
     gettimeofday (&tv1, NULL);

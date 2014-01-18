@@ -79,7 +79,9 @@ int main (int argc, char **argv)
 
     // compute intergrals
     CInt_createERD (basis, &erd);
-
+    //printf ("max memory footprint per thread = %lf KB\n",
+    //    CInt_getMaxMemory (erd)/1024.0);
+    
     printf ("Computing integrals ...\n");
     ns = CInt_getNumShells (basis);
     timepass = 0.0;
