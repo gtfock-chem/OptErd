@@ -119,6 +119,8 @@ int erd__1111_csgto (int zmax, int npgto1, int npgto2,
     int shellt;
     double spnorm;
     int zcbatch;
+    uint64_t start_clock, end_clock;
+    int tid = omp_get_thread_num();
 
     ftable_dim1 = mgrid - 0 + 1;
     ftable_offset = 0 + ftable_dim1 * 0;
@@ -195,6 +197,8 @@ int erd__1111_csgto (int zmax, int npgto1, int npgto2,
     {
         spnorm += spnorm;
     }
+
+    start_clock = __rdtsc();
     erd__set_ij_kl_pairs  (npgto1, npgto2, npgto3, npgto4,
                            x1, y1, z1, x2, y2, z2,
                            x3, y3, z3, x4, y4, z4,
@@ -206,6 +210,9 @@ int erd__1111_csgto (int zmax, int npgto1, int npgto2,
                            &empty, &nij, &nkl,
                            &icore[iprim1], &icore[iprim2],
                            &icore[iprim3], &icore[iprim4], &zcore[0]);
+    end_clock = __rdtsc();
+    erd__set_ij_kl_pairs_ticks[tid] += (end_clock - start_clock);
+
     if (empty)
     {
         *nbatch = 0;

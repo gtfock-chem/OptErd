@@ -5,6 +5,11 @@
 
 #include "erd.h"
 
+uint64_t erd__e0f0_pcgto_block_ticks[256];
+uint64_t erd__csgto_ticks[256];
+uint64_t erd__xyz_to_ry_abcd_ticks[256];
+uint64_t erd__hrr_matrix_ticks[256];
+uint64_t erd__hrr_transform_ticks[256];
 
 /* ------------------------------------------------------------------------ */
 /*  OPERATION   : ERD__CSGTO */
@@ -201,6 +206,8 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
         notmove, zqinvhf, nrothrr, nrowhrr;
     int zpqpinv;
     double abx, aby, abz, cdx, cdy, cdz;
+    uint64_t start_clock, end_clock;
+    int tid = omp_get_thread_num();
     
     --icore;
     --zcore;
@@ -286,7 +293,9 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
     iprima = 1;
     iprimb = iprima + npgtoab;
     iprimc = iprimb + npgtoab;
-    iprimd = iprimc + npgtocd;        
+    iprimd = iprimc + npgtocd;
+
+    start_clock = __rdtsc(); 
     erd__set_ij_kl_pairs (npgtoa, npgtob, npgtoc, npgtod,
                           xa, ya, za, xb, yb, zb,
                           xc, yc, zc, xd, yd, zd,
@@ -298,6 +307,9 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
                           screen, &empty, &nij, &nkl,
                           &icore[iprima], &icore[iprimb], &icore[iprimc],
                           &icore[iprimd], &zcore[1]);
+    end_clock = __rdtsc(); 
+    erd__set_ij_kl_pairs_ticks[tid] += (end_clock - start_clock);
+
     if (empty)
     {
         *nbatch = 0;
@@ -340,7 +352,8 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
 /*                over ij and kl pairs and add to final contracted */
 /*                (e0|f0). The keyword REORDER indicates, if the */
 /*                primitive [e0|f0] blocks need to be transposed */
-/*                before being contracted. */    
+/*                before being contracted. */
+    start_clock = __rdtsc();
     erd__e0f0_pcgto_block (nij, nkl, ngqp, nmom,
                            nxyzet, nxyzft, nxyzp, nxyzq,
                            shella, shellp, shellc, shellq,
@@ -371,6 +384,8 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
                            &zcore[zd00x], &zcore[zd00y], &zcore[zd00z],
                            &zcore[zint2dx], &zcore[zint2dy], &zcore[zint2dz],
                            &zcore[zcbatch]);
+    end_clock = __rdtsc();
+    erd__e0f0_pcgto_block_ticks[tid] += (end_clock - start_clock);
 /*             ...the unnormalized cartesian (e0|f0) contracted batch is */
 /*                ready. Expand the contraction indices (if necessary): */
 /*                   batch (nxyzt,r>=s,t>=u) --> batch (nxyzt,r,s,t,u) */
@@ -470,6 +485,7 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
     {
         if (mxshell > 1)
         {
+            start_clock = __rdtsc();
             erd__xyz_to_ry_abcd (nxyza, nxyzb, nxyzc, nxyzd,
                                  nrya, nryb, nryc, nryd,
                                  shella, shellb, shellc, shelld,
@@ -480,6 +496,8 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
                                  &isnrowa, &isnrowb, &isnrowc, &isnrowd,
                                  &isrowa, &isrowb, &isrowc, &isrowd,
                                  &iused, &zused, &icore[1], &zcore[1]);
+            end_clock = __rdtsc();
+            erd__xyz_to_ry_abcd_ticks[tid] += (end_clock - start_clock);
         }
         else
         {
@@ -515,16 +533,24 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
 /*                   batch (ijkl[d'],e0,c') --> batch (ijkl[c'd'],e0) */
     if (shelld != 0)
     {
+        start_clock = __rdtsc();
         erd__hrr_matrix (nrothrr, ncolhrr, nxyzft, nxyzc, nxyzq,
                          shellc, shelld, shellq,
                          ncdcoor, cdx, cdy, cdz,
                          &icore[ihscr], &pos1, &pos2, &nrowhrr,
                          &icore[ihnrow], &icore[ihrow], &zcore[zhrot]);
+        end_clock = __rdtsc();
+        erd__hrr_matrix_ticks[tid] += (end_clock - start_clock);
+
+        start_clock = __rdtsc();
         erd__hrr_transform (nxyzet, nrowhrr, nxyzc, nxyzd,
                             &icore[ihnrow + pos1 - 1],
                             &icore[ihrow + pos2 - 1],
                             &zcore[zhrot + pos2 - 1], &zcore[in],
                             &zcore[out]);
+        end_clock = __rdtsc();
+        erd__hrr_transform_ticks[tid] += (end_clock - start_clock);
+
         temp = in;
         in = out;
         out = temp;
@@ -604,16 +630,24 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
 /*                   batch (ijkl[b'c'd'],a') --> batch (ijkl[a'b'c'd']) */
     if (shellb != 0)
     {
+        start_clock = __rdtsc();
         erd__hrr_matrix (nrothrr, ncolhrr, nxyzet, nxyza, nxyzp,
                          shella, shellb, shellp,
                          nabcoor, abx, aby, abz,
                          &icore[ihscr], &pos1, &pos2, &nrowhrr,
                          &icore[ihnrow], &icore[ihrow], &zcore[zhrot]);
+        end_clock = __rdtsc();
+        erd__hrr_matrix_ticks[tid] += (end_clock - start_clock);
+
+        start_clock = __rdtsc();
         erd__hrr_transform (nryc * nryd, nrowhrr, nxyza, nxyzb,
                             &icore[ihnrow + pos1 - 1],
                             &icore[ihrow + pos2 - 1],
                             &zcore[zhrot + pos2 - 1], &zcore[in],
                             &zcore[out]);
+        end_clock = __rdtsc();
+        erd__hrr_transform_ticks[tid] += (end_clock - start_clock);
+
         temp = in;
         in = out;
         out = temp;
@@ -710,6 +744,10 @@ int erd__csgto_ (int * imax, int * zmax, int * nalpha,
               int * spheric, int * screen, int * icore,
               int * nbatch, int * nfirst, double * zcore)
 {
+    uint64_t start_clock, end_clock;
+    int tid = omp_get_thread_num();
+
+    start_clock = __rdtsc();
     erd__csgto (*zmax, *npgto1, *npgto2,
                 *npgto3, *npgto4,
                 *shell1, *shell2,
@@ -723,6 +761,8 @@ int erd__csgto_ (int * imax, int * zmax, int * nalpha,
                 *tmax, *tstep, *tvstep,
                 *spheric, *screen,
                 icore, nbatch, nfirst, zcore);
+    end_clock = __rdtsc();
+    erd__csgto_ticks[tid] += (end_clock - start_clock);  
                 
     return 0;
 }

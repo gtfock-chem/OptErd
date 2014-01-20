@@ -6,7 +6,53 @@
 #include "CInt.h"
 #include "screening.h"
 
-extern uint64_t erd__set_ij_kl_pairs_ticks;
+extern uint64_t erd__set_ij_kl_pairs_ticks[256];
+extern uint64_t erd__rys_roots_weights_ticks[256];
+extern uint64_t erd__2d_coefficients_ticks[256];
+extern uint64_t erd__2d_pq_integrals_ticks[256];
+extern uint64_t erd__int2d_to_e0f0_ticks[256];
+extern uint64_t erd__e0f0_pcgto_block_ticks[256];
+extern uint64_t erd__xyz_to_ry_abcd_ticks[256];
+extern uint64_t erd__hrr_matrix_ticks[256];
+extern uint64_t erd__hrr_transform_ticks[256];
+extern uint64_t erd__csgto_ticks[256];
+
+void initProfile(int nthreads)
+{
+    memset(erd__set_ij_kl_pairs_ticks, 0, nthreads * sizeof(int));
+    memset(erd__rys_roots_weights_ticks, 0, nthreads * sizeof(int));
+    memset(erd__2d_coefficients_ticks, 0, nthreads * sizeof(int));
+    memset(erd__2d_pq_integrals_ticks, 0, nthreads * sizeof(int));
+    memset(erd__int2d_to_e0f0_ticks, 0, nthreads * sizeof(int));
+    memset(erd__e0f0_pcgto_block_ticks, 0, nthreads * sizeof(int));
+    memset(erd__xyz_to_ry_abcd_ticks, 0, nthreads * sizeof(int));
+    memset(erd__hrr_matrix_ticks, 0, nthreads * sizeof(int));
+    memset(erd__hrr_transform_ticks, 0, nthreads * sizeof(int));
+    memset(erd__csgto_ticks, 0, nthreads * sizeof(int));
+}
+
+void printProfile(int nthreads, uint64_t freq)
+{
+    int i;
+    printf("tid\terd__set_ij_kl_pairs_ticks\terd__rys_roots_weights\terd__2d_coefficients\t");
+    printf("erd__2d_pq_integrals\terd__int2d_e0f0\terd__e0f0_pcgto_block\t");
+    printf("erd__xyz_to_ry_abcd\terd__hrr_matrix\terd__hrr_transform\terd__csgto\n");
+    for(i = 0; i < nthreads; i++)
+    {
+        printf("%d\t%.3lf\t%.3lf\t%.3lf\t%.3lf\t%.3lf\t%.3lf\t%.3lf\t%.3lf\t%.3lf\t%.3lf\n",
+                i,
+                ((double) erd__set_ij_kl_pairs_ticks[i]) / freq,
+                ((double) erd__rys_roots_weights_ticks[i]) / freq,
+                ((double) erd__2d_coefficients_ticks[i]) / freq,
+                ((double) erd__2d_pq_integrals_ticks[i]) / freq,
+                ((double) erd__int2d_to_e0f0_ticks[i]) / freq,
+                ((double) erd__e0f0_pcgto_block_ticks[i]) / freq,
+                ((double) erd__xyz_to_ry_abcd_ticks[i]) / freq,
+                ((double) erd__hrr_matrix_ticks[i]) / freq,
+                ((double) erd__hrr_transform_ticks[i]) / freq,
+                ((double) erd__csgto_ticks[i]) / freq);
+    }
+}
 
 int
 main (int argc, char **argv)
@@ -26,13 +72,22 @@ main (int argc, char **argv)
     struct timeval tv1;
     struct timeval tv2;
     double timepass;
+    uint64_t start_clock, end_clock;
 
     if (argc != 4)
     {
         printf ("Usage: %s <basisset> <xyz> <nthreads>\n", argv[0]);
         return -1;
     }
+
+    start_clock = __rdtsc();
+    sleep(1);
+    end_clock = __rdtsc();
+    uint64_t freq = end_clock - start_clock;
+    printf("freq = %lld\n", freq);
+
     nthreads = atoi (argv[3]);
+    initProfile(nthreads);
     omp_set_num_threads (nthreads);
 
     // load basis set
@@ -74,7 +129,8 @@ main (int argc, char **argv)
     int end;
     start = 0;
     end = shellptr[ns];
-    
+   
+    start_clock = __rdtsc(); 
 #pragma omp parallel
     {
         int tid;
@@ -127,18 +183,21 @@ main (int argc, char **argv)
         totalcalls[0 * 64] = totalcalls[0 * 64] + totalcalls[i * 64];
         totalnintls[0 * 64] = totalnintls[0 * 64] + totalnintls[i * 64];
     }
+    end_clock = __rdtsc();
     gettimeofday (&tv2, NULL);
-    timepass = (tv2.tv_sec - tv1.tv_sec) +
-        (tv2.tv_usec - tv1.tv_usec) / 1000.0 / 1000.0;
+    uint64_t total_ticks = end_clock - start_clock;
+    timepass = ((double) total_ticks) / freq;
     printf ("Done\n");
     printf ("\n");
     printf ("Number of calls: %.6le, Number of integrals: %.6le\n",
             totalcalls[0], totalnintls[0]);
+    printf ("Total GigaTicks: %.3lf\n",
+            (double) (total_ticks) * 1.0e-9);
     printf ("Total time: %.4lf secs\n", timepass);
     printf ("Average time per call: %.3le us\n",
             1000.0 * 1000.0 * timepass / totalcalls[0]);
-    printf ("GigaTicks in erd__set_ij_kl_pairs: %.3lf\n",
-            (double) (erd__set_ij_kl_pairs_ticks) * 1.0e-9);
+
+    printProfile(nthreads, freq);
 
     for (i = 0; i < nthreads; i++)
     {

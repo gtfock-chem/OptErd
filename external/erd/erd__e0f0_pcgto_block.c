@@ -5,7 +5,10 @@
 
 
 #include "erd.h"
-
+uint64_t erd__rys_roots_weights_ticks[256];
+uint64_t erd__2d_coefficients_ticks[256];
+uint64_t erd__2d_pq_integrals_ticks[256];
+uint64_t erd__int2d_to_e0f0_ticks[256];
 
 /* ------------------------------------------------------------------------ */
 /*  OPERATION   : ERD_E0F0_PCGTO_BLOCK */
@@ -218,7 +221,8 @@ int erd__e0f0_pcgto_block (int nij, int nkl,
     double cdy;
     double cdz;
     int mgqijkl;
-    
+    uint64_t start_clock, end_clock; 
+    int tid = omp_get_thread_num();
     
 /*            ...predetermine 2D integral case. This is done in */
 /*               order to distinguish the P- and Q-shell combinations */
@@ -412,11 +416,14 @@ int erd__e0f0_pcgto_block (int nij, int nkl,
 
 /*             ...calculate all roots and weights. Array B00 is passed */
 /*                as a scratch array. */
+    start_clock = __rdtsc();
     erd__rys_roots_weights_ (&nijkl, &mgqijkl, &ngqp, &nmom, &tval[1], &b00[1],
                              ftable, &mgrid, &ngrid,
                              &tmax, &tstep, &tvstep, &gqscr[g000], &gqscr[g010],
                              &gqscr[g020], &gqscr[g030], &gqscr[g040],
                              &gqscr[g050], &gqscr[g060], &rts[1], &wts[1]);
+    end_clock = __rdtsc();
+    erd__rys_roots_weights_ticks[tid] += (end_clock - start_clock);
 
 /*             ...perform the following steps: */
 /*                1) generate all VRR coefficients. */
@@ -433,6 +440,7 @@ int erd__e0f0_pcgto_block (int nij, int nkl,
 /*                for the special s-shell cases. Note, that the case */
 /*                in which both P- and Q-shells are s-shells cannot */
 /*                arise, as this case is dealt with in separate routines. */
+    start_clock = __rdtsc();
     erd__2d_coefficients (nij, nkl, ngqp, &p[1], &q[1],
                           &px[1], &py[1], &pz[1], &qx[1], &qy[1], &qz[1],
                           &pax[1], &pay[1], &paz[1], &qcx[1], &qcy[1], &qcz[1],
@@ -440,11 +448,19 @@ int erd__e0f0_pcgto_block (int nij, int nkl,
                           case2d, &b00[1], &b01[1], &b10[1],
                           &c00x[1], &c00y[1], &c00z[1],
                           &d00x[1], &d00y[1], &d00z[1]);
+    end_clock = __rdtsc();
+    erd__2d_coefficients_ticks[tid] += (end_clock - start_clock);
+
+    start_clock = __rdtsc();
     erd__2d_pq_integrals (shellp, shellq, mgqijkl, &wts[1],
                           &b00[1], &b01[1], &b10[1],
                           &c00x[1], &c00y[1], &c00z[1], &d00x[1],
                           &d00y[1], &d00z[1], case2d,
                           &int2dx[1], &int2dy[1], &int2dz[1]);
+    end_clock = __rdtsc();
+    erd__2d_pq_integrals_ticks[tid] += (end_clock - start_clock);
+
+    start_clock = __rdtsc();
     if (shellq == 0)
     {
         erd__int2d_to_e000 (shella, shellp, ngqp, nijkl, mgqijkl,
@@ -466,6 +482,8 @@ int erd__e0f0_pcgto_block (int nij, int nkl,
                             &int2dx[1], &int2dy[1], &int2dz[1],
                             &b00[1], &b01[1], &scalepq[1], &batch[1]);
     }
+    end_clock = __rdtsc();
+    erd__int2d_to_e0f0_ticks[tid] += (end_clock - start_clock);
     
     return 0;
 }

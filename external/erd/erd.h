@@ -1,7 +1,8 @@
 #ifndef __ERD_H__
 #define __ERD_H__
 
-
+#include <stdint.h>
+#include <omp.h>
 #include <yepPredefines.h>
 
 
@@ -9,6 +10,7 @@
 #define MIN(a,b)    ((a) > (b) ? (b) : (a))
 #define PREFACT     9.027033336764101
 
+uint64_t erd__set_ij_kl_pairs_ticks[256];
 
 /*******************************************************************/
 // C functions

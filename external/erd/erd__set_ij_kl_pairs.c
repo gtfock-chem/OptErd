@@ -8,8 +8,6 @@
 
 #define TOL 1e-14
 
-uint64_t erd__set_ij_kl_pairs_ticks = 0;
-
 static YEP_INLINE double pow3o4(double x) {
     return __builtin_sqrt(x * __builtin_sqrt (x));
 }
@@ -81,7 +79,6 @@ int erd__set_ij_kl_pairs(
     int *YEP_RESTRICT primb, int *YEP_RESTRICT primc,
     int *YEP_RESTRICT primd, double *YEP_RESTRICT rho)
 {
-    const uint64_t ticks_start = __rdtsc();
     *empty = 0;
 
     uint32_t nij = 0;
@@ -133,8 +130,6 @@ int erd__set_ij_kl_pairs(
     set_pairs(npgtoa, npgtob, rnabsq, alphaa, alphab, &nij, prima, primb, rho, qmin, smaxcd, rminsq);
     if (nij == 0) {
         *empty = 1;
-        const uint64_t ticks_elapsed = __rdtsc () - ticks_start;
-        erd__set_ij_kl_pairs_ticks += ticks_elapsed;
 
         *nij_ptr = nij;
         *nkl_ptr = nkl;
@@ -144,16 +139,11 @@ int erd__set_ij_kl_pairs(
     set_pairs(npgtoc, npgtod, rncdsq, alphac, alphad, &nkl, primc, primd, &rho[nij], pmin, smaxab, rminsq);
     if (nkl == 0) {
         *empty = 1;
-        const uint64_t ticks_elapsed = __rdtsc () - ticks_start;
-        erd__set_ij_kl_pairs_ticks += ticks_elapsed;
 
         *nij_ptr = nij;
         *nkl_ptr = nkl;
         return 0;
     }
-
-    const uint64_t ticks_elapsed = __rdtsc () - ticks_start;
-    erd__set_ij_kl_pairs_ticks += ticks_elapsed;
 
     *nij_ptr = nij;
     *nkl_ptr = nkl;
