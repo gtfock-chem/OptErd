@@ -22,19 +22,6 @@ int main (int argc, char **argv)
     int ns;
     double totalcalls = 0;
     double *integrals;
-    int startM;
-    int startN;
-    int startP;
-    int startQ;
-    int dimM;
-    int dimN;
-    int dimP;
-    int dimQ;
-    int iM;
-    int iN;
-    int iP;
-    int iQ;
-    double ivalue;
     int *shellptr;
     int *shellid;
     int *shellrid;
@@ -52,20 +39,14 @@ int main (int argc, char **argv)
 #if defined(OPTERD_TEST_REFERENCE)
     FILE *ref_data_file = fopen ("ivalues.ref", "w+");
 #elif defined(OPTERD_TEST_OPTIMIZED)
-    char line[1024];
-    int A;
-    int B;
-    int C;
-    int D;
-    double ivalue0;
-    int errcount; 
-    errcount = 0;
     FILE *ref_data_file = fopen ("ivalues.ref", "r");
     if (ref_data_file == NULL)
     {
         fprintf (stderr, "ivalues.ref does not exist\n");
     }
 #endif
+    int errcount; 
+    errcount = 0;
     // load basis set   
     CInt_createBasisSet (&basis);
     CInt_loadBasisSet (basis, argv[1], argv[2]);
@@ -93,6 +74,14 @@ int main (int argc, char **argv)
     int end2;
     double value1;
     double value2;
+
+#if defined(OPTERD_TEST_OPTIMIZED)
+    int dimMax = CInt_getMaxShellDim (basis);
+    int nints0;
+    int k;
+    double * integrals0 = (double *)malloc (sizeof(double) * dimMax * dimMax * dimMax * dimMax);
+    assert (integrals0 != NULL);
+#endif    
     
     for (M = 0; M < ns; M++)
     {
@@ -123,95 +112,95 @@ int main (int argc, char **argv)
                     timepass += (tv2.tv_sec - tv1.tv_sec) +
                         (tv2.tv_usec - tv1.tv_usec) / 1000.0 / 1000.0;
                     totalintls = totalintls + nints;
+                    
+#if defined(OPTERD_TEST_REFERENCE)
+                    fwrite (&nints, sizeof(int), 1, ref_data_file);
                     if (nints != 0)
                     {
-                        startM = CInt_getFuncStartInd (basis, M);
-                        startN = CInt_getFuncStartInd (basis, N);
-                        startP = CInt_getFuncStartInd (basis, P);
-                        startQ = CInt_getFuncStartInd (basis, Q);
-                        dimM = CInt_getShellDim (basis, M);
-                        dimN = CInt_getShellDim (basis, N);
-                        dimP = CInt_getShellDim (basis, P);
-                        dimQ = CInt_getShellDim (basis, Q);
-                        for (iM = 0; iM < dimM; iM++)
-                        {
-                            for (iN = 0; iN < dimN; iN++)
-                            {
-                                for (iP = 0; iP < dimP; iP++)
-                                {
-                                    for (iQ = 0; iQ < dimQ; iQ++)
-                                    {
-                                        ivalue =
-                                            integrals[iM +
-                                                      dimM * (iN +
-                                                              dimN * (iP +
-                                                                      dimP *
-                                                                      iQ))];
-#if defined(OPTERD_TEST_REFERENCE)
-                                        fprintf (ref_data_file,
-                                                 "%d %d %d %d %le\n",
-                                                 startM + iM, startN + iN,
-                                                 startP + iP, startQ + iQ,
-                                                 ivalue);
+                        fwrite (integrals, sizeof(double), nints, ref_data_file);
+                    }
 #endif
-#if defined(OPTERD_TEST_OPTIMIZED)
-                                      hehe:
-                                        assert (fgets
-                                                (line, 1000,
-                                                 ref_data_file) != NULL);
-                                        sscanf (line, "%d %d %d %d %le\n", &A,
-                                                &B, &C, &D, &ivalue0);
-                                        if ((A != startM + iM)
-                                            || (B != startN + iN)
-                                            || (C != startP + iP)
-                                            || (D != startQ + iQ))
-                                        {
-                                            if (ivalue0 < 1e-10)
-                                                goto hehe;
-                                        }
-                                        assert (A == startM + iM);
-                                        assert (B == startN + iN);
-                                        assert (C == startP + iP);
-                                        assert (D == startQ + iQ);
-                                        if (fabs(ivalue) < 1e-6 || fabs(ivalue0) < 1e-6)
-                                        {
-                                            if (fabs (ivalue0 - ivalue) >
-                                                1e-10 && errcount < 10)
-                                            {
-                                                printf
-                                                    ("** ERROR: %d %d %d %d %le %le: %le\n",
-                                                     A, B, C, D, ivalue0,
-                                                     ivalue,
-                                                     fabs (ivalue0 - ivalue));
-                                                errcount++;
-                                            }
-                                        }
-                                        else
-                                        {
-                                            if (fabs (ivalue0 - ivalue)/fabs (ivalue) >
-                                                1e-6 && errcount < 10)
-                                            {
-                                                printf
-                                                    ("ERROR: %d %d %d %d %le %le: %le\n",
-                                                     A, B, C, D, ivalue0,
-                                                     ivalue,
-                                                     fabs (ivalue0 -
-                                                           ivalue) /
-                                                     fabs (ivalue0));
-                                                errcount++;
-                                            }
 
-                                        }
-#endif /* defined(OPTERD_TEST_OPTIMIZED) */
-                                    }
-                                }
+#if defined(OPTERD_TEST_OPTIMIZED)
+                    fread (&nints0, sizeof(int), 1, ref_data_file);
+                    if (nints0 != 0)
+                    {
+                        fread (integrals0, sizeof(double), nints0, ref_data_file);
+                    }
+                    // compare results
+                    if (nints == 0 && nints0 == 0)
+                    {
+                        continue;
+                    }
+                    else if (nints != 0 && nints0 == 0)
+                    {
+                        for (k = 0; k < nints; k++)
+                        {
+                            if (integrals[k] > 1e-10)
+                            {
+                                printf ("ERROR: %d %d %d %d: %le %le\n",
+                                    M, N, P, Q, 0.0, integrals[k]);
+                                errcount++;
                             }
                         }
                     }
-                }
-            }
-        }
-    }
+                    else if (nints == 0 && nints != 0)
+                    {
+                        for (k = 0; k < nints0; k++)
+                        {
+                            if (integrals0[k] > 1e-10)
+                            {
+                                printf ("ERROR: %d %d %d %d: %le %le\n",
+                                    M, N, P, Q, integrals0[k], 0.0);
+                                errcount++;
+                            }
+                        }
+                    
+                    }
+                    else if (nints == nints0 && nints != 0)
+                    {
+                     
+                        for (k = 0; k < nints0; k++)
+                        {
+                            if (fabs(integrals0[k]) < 1e-6 ||
+                                fabs(integrals[k]) < 1e-6)
+                            {
+                                if (fabs(integrals0[k] - integrals[k]) > 1e-10)
+                                {
+                                    printf ("* ERROR: %d %d %d %d: %le %le\n",
+                                        M, N, P, Q, integrals0[k], integrals[k]);
+                                    errcount++;
+                                }
+                            }
+                            else
+                            {
+                                if (fabs(integrals0[k] - integrals[k])/fabs(integrals0[k]) >
+                                    1e-6 && errcount < 10)
+                                {
+                                    printf ("* ERROR: %d %d %d %d: %le %le: %le\n",
+                                        M, N, P, Q, integrals0[k], integrals[k],
+                                        fabs(integrals0[k] - integrals[k])/fabs(integrals0[k]));
+                                    errcount++;
+                                }
+
+                            }
+                        }   
+                    }
+                    else
+                    {
+                        printf ("ERROR: nints0 %d nints %d\n", nints0, nints);
+                    }
+#endif /* defined(OPTERD_TEST_OPTIMIZED) */
+
+                    if (errcount > 10)
+                    {
+                        goto end;
+                    }
+                } /* for (j = start2; j < end2; j++) */
+            } /* for (P = 0; P < ns; P++) */
+        } /* for (i = start1; i < end1; i++) */
+    } /* for (M = 0; M < ns; M++) */
+    
     printf ("Done\n");
     printf ("\n");
     printf ("Number of calls: %.6le, Number of integrals: %.6le\n",
@@ -220,6 +209,10 @@ int main (int argc, char **argv)
     printf ("Average time per call: %.3le us\n",
             1000.0 * 1000.0 * timepass / totalcalls);
 
+end:
+#if defined(OPTERD_TEST_OPTIMIZED)
+    free (integrals0);
+#endif
     CInt_destroyERD (erd);
     CInt_destroyBasisSet (basis);
     free (shellptr);
