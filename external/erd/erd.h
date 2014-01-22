@@ -9,6 +9,11 @@
 #define MAX(a,b)    ((a) < (b) ? (b) : (a))
 #define MIN(a,b)    ((a) > (b) ? (b) : (a))
 #define PREFACT     9.027033336764101
+#ifdef MIC
+#define SIMD_WIDTH 8
+#else
+#define SIMD_WIDTH 4
+#endif
 
 uint64_t erd__set_ij_kl_pairs_ticks[256];
 
@@ -374,7 +379,7 @@ int erd__2d_pq_integrals (int shellp, int shellq, int ngqexq,
                           double *int2dy, double *int2dz);
 
 int erd__int2d_to_e0f0 (int shella, int shellp, int shellc, int shellq,
-                        int ngqp, int nexq, int ngqexq,
+                        int ngqexq,
                         int nxyzet, int nxyzft, int nxyzp, int nxyzq,
                         double *int2dx, double *int2dy, double *int2dz,
                         double *temp1, double *temp2, double *scale,

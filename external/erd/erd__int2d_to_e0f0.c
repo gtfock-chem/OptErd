@@ -4,7 +4,6 @@
 
 #include "erd.h"
 
-
 /* ------------------------------------------------------------------------ */
 /*  OPERATION   : ERD__INT2D_TO_E0F0 */
 /*  MODULE      : ELECTRON REPULSION INTEGRALS DIRECT */
@@ -115,18 +114,20 @@
 /*                                   to all current exponent quadruplets */
 /* ------------------------------------------------------------------------ */
 int erd__int2d_to_e0f0 (int shella, int shellp, int shellc, int shellq,
-                        int ngqp, int nexq, int ngqexq,
+                        int ngqexq,
                         int nxyzet, int nxyzft, int nxyzp, int nxyzq,
                         double *int2dx, double *int2dy, double *int2dz,
                         double *temp1, double *temp2, double *scale,
                         double *batch)
 {
-    int i, j, k, m, n, se, sf, xe, ye, ze, xf, yf, zf, xep, xfp;
-    double sum;
+    int i, j, k, m, se, sf, xe, ye, ze, xf, yf, zf, xep, xfp;
     int xye, xyf, xyep, xyfp, seend, sfend, yeend, yfend, xemax,
         xfmax, nxyze, nxyzf;
-    
+  
+    int indices[ngqexq * nxyzet * nxyzft][4];
     xfp = nxyzft + 2;
+    int indx, indy, indz, indb;
+    k = 0;
     for (xf = 0; xf <= shellq; ++xf)
     {
         xfp = xfp + xf - 2;
@@ -138,11 +139,8 @@ int erd__int2d_to_e0f0 (int shella, int shellp, int shellc, int shellq,
             xep = xep + xe - 2;
             xemax = xe * shellp;
             yeend = shellp - xe;
-            for (m = 0; m < ngqexq; ++m)
-            {
-                temp1[m] = scale[m] *
-                    int2dx[m + (xe + xf * (shellp + 1)) * ngqexq];
-            }
+            indx = (xe + xf * (shellp + 1)) * ngqexq;
+
 /*             ...middle loops over y,y-pairs. Skip multiplication */
 /*                of y,y-contributions, if we have a 0,0-pair, as */
 /*                then the 2DY integral is equal to 1. */
@@ -158,24 +156,8 @@ int erd__int2d_to_e0f0 (int shella, int shellp, int shellc, int shellq,
                     xye = xe + ye;
                     --xyep;
                     seend = MAX (shella, xye);
-                    if (ye + yf == 0)
-                    {
-                        for (n = 0; n < ngqexq; ++n)
-                        {
-                            temp2[n] = temp1[n];
-                        }
-                    }
-                    else
-                    {
-                        for (n = 0; n < ngqexq; ++n)
-                        {
-                            temp2[n] = temp1[n] *
-                                int2dy[n + (ye + yf * (shellp + 1)) * ngqexq];
-                        }
-                    }
-/*             ...inner loops over E,F-pairs. Skip multiplication */
-/*                of z,z-contributions, if we have a 0,0-pair, as */
-/*                then the 2DZ integral is equal to 1. */
+                    indy = (ye + yf * (shellp + 1)) * ngqexq;
+
                     j = xyfp;
                     nxyzf = nxyzq;
                     for (sf = shellq; sf >= sfend; --sf)
@@ -186,40 +168,14 @@ int erd__int2d_to_e0f0 (int shella, int shellp, int shellc, int shellq,
                         for (se = shellp; se >= seend; --se)
                         {
                             ze = se - xye;
-/*             ...all info concerning all three x,x-, y,y- and z,z-pairs */
-/*                have been collected for all exponent quadruplets at */
-/*                once. Sum up the 2D X,Y,Z integral products to the */
-/*                appropriate place of the [E0|F0] batch. */
-                            batch[i + j * nxyzet] = 0.0;
-                            if (ze + zf == 0)
-                            {
-                                k = 0;
-                                for (m = 0; m < nexq; ++m)
-                                {
-                                    sum = 0.;
-                                    for (n = 0; n < ngqp; ++n)
-                                    {
-                                        sum += temp2[k + n];
-                                    }
-                                    k += ngqp;
-                                    batch[i + j * nxyzet] += sum;
-                                }
-                            }
-                            else
-                            {
-                                k = 0;
-                                for (m = 0; m < nexq; ++m)
-                                {
-                                    sum = 0.;
-                                    for (n = 0; n < ngqp; ++n)
-                                    {
-                                        sum += temp2[k + n] *
-                                          int2dz[k + n + (ze + zf * (shellp + 1)) * ngqexq];
-                                    }
-                                    k += ngqp;
-                                    batch[i + j * nxyzet] += sum;
-                                }
-                            }
+                            indz = (ze + zf * (shellp + 1)) * ngqexq;
+
+                            indices[k][0] = indx;
+                            indices[k][1] = indy;
+                            indices[k][2] = indz;
+                            indices[k][3] = i + j * nxyzet;
+                            k++;
+                             
                             i = i - nxyze + xe;
                             nxyze = nxyze - se - 1;
                         }
@@ -229,6 +185,30 @@ int erd__int2d_to_e0f0 (int shella, int shellp, int shellc, int shellq,
                 }
             }
         }
+    }
+
+    int k1, m1;
+    for(k1 = 0; k1 < k; k1++)
+    {
+        indx = indices[k1][0];
+        indy = indices[k1][1];
+        indz = indices[k1][2];
+        indb = indices[k1][3];
+
+        double sum = 0;
+        for(m = 0; m < ngqexq; m+=SIMD_WIDTH)
+        {
+#pragma vector aligned
+            for(m1 = 0; m1 < SIMD_WIDTH; m1++)
+            {
+                sum += scale[m + m1]
+                    * int2dx[m + m1 + indx]
+                    * int2dy[m + m1 + indy]
+                    * int2dz[m + m1 + indz];
+            }
+        }
+        batch[indb] = sum;
+         
     }
 
     return 0;

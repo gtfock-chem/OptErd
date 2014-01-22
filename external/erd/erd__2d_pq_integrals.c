@@ -83,7 +83,6 @@ int erd__2d_pq_integrals (int shellp, int shellq, int ngqexq,
 /*                each leading to simplifications in the VRR formulas. */
 /*                The case present has been evaluated outside this */
 /*                routine and is transmitted via argument. */
-    goto L4;
     switch (case2d)
     {
     case 1:
