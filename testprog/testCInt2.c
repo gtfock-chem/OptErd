@@ -68,15 +68,16 @@ main (int argc, char **argv)
     int *shellid;
     int *shellrid;
     double *shellvalue;
+    double fraction;
     
     struct timeval tv1;
     struct timeval tv2;
     double timepass;
     uint64_t start_clock, end_clock;
-
-    if (argc != 4)
+    
+    if (argc != 5)
     {
-        printf ("Usage: %s <basisset> <xyz> <nthreads>\n", argv[0]);
+        printf ("Usage: %s <basisset> <xyz> <fraction> <nthreads>\n", argv[0]);
         return -1;
     }
 
@@ -86,7 +87,9 @@ main (int argc, char **argv)
     uint64_t freq = end_clock - start_clock;
     printf("freq = %lld\n", freq);
 
-    nthreads = atoi (argv[3]);
+    fraction = atof (argv[3]);
+    assert (fraction > 0.0 && fraction <= 1.0);
+    nthreads = atoi (argv[4]);
     initProfile(nthreads);
     omp_set_num_threads (nthreads);
 
@@ -108,7 +111,7 @@ main (int argc, char **argv)
     assert (totalcalls != NULL);
     totalnintls = (double *) malloc (sizeof (double) * nthreads * 64);
     assert (totalnintls != NULL);
-
+    
 #pragma omp parallel for
     for (i = 0; i < nthreads; i++)
     {
@@ -125,11 +128,30 @@ main (int argc, char **argv)
     ns = CInt_getNumShells (basis);
     timepass = 0.0;
     gettimeofday (&tv1, NULL);
-    int start;
-    int end;
-    start = 0;
-    end = shellptr[ns];
-   
+
+    int slen;
+    int *idx;
+    int swap;
+    int tmpid;
+    int reallen;
+    
+    slen = shellptr[ns];
+    idx = (int *) malloc (sizeof (int) * slen);
+    assert (idx != NULL);
+    srand (1234);
+    for (i = 0; i < slen; i++)
+    {
+        idx[i] = i;
+    }
+    for (i = 0; i < slen - 1; i++)
+    {
+        swap = (int)((double)rand()/RAND_MAX * (slen - i));
+        tmpid = idx[swap];
+        idx[swap] = idx[slen - i - 1];
+        idx[slen - i - 1] = tmpid;
+    }
+    reallen = (int)(slen * fraction);
+    reallen = ((reallen == 0) ? 1 : reallen);    
     start_clock = __rdtsc(); 
 #pragma omp parallel
     {
@@ -138,6 +160,7 @@ main (int argc, char **argv)
         int N;
         int P;
         int Q;
+        int k;
         int i;
         int j;
         double *integrals;
@@ -150,8 +173,9 @@ main (int argc, char **argv)
         tid = omp_get_thread_num ();
 
 #pragma omp for schedule(dynamic)
-        for (i = start; i < end; i++)
+        for (k = 0; k < reallen; k++)
         {
+            i = idx[k];
             M = shellrid[i];
             N = shellid[i];
             value1 = shellvalue[i];
