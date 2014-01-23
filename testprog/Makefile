@@ -1,11 +1,12 @@
 include ../make.in
 
-CFLAGS = -O3 -Wall -openmp -w2
+CFLAGS = -O3 -Wall -openmp -w2 -std=gnu99
 CFLAGS += -Wunknown-pragmas -Wunused-variable -Wunused-function
 CFLAGS += ${OPTFLAGS}
 
 INC = -I./             \
-      -I../include     
+      -I../include \
+      -I../external/Yeppp/include
 
 LDFLAGS = -L./
 

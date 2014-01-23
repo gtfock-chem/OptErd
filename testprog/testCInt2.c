@@ -2,7 +2,13 @@
 #include <stdio.h>
 #include <assert.h>
 #include <stdint.h>
+#include <string.h>
+#include <unistd.h>
+#include <omp.h>
+#include <math.h>
+#include <sys/time.h>
 
+#include <yepPredefines.h>
 #include "CInt.h"
 #include "screening.h"
 
@@ -33,25 +39,84 @@ void initProfile(int nthreads)
 
 void printProfile(int nthreads, uint64_t freq)
 {
-    int i;
-    printf("tid\terd__set_ij_kl_pairs_ticks\terd__rys_roots_weights\terd__2d_coefficients\t");
-    printf("erd__2d_pq_integrals\terd__int2d_e0f0\terd__e0f0_pcgto_block\t");
-    printf("erd__xyz_to_ry_abcd\terd__hrr_matrix\terd__hrr_transform\terd__csgto\n");
-    for(i = 0; i < nthreads; i++)
-    {
-        printf("%d\t%.3lf\t%.3lf\t%.3lf\t%.3lf\t%.3lf\t%.3lf\t%.3lf\t%.3lf\t%.3lf\t%.3lf\n",
-                i,
-                ((double) erd__set_ij_kl_pairs_ticks[i]) / freq,
-                ((double) erd__rys_roots_weights_ticks[i]) / freq,
-                ((double) erd__2d_coefficients_ticks[i]) / freq,
-                ((double) erd__2d_pq_integrals_ticks[i]) / freq,
-                ((double) erd__int2d_to_e0f0_ticks[i]) / freq,
-                ((double) erd__e0f0_pcgto_block_ticks[i]) / freq,
-                ((double) erd__xyz_to_ry_abcd_ticks[i]) / freq,
-                ((double) erd__hrr_matrix_ticks[i]) / freq,
-                ((double) erd__hrr_transform_ticks[i]) / freq,
-                ((double) erd__csgto_ticks[i]) / freq);
+    double per_thread_total_secs[YEP_COUNT_OF(erd__set_ij_kl_pairs_ticks)] = { 0.0 };
+
+    printf("%22s", "erd__set_ij_kl_pairs");
+    for (int i = 0; i < nthreads; i++) {
+        printf("\t%.3lf", ((double) erd__set_ij_kl_pairs_ticks[i]) / freq);
+        per_thread_total_secs[i] += (double) erd__set_ij_kl_pairs_ticks[i] / freq;
     }
+    printf("\n");
+
+    printf("%22s", "erd__rys_roots_weights");
+    for (int i = 0; i < nthreads; i++) {
+        printf("\t%.3lf", ((double) erd__rys_roots_weights_ticks[i]) / freq);
+        per_thread_total_secs[i] += (double) erd__rys_roots_weights_ticks[i] / freq;
+    }
+    printf("\n");
+
+    printf("%22s", "erd__2d_coefficients");
+    for (int i = 0; i < nthreads; i++) {
+        printf("\t%.3lf", ((double) erd__2d_coefficients_ticks[i]) / freq);
+        per_thread_total_secs[i] += (double) erd__2d_coefficients_ticks[i] / freq;
+    }
+    printf("\n");
+
+    printf("%22s", "erd__2d_pq_integrals");
+    for (int i = 0; i < nthreads; i++) {
+        printf("\t%.3lf", ((double) erd__2d_pq_integrals_ticks[i]) / freq);
+        per_thread_total_secs[i] += (double) erd__2d_pq_integrals_ticks[i] / freq;
+    }
+    printf("\n");
+
+    printf("%22s", "erd__int2d_to_e0f0");
+    for (int i = 0; i < nthreads; i++) {
+        printf("\t%.3lf", ((double) erd__int2d_to_e0f0_ticks[i]) / freq);
+        per_thread_total_secs[i] += (double) erd__int2d_to_e0f0_ticks[i] / freq;
+    }
+    printf("\n");
+
+    printf("%22s", "erd__e0f0_pcgto");
+    for (int i = 0; i < nthreads; i++) {
+        printf("\t%.3lf", ((double) erd__e0f0_pcgto_block_ticks[i]) / freq);
+        per_thread_total_secs[i] += (double) erd__e0f0_pcgto_block_ticks[i] / freq;
+    }
+    printf("\n");
+
+    printf("%22s", "erd__xyz_to_ry_abcd");
+    for (int i = 0; i < nthreads; i++) {
+        printf("\t%.3lf", ((double) erd__xyz_to_ry_abcd_ticks[i]) / freq);
+        per_thread_total_secs[i] += (double) erd__xyz_to_ry_abcd_ticks[i] / freq;
+    }
+    printf("\n");
+
+    printf("%22s", "erd__hrr_matrix");
+    for (int i = 0; i < nthreads; i++) {
+        printf("\t%.3lf", ((double) erd__hrr_matrix_ticks[i]) / freq);
+        per_thread_total_secs[i] += (double) erd__hrr_matrix_ticks[i] / freq;
+    }
+    printf("\n");
+
+    printf("%22s", "erd__hrr_transform");
+    for (int i = 0; i < nthreads; i++) {
+        printf("\t%.3lf", ((double) erd__hrr_transform_ticks[i]) / freq);
+        per_thread_total_secs[i] += (double) erd__hrr_transform_ticks[i] / freq;
+    }
+    printf("\n");
+
+    printf("%22s", "erd__csgto");
+    for (int i = 0; i < nthreads; i++) {
+        printf("\t%.3lf", ((double) erd__csgto_ticks[i]) / freq);
+        per_thread_total_secs[i] += (double) erd__csgto_ticks[i] / freq;
+    }
+    printf("\n");
+
+    printf("%22s", "total");
+    for (int i = 0; i < nthreads; i++) {
+        printf("\t%.3lf", per_thread_total_secs[i]);
+    }
+    printf("\n");
+
 }
 
 int
