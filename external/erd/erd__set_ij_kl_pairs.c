@@ -12,6 +12,14 @@ static YEP_INLINE double pow3o4(double x) {
     return __builtin_sqrt(x * __builtin_sqrt (x));
 }
 
+static YEP_INLINE double square(double x) {
+    return x * x;
+}
+
+static YEP_INLINE double pow4(double x) {
+    return square(square(x));
+}
+
 static YEP_INLINE double vector_min(const double *YEP_RESTRICT vector, size_t length) {
     double result = vector[0];
     for (size_t i = 1; i < length; i++) {
@@ -21,6 +29,8 @@ static YEP_INLINE double vector_min(const double *YEP_RESTRICT vector, size_t le
     return result;
 }
 
+#define ERD_SCREENING_USE_BRANCH 1
+
 static YEP_NOINLINE void set_pairs(
     int npgtoa, int npgtob, double rnabsq,
     double *YEP_RESTRICT alphaa, double *YEP_RESTRICT alphab,
@@ -29,9 +39,7 @@ static YEP_NOINLINE void set_pairs(
     double *YEP_RESTRICT rho,
     double qmin, double smaxcd, double rminsq)
 {
-    YEP_ALIGN(128) double ssss1[128];
-    YEP_ALIGN(128) double ssss2[128];
-
+    const double smaxcd_scaled = smaxcd * (0x1.C5BF891B4EF6Bp-1 / TOL);
     uint32_t nij = 0;
     for (int i = 0; i < npgtoa; i += 1) {
         const double a = alphaa[i];
@@ -44,18 +52,33 @@ static YEP_NOINLINE void set_pairs(
             const double pqpinv = 1.0 / (p + qmin);
             const double rhoab = __builtin_exp(-ab * rnabsq * pinv);
             const double t = rminsq * p * qmin * pqpinv;
-            const double ssssmx = pow3o4 (ab) * rhoab * smaxcd * pinv * sqrt (pqpinv);
-            const double f0 = boys0 (t);
-            ssss1[j] = ssssmx * f0;
-            ssss2[j] = rhoab;
-        }
-        for (int j = 0; j < npgtob; j += 1) {
-            if (ssss1[j] >= TOL) {
-                rho[nij] = ssss2[j];
+#if ERD_SCREENING_USE_BRANCH
+            if YEP_UNLIKELY(t == 0.0) {
+                if (ab*ab*ab*pow4(rhoab*smaxcd*pinv) * square(pqpinv) >= pow4(TOL)) {
+                    rho[nij] = rhoab;
+                    prima[nij] = i;
+                    primb[nij] = j;
+                    nij += 1;
+                }
+            } else {
+                const double f0 = __builtin_erf(__builtin_sqrt(t));
+                if (ab*ab*ab*pow4(rhoab*smaxcd_scaled*pinv*f0) * square(pqpinv) >= square(t)) {
+                    rho[nij] = rhoab;
+                    prima[nij] = i;
+                    primb[nij] = j;
+                    nij += 1;
+                }
+            }
+#else
+            const double x = (t == 0.0) ? 0.6660643381659640821266173048051448306007716911490855934343382974343011799144670523476288209785751056 : t;
+            const double f0 = 0x1.C5BF891B4EF6Bp-1 * __builtin_erf(__builtin_sqrt(x));
+            if (ab*ab*ab*pow4(rhoab*smaxcd*pinv*f0) * square(pqpinv) >= TOL*TOL*TOL*TOL*square(x)) {
+                rho[nij] = rhoab;
                 prima[nij] = i;
                 primb[nij] = j;
                 nij += 1;
             }
+#endif
         }
     }
     *nij_ptr = nij;
