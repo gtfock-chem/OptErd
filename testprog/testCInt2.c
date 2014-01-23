@@ -103,18 +103,18 @@ void printProfile(int nthreads, uint64_t freq)
         per_thread_total_secs[i] += (double) erd__hrr_transform_ticks[i] / freq;
     }
     printf("\n");
-
+#if 0
     printf("%22s", "erd__csgto");
     for (int i = 0; i < nthreads; i++) {
         printf("\t%.3lf", ((double) erd__csgto_ticks[i]) / freq);
         per_thread_total_secs[i] += (double) erd__csgto_ticks[i] / freq;
     }
     printf("\n");
-
     printf("%22s", "total");
     for (int i = 0; i < nthreads; i++) {
         printf("\t%.3lf", per_thread_total_secs[i]);
     }
+#endif
     printf("\n");
 
 }
