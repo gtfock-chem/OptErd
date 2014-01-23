@@ -236,6 +236,7 @@ C
          INTEGER     PRIMB (1:MIJ)
          INTEGER     PRIMC (1:MKL)
          INTEGER     PRIMD (1:MKL)
+         INTEGER*8   STIME
 
          DOUBLE PRECISION  ABX,ABY,ABZ,CDX,CDY,CDZ
          DOUBLE PRECISION  EXPA,EXPB,EXPC,EXPD
@@ -613,6 +614,7 @@ C             ...calculate all roots and weights. Array B00 is passed
 C                as a scratch array.
 C
 C
+         CALL START_TIMER (STIME)
          CALL    ERD__RYS_ROOTS_WEIGHTS
      +
      +                ( MIJKL,MGQIJKL,
@@ -628,6 +630,7 @@ C
      +                           WTS )
      +
      +
+         CALL END_TIMER (2, STIME)
 C
 C
 C             ...perform the following steps:
@@ -652,7 +655,7 @@ C                arise, as this case is dealt with in separate routines.
 C
 C
          IF (.NOT.ATOMIC) THEN
-
+             CALL START_TIMER (STIME)
              CALL    ERD__2D_COEFFICIENTS
      +
      +                    ( MIJ,MKL,MIJKL,
@@ -670,6 +673,9 @@ C
      +                                D00X,D00Y,D00Z )
      +
      +
+             CALL END_TIMER (3, STIME)
+             
+             CALL START_TIMER (STIME)
              CALL    ERD__2D_PQ_INTEGRALS
      +
      +                    ( SHELLP,SHELLQ,
@@ -685,8 +691,10 @@ C
      +                                INT2DZ )
      +
      +
+             CALL END_TIMER (4, STIME)
+             
              IF (SHELLQ.EQ.0) THEN
-
+                 CALL START_TIMER (STIME)
                  CALL    ERD__INT2D_TO_E000
      +
      +                        ( SHELLA,SHELLP,
@@ -699,8 +707,9 @@ C
      +                                    BATCH )
      +
      +
+                 CALL END_TIMER (5, STIME)
              ELSE IF (SHELLP.EQ.0) THEN
-
+                 CALL START_TIMER (STIME)
                  CALL    ERD__INT2D_TO_E000
      +
      +                        ( SHELLC,SHELLQ,
@@ -713,8 +722,9 @@ C
      +                                    BATCH )
      +
      +
+                 CALL END_TIMER (5, STIME)
              ELSE
-
+                 CALL START_TIMER (STIME)
                  CALL    ERD__INT2D_TO_E0F0
      +
      +                        ( SHELLA,SHELLP,SHELLC,SHELLQ,
@@ -727,6 +737,7 @@ C
      +                                    BATCH )
      +
      +
+                 CALL END_TIMER (5, STIME)
              END IF
 
          ELSE

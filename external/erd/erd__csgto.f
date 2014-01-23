@@ -304,7 +304,9 @@ C
          DOUBLE PRECISION  ZCORE (1:ZMAX)
 
          DOUBLE PRECISION  FTABLE (0:MGRID,0:NGRID)
-
+         
+         INTEGER*8         STIME, STIME0
+         
          PARAMETER  (PREFACT = 9.027033336764101D0)
 C
 C
@@ -316,6 +318,7 @@ C                Calculate the relevant data for the A,B,C,D batch of
 C                integrals.
 C
 C
+         CALL START_TIMER (STIME0)
          LEXP1 = 1
          LEXP2 = LEXP1 + NPGTO1
          LEXP3 = LEXP2 + NPGTO2
@@ -400,7 +403,8 @@ C
          IPRIMB = IPRIMA + NPGTOAB
          IPRIMC = IPRIMB + NPGTOAB
          IPRIMD = IPRIMC + NPGTOCD
-
+         
+         CALL START_TIMER (STIME)
          CALL  ERD__SET_IJ_KL_PAIRS
      +
      +              ( NPGTOA,NPGTOB,NPGTOC,NPGTOD,
@@ -423,6 +427,7 @@ C
      +                         ZCORE (1) )
      +
      +
+         CALL END_TIMER (1, STIME)
          IF (EMPTY) THEN
              NBATCH = 0
              RETURN
@@ -469,7 +474,8 @@ C
      +
      +
          BLOCKED = (NIJBLK.LT.NIJ) .OR. (NKLBLK.LT.NKL)
-
+         
+         CALL START_TIMER (STIME)
          CALL  ERD__PREPARE_CTR
      +
      +              ( NCSIZE,
@@ -489,6 +495,7 @@ C
      +                          ZCORE (ZCBATCH) )
      +
      +
+         CALL END_TIMER (0, STIME)
          IPUSED = IPRIMD + NPGTOCD
          IPSAVE = IPUSED + MNPRIM
          IPPAIR = IPSAVE + MXPRIM
@@ -512,7 +519,7 @@ C
 
                MIJKL = MIJ * MKL
                MGQIJKL = NGQP * MIJKL
-
+               CALL START_TIMER (STIME)
                CALL  ERD__E0F0_PCGTO_BLOCK
      +
      +                    ( NPSIZE,NINT2D,
@@ -590,7 +597,7 @@ C               WRITE (*,*) ' Finished e0f0 pcgto block '
      +
      +
 C               WRITE (*,*) ' Finished 4 index ctr block '
-
+            CALL END_TIMER (6, STIME)    
  1100       CONTINUE
  1000    CONTINUE
 C
@@ -835,6 +842,7 @@ C
 
          IF (SPHERIC) THEN
              IF (MXSHELL.GT.1) THEN
+                 CALL START_TIMER (STIME)
                  CALL  ERD__XYZ_TO_RY_ABCD
      +
      +                      ( NXYZA,NXYZB,NXYZC,NXYZD,
@@ -852,6 +860,7 @@ C
      +
      +
 C                 WRITE (*,*) ' Finished xyz to ry abcd '
+                  CALL END_TIMER (7, STIME)
              ELSE
                  IUSED = 0
                  ZUSED = 0
@@ -891,7 +900,7 @@ C                   batch (ijkl[d'],e0,c') --> batch (ijkl[c'd'],e0)
 C
 C
          IF (SHELLD.NE.0) THEN
-
+             CALL START_TIMER (STIME)
              CALL  ERD__HRR_MATRIX
      +
      +                  ( NROTHRR,NCOLHRR,
@@ -909,7 +918,9 @@ C
      +
      +
 C             WRITE (*,*) ' Finished HRR f0 matrix '
-
+             CALL END_TIMER (8, STIME)
+             
+             CALL START_TIMER (STIME)
              CALL  ERD__HRR_TRANSFORM
      +
      +                  ( NCTR*NXYZET,
@@ -924,13 +935,14 @@ C             WRITE (*,*) ' Finished HRR f0 matrix '
      +
      +
 C             WRITE (*,*) ' Finished HRR f0 '
-
+             CALL END_TIMER (9, STIME)
              TEMP = IN
              IN = OUT
              OUT = TEMP
 
              IF (SHELLD.GT.1) THEN
                  IF (SPHERIC) THEN
+                     CALL START_TIMER (STIME)
                      CALL  ERD__SPHERICAL_TRANSFORM
      +
      +                          ( NCTR*NXYZET*NXYZC,
@@ -944,6 +956,7 @@ C             WRITE (*,*) ' Finished HRR f0 '
      +
      +
 C                     WRITE (*,*) ' Finished sph quart d '
+                     CALL END_TIMER (11, STIME)
                      TEMP = IN
                      IN = OUT
                      OUT = TEMP
@@ -968,7 +981,7 @@ C                     WRITE (*,*) ' Finished normalize cart d '
              NOTMOVE = IXOFF (INDEXD)
              MOVE = NBATCH / (NOTMOVE * NRYD)
              IF (MOVE.GT.1) THEN
-
+                 CALL START_TIMER (STIME)
                  CALL  ERD__MOVE_RY
      +
      +                      ( NBATCH,4,
@@ -982,6 +995,7 @@ C                     WRITE (*,*) ' Finished normalize cart d '
      +
      +
 C                 WRITE (*,*) ' Finished move ry d '
+                 CALL END_TIMER (10, STIME)
                  TEMP = IN
                  IN = OUT
                  OUT = TEMP
@@ -990,6 +1004,7 @@ C                 WRITE (*,*) ' Finished move ry d '
 
          IF (SHELLC.GT.1) THEN
              IF (SPHERIC) THEN
+                 CALL START_TIMER (STIME)
                  CALL  ERD__SPHERICAL_TRANSFORM
      +
      +                      ( NCTR*NXYZET*NRYD,
@@ -1003,6 +1018,7 @@ C                 WRITE (*,*) ' Finished move ry d '
      +
      +
 C                 WRITE (*,*) ' Finished sph quart c '
+                 CALL END_TIMER (11, STIME)
                  TEMP = IN
                  IN = OUT
                  OUT = TEMP
@@ -1026,7 +1042,7 @@ C                 WRITE (*,*) ' Finished normalize cart c '
              NOTMOVE = IXOFF (INDEXC)
              MOVE = NBATCH / (NOTMOVE * NRYC)
              IF (MOVE.GT.1) THEN
-
+                 CALL START_TIMER (STIME)
                  CALL  ERD__MOVE_RY
      +
      +                      ( NBATCH,4,
@@ -1040,6 +1056,7 @@ C                 WRITE (*,*) ' Finished normalize cart c '
      +
      +
 C                 WRITE (*,*) ' Finished move ry c '
+                 CALL END_TIMER (10, STIME)
                  TEMP = IN
                  IN = OUT
                  OUT = TEMP
@@ -1057,7 +1074,7 @@ C                   batch (ijkl[b'c'd'],a') --> batch (ijkl[a'b'c'd'])
 C
 C
          IF (SHELLB.NE.0) THEN
-
+             CALL START_TIMER (STIME)
              CALL  ERD__HRR_MATRIX
      +
      +                  ( NROTHRR,NCOLHRR,
@@ -1075,7 +1092,9 @@ C
      +
      +
 C             WRITE (*,*) ' Finished HRR e0 matrix '
-
+             CALL END_TIMER (8, STIME)
+             
+             CALL START_TIMER (STIME)
              CALL  ERD__HRR_TRANSFORM
      +
      +                  ( NCTR*NRYC*NRYD,
@@ -1090,12 +1109,14 @@ C             WRITE (*,*) ' Finished HRR e0 matrix '
      +
      +
 C             WRITE (*,*) ' Finished HRR e0 '
+             CALL END_TIMER (9, STIME)
              TEMP = IN
              IN = OUT
              OUT = TEMP
 
              IF (SHELLB.GT.1) THEN
                  IF (SPHERIC) THEN
+                     CALL START_TIMER (STIME)
                      CALL  ERD__SPHERICAL_TRANSFORM
      +
      +                          ( NCTR*NRYC*NRYD*NXYZA,
@@ -1109,6 +1130,7 @@ C             WRITE (*,*) ' Finished HRR e0 '
      +
      +
 C                     WRITE (*,*) ' Finished sph quart b '
+                     CALL END_TIMER (11, STIME)
                      TEMP = IN
                      IN = OUT
                      OUT = TEMP
@@ -1133,7 +1155,7 @@ C                     WRITE (*,*) ' Finished normalized cart b '
              NOTMOVE = IXOFF (INDEXB)
              MOVE = NBATCH / (NOTMOVE * NRYB)
              IF (MOVE.GT.1) THEN
-
+                 CALL START_TIMER (STIME)
                  CALL  ERD__MOVE_RY
      +
      +                      ( NBATCH,4,
@@ -1147,6 +1169,7 @@ C                     WRITE (*,*) ' Finished normalized cart b '
      +
      +
 C                 WRITE (*,*) ' Finished move ry b '
+                 CALL END_TIMER (10, STIME)
                  TEMP = IN
                  IN = OUT
                  OUT = TEMP
@@ -1155,6 +1178,7 @@ C                 WRITE (*,*) ' Finished move ry b '
 
          IF (SHELLA.GT.1) THEN
              IF (SPHERIC) THEN
+                 CALL START_TIMER (STIME)
                  CALL  ERD__SPHERICAL_TRANSFORM
      +
      +                      ( NCTR*NRYB*NRYC*NRYD,
@@ -1168,6 +1192,7 @@ C                 WRITE (*,*) ' Finished move ry b '
      +
      +
 C                 WRITE (*,*) ' Finished sph quart a '
+                 CALL END_TIMER (11, STIME)
                  TEMP = IN
                  IN = OUT
                  OUT = TEMP
@@ -1192,7 +1217,7 @@ C                 WRITE (*,*) ' Finished normalized cart a '
              NOTMOVE = IXOFF (INDEXA)
              MOVE = NBATCH / (NOTMOVE * NRYA)
              IF (MOVE.GT.1) THEN
-
+                 CALL START_TIMER (STIME)
                  CALL  ERD__MOVE_RY
      +
      +                      ( NBATCH,4,
@@ -1205,6 +1230,7 @@ C                 WRITE (*,*) ' Finished normalized cart a '
      +                                ZCORE (OUT) )
      +
      +
+                 CALL END_TIMER (10, STIME)
 C                 WRITE (*,*) ' Finished move ry a '
                  TEMP = IN
                  IN = OUT
@@ -1222,5 +1248,6 @@ C
 C             ...ready!
 C
 C
+         CALL END_TIMER (12, STIME0)
          RETURN
          END

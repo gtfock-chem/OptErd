@@ -119,8 +119,10 @@ int erd__1111_csgto (int zmax, int npgto1, int npgto2,
     int shellt;
     double spnorm;
     int zcbatch;
+#ifdef __ERD_PROFILE__    
     uint64_t start_clock, end_clock;
     int tid = omp_get_thread_num();
+#endif
 
     ftable_dim1 = mgrid - 0 + 1;
     ftable_offset = 0 + ftable_dim1 * 0;
@@ -198,7 +200,9 @@ int erd__1111_csgto (int zmax, int npgto1, int npgto2,
         spnorm += spnorm;
     }
 
+#ifdef __ERD_PROFILE__
     start_clock = __rdtsc();
+#endif
     erd__set_ij_kl_pairs  (npgto1, npgto2, npgto3, npgto4,
                            x1, y1, z1, x2, y2, z2,
                            x3, y3, z3, x4, y4, z4,
@@ -210,9 +214,10 @@ int erd__1111_csgto (int zmax, int npgto1, int npgto2,
                            &empty, &nij, &nkl,
                            &icore[iprim1], &icore[iprim2],
                            &icore[iprim3], &icore[iprim4], &zcore[0]);
+#ifdef __ERD_PROFILE__
     end_clock = __rdtsc();
-    erd__set_ij_kl_pairs_ticks[tid] += (end_clock - start_clock);
-
+    erd_ticks[tid][erd__set_ij_kl_pairs_ticks_1111] += (end_clock - start_clock);
+#endif
     if (empty)
     {
         *nbatch = 0;
@@ -229,7 +234,9 @@ int erd__1111_csgto (int zmax, int npgto1, int npgto2,
                           &zrho12, &zrho34,
                           &zp, &zpx, &zpy, &zpz, &zscpk2,
                           &zq, &zqx, &zqy, &zqz, &zscqk2);
-
+#ifdef __ERD_PROFILE__
+    start_clock = __rdtsc();
+#endif
     erd__prepare_ctr (nij, nkl,
                       npgto1, npgto2, npgto3, npgto4,
                       shell1, shell2, shell3, shell4,
@@ -239,6 +246,10 @@ int erd__1111_csgto (int zmax, int npgto1, int npgto2,
                       &zcore[znorm1], &zcore[znorm2],
                       &zcore[znorm3], &zcore[znorm4],
                       &zcore[zrho12], &zcore[zrho34]);
+#ifdef __ERD_PROFILE__
+    end_clock = __rdtsc();
+    erd_ticks[tid][erd__prepare_ctr_ticks_1111] += (end_clock - start_clock);
+#endif
 
 /*             ...evaluate [12|34] in blocks over ij and kl pairs */
 /*                and add to final contracted (12|34) with full */
@@ -251,6 +262,9 @@ int erd__1111_csgto (int zmax, int npgto1, int npgto2,
     }
     if (shellt == 0)
     {
+    #ifdef __ERD_PROFILE__
+        start_clock = __rdtsc();
+    #endif
         erd__ssss_pcgto_block (nij, nkl,
                                x1, y1, z1, x2, y2, z2,
                                x3, y3, z3, x4, y4, z4,
@@ -272,9 +286,16 @@ int erd__1111_csgto (int zmax, int npgto1, int npgto2,
                                &zcore[zq], &zcore[zqx],
                                &zcore[zqy], &zcore[zqz], &zcore[zscqk2],
                                &zcore[zcbatch]);
+    #ifdef __ERD_PROFILE__
+        end_clock = __rdtsc();
+        erd_ticks[tid][erd__ssss_pcgto_block_ticks] += (end_clock - start_clock);
+    #endif
     }
     else if (shellt == 1)
     {
+    #ifdef __ERD_PROFILE__
+        start_clock = __rdtsc();
+    #endif
         erd__sssp_pcgto_block (nij, nkl,
                                shell1, shell3, shellp, 
                                x1, y1, z1, x2, y2, z2,
@@ -297,9 +318,16 @@ int erd__1111_csgto (int zmax, int npgto1, int npgto2,
                                &zcore[zq], &zcore[zqx],
                                &zcore[zqy], &zcore[zqz], &zcore[zscqk2],
                                &zcore[zcbatch]);
+    #ifdef __ERD_PROFILE__
+        end_clock = __rdtsc();
+        erd_ticks[tid][erd__sssp_pcgto_block_ticks] += (end_clock - start_clock);
+    #endif
     }
     else if (shellt == 2)
     {
+    #ifdef __ERD_PROFILE__
+        start_clock = __rdtsc();
+    #endif
         erd__sspp_pcgto_block (nij, nkl,
                                shell1, shell3, shellp, 
                                x1, y1, z1, x2, y2, z2,
@@ -322,9 +350,16 @@ int erd__1111_csgto (int zmax, int npgto1, int npgto2,
                                &zcore[zq], &zcore[zqx],
                                &zcore[zqy], &zcore[zqz], &zcore[zscqk2],
                                &zcore[zcbatch]);
+    #ifdef __ERD_PROFILE__
+        end_clock = __rdtsc();
+        erd_ticks[tid][erd__sspp_pcgto_block_ticks] += (end_clock - start_clock);
+    #endif
     }
     else if (shellt == 3)
     {
+    #ifdef __ERD_PROFILE__
+        start_clock = __rdtsc();
+    #endif
         erd__sppp_pcgto_block (nij, nkl,
                                shell1, shell3, shellp, 
                                x1, y1, z1, x2, y2, z2,
@@ -347,9 +382,16 @@ int erd__1111_csgto (int zmax, int npgto1, int npgto2,
                                &zcore[zq], &zcore[zqx],
                                &zcore[zqy], &zcore[zqz], &zcore[zscqk2],
                                &zcore[zcbatch]);
+    #ifdef __ERD_PROFILE__
+        end_clock = __rdtsc();
+        erd_ticks[tid][erd__sppp_pcgto_block_ticks] += (end_clock - start_clock);
+    #endif
     }
     else
     {
+    #ifdef __ERD_PROFILE__
+        start_clock = __rdtsc();
+    #endif
         erd__pppp_pcgto_block (nij, nkl,
                                x1, y1, z1, x2, y2, z2,
                                x3, y3, z3, x4, y4, z4,
@@ -371,6 +413,10 @@ int erd__1111_csgto (int zmax, int npgto1, int npgto2,
                                &zcore[zq], &zcore[zqx],
                                &zcore[zqy], &zcore[zqz], &zcore[zscqk2],
                                &zcore[zcbatch]);
+    #ifdef __ERD_PROFILE__
+        end_clock = __rdtsc();
+        erd_ticks[tid][erd__pppp_pcgto_block_ticks] += (end_clock - start_clock);
+    #endif
     }    
 
 /*             ...expand the contraction indices (if necessary): */
@@ -417,6 +463,12 @@ int erd__1111_csgto_ (int *imax, int *zmax,
                       int * nctrow, int * screen, int * icore,
                       int * nbatch, int * nfirst, double * zcore)
 {
+#ifdef __ERD_PROFILE__
+    uint64_t start_clock, end_clock;
+    int tid = omp_get_thread_num();
+    start_clock = __rdtsc();
+#endif
+
     erd__1111_csgto (*zmax, *npgto1, *npgto2,
                      *npgto3, *npgto4,
                      *shell1, *shell2,
@@ -429,6 +481,10 @@ int erd__1111_csgto_ (int *imax, int *zmax,
                      ftable, *mgrid, *ngrid,
                      *tmax, *tstep, *tvstep, *screen,
                      icore, nbatch, nfirst, zcore);
-    
+#ifdef __ERD_PROFILE__
+    end_clock = __rdtsc();
+    erd_ticks[tid][erd__1111_csgto_ticks] += (end_clock - start_clock);  
+#endif
+
     return 0;
 }

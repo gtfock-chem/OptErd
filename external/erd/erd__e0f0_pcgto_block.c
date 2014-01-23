@@ -5,10 +5,7 @@
 #include <string.h>
 
 #include "erd.h"
-uint64_t erd__rys_roots_weights_ticks[256];
-uint64_t erd__2d_coefficients_ticks[256];
-uint64_t erd__2d_pq_integrals_ticks[256];
-uint64_t erd__int2d_to_e0f0_ticks[256];
+
 
 /* ------------------------------------------------------------------------ */
 /*  OPERATION   : ERD_E0F0_PCGTO_BLOCK */
@@ -221,8 +218,10 @@ int erd__e0f0_pcgto_block (int nij, int nkl,
     double cdy;
     double cdz;
     int mgqijkl;
+#ifdef __ERD_PROFILE__   
     uint64_t start_clock, end_clock; 
     int tid = omp_get_thread_num();
+#endif
     
 /*            ...predetermine 2D integral case. This is done in */
 /*               order to distinguish the P- and Q-shell combinations */
@@ -416,15 +415,18 @@ int erd__e0f0_pcgto_block (int nij, int nkl,
 
 /*             ...calculate all roots and weights. Array B00 is passed */
 /*                as a scratch array. */
+#ifdef __ERD_PROFILE__
     start_clock = __rdtsc();
+#endif
     erd__rys_roots_weights_ (&nijkl, &mgqijkl, &ngqp, &nmom, &tval[1], &b00[1],
                              ftable, &mgrid, &ngrid,
                              &tmax, &tstep, &tvstep, &gqscr[g000], &gqscr[g010],
                              &gqscr[g020], &gqscr[g030], &gqscr[g040],
                              &gqscr[g050], &gqscr[g060], &rts[1], &wts[1]);
+#ifdef __ERD_PROFILE__
     end_clock = __rdtsc();
-    erd__rys_roots_weights_ticks[tid] += (end_clock - start_clock);
-
+    erd_ticks[tid][erd__rys_roots_weights_ticks] += (end_clock - start_clock);
+#endif
 /*             ...perform the following steps: */
 /*                1) generate all VRR coefficients. */
 /*                2) construct all 2D PQ x,y,z integrals using all the */
@@ -440,7 +442,9 @@ int erd__e0f0_pcgto_block (int nij, int nkl,
 /*                for the special s-shell cases. Note, that the case */
 /*                in which both P- and Q-shells are s-shells cannot */
 /*                arise, as this case is dealt with in separate routines. */
+#ifdef __ERD_PROFILE__
     start_clock = __rdtsc();
+#endif
     erd__2d_coefficients (nij, nkl, ngqp, &p[1], &q[1],
                           &px[1], &py[1], &pz[1], &qx[1], &qy[1], &qz[1],
                           &pax[1], &pay[1], &paz[1], &qcx[1], &qcy[1], &qcz[1],
@@ -448,8 +452,10 @@ int erd__e0f0_pcgto_block (int nij, int nkl,
                           case2d, &b00[1], &b01[1], &b10[1],
                           &c00x[1], &c00y[1], &c00z[1],
                           &d00x[1], &d00y[1], &d00z[1]);
+#ifdef __ERD_PROFILE__
     end_clock = __rdtsc();
-    erd__2d_coefficients_ticks[tid] += (end_clock - start_clock);
+    erd_ticks[tid][erd__2d_coefficients_ticks] += (end_clock - start_clock);
+#endif
 
     int mgqijkl_aligned = ((mgqijkl + SIMD_WIDTH - 1)/SIMD_WIDTH) * SIMD_WIDTH;
     int int2d_size_aligned = mgqijkl_aligned * (shellp + 1) * (shellq + 1);
@@ -516,7 +522,9 @@ int erd__e0f0_pcgto_block (int nij, int nkl,
     memcpy(scalepq_aligned, scalepq + 1, mgqijkl*sizeof(double));
 
 
+#ifdef __ERD_PROFILE__
     start_clock = __rdtsc();
+#endif
     /*erd__2d_pq_integrals (shellp, shellq, mgqijkl, &wts[1],
                           &b00[1], &b01[1], &b10[1],
                           &c00x[1], &c00y[1], &c00z[1], &d00x[1],
@@ -529,10 +537,14 @@ int erd__e0f0_pcgto_block (int nij, int nkl,
                           d00y_aligned, d00z_aligned, case2d,
                           int2dx_aligned, int2dy_aligned, int2dz_aligned);
 
+#ifdef __ERD_PROFILE__
     end_clock = __rdtsc();
-    erd__2d_pq_integrals_ticks[tid] += (end_clock - start_clock);
+    erd_ticks[tid][erd__2d_pq_integrals_ticks] += (end_clock - start_clock);
+#endif
 
+#ifdef __ERD_PROFILE__
     start_clock = __rdtsc();
+#endif
     /*if (shellq == 0)
     {
         erd__int2d_to_e000 (shella, shellp, ngqp, nijkl, mgqijkl,
@@ -559,8 +571,10 @@ int erd__e0f0_pcgto_block (int nij, int nkl,
             mgqijkl_aligned, nxyzet, nxyzft, nxyzp, nxyzq,
             int2dx_aligned, int2dy_aligned, int2dz_aligned,
             b00_aligned, b01_aligned, scalepq_aligned, batch_aligned);
+#ifdef __ERD_PROFILE__
     end_clock = __rdtsc();
-    erd__int2d_to_e0f0_ticks[tid] += (end_clock - start_clock);
+    erd_ticks[tid][erd__int2d_to_e0f0_ticks] += (end_clock - start_clock);
+#endif
     memcpy(&batch[1], batch_aligned, nxyzet * nxyzft * sizeof(double)); 
 
     return 0;

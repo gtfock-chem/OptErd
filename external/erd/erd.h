@@ -5,17 +5,19 @@
 #include <omp.h>
 #include <yepPredefines.h>
 
+#ifdef __ERD_PROFILE__
+#include "erd_profile.h"
+#endif
 
 #define MAX(a,b)    ((a) < (b) ? (b) : (a))
 #define MIN(a,b)    ((a) > (b) ? (b) : (a))
 #define PREFACT     9.027033336764101
-#ifdef MIC
+#ifdef __MIC__
 #define SIMD_WIDTH 8
 #else
 #define SIMD_WIDTH 4
 #endif
 
-uint64_t erd__set_ij_kl_pairs_ticks[256];
 
 /*******************************************************************/
 // C functions
@@ -287,26 +289,6 @@ int erd__set_abcd (int npgto1, int npgto2, int npgto3, int npgto4,
                    int *nabcoor, int *ncdcoor,
                    int *ncolhrr, int *nrothrr,
                    int *nxyzhrr, int *empty);
-
-int erd__e0f0_def_blocks (int zmax, int npgtoa, int npgtob,
-                          int npgtoc, int npgtod,
-                          int shellp, int shellq,
-                          int nij, int nkl, int ngqp, int ngqscr,
-                          int nxyzt, int memory, int *nint2d, int *zcbatch,
-                          int *znorma, int *znormb, int *znormc,
-                          int *znormd, int *zrhoab, int *zrhocd,
-                          int *zp, int *zpx, int *zpy,
-                          int *zpz, int *zpax, int *zpay,
-                          int *zpaz, int *zpinvhf, int *zscpk2,
-                          int *zq, int *zqx, int *zqy,
-                          int *zqz, int *zqcx, int *zqcy,
-                          int *zqcz, int *zqinvhf, int *zscqk2,
-                          int *zrts, int *zwts, int *zgqscr,
-                          int *ztval, int *zpqpinv, int *zscpqk4,
-                          int *zb00, int *zb01, int *zb10,
-                          int *zc00x, int *zc00y, int *zc00z,
-                          int *zd00x, int *zd00y, int *zd00z,
-                          int *zint2dx, int *zint2dy, int *zint2dz);
                           
 int erd__memory_csgto (int npgto1, int npgto2,
                        int npgto3, int npgto4,
@@ -391,6 +373,26 @@ int erd__int2d_to_e000 (int shella, int shellp, int ngqp, int nexq, int ngqexq,
                         double *temp1, double *temp2,
                         double *scale, double *batch);
 
+int erd__e0f0_def_blocks (int zmax, int npgtoa, int npgtob,
+                          int npgtoc, int npgtod,
+                          int shellp, int shellq,
+                          int nij, int nkl, int ngqp, int ngqscr,
+                          int nxyzt, int memory, int *nint2d, int *zcbatch,
+                          int *znorma, int *znormb, int *znormc,
+                          int *znormd, int *zrhoab, int *zrhocd,
+                          int *zp, int *zpx, int *zpy,
+                          int *zpz, int *zpax, int *zpay,
+                          int *zpaz, int *zpinvhf, int *zscpk2,
+                          int *zq, int *zqx, int *zqy,
+                          int *zqz, int *zqcx, int *zqcy,
+                          int *zqcz, int *zqinvhf, int *zscqk2,
+                          int *zrts, int *zwts, int *zgqscr,
+                          int *ztval, int *zpqpinv, int *zscpqk4,
+                          int *zb00, int *zb01, int *zb10,
+                          int *zc00x, int *zc00y, int *zc00z,
+                          int *zd00x, int *zd00y, int *zd00z,
+                          int *zint2dx, int *zint2dy, int *zint2dz);
+                          
 
 /*******************************************************************/
 // Fortran functions

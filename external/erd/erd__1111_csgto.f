@@ -181,7 +181,7 @@ C
          DOUBLE PRECISION    ZCORE (1:ZMAX)
 
          DOUBLE PRECISION    FTABLE (0:MGRID,0:NGRID)
-
+         INTEGER*8         STIME, STIME0
          PARAMETER  (ZERO    = 0.D0)
          PARAMETER  (ONE     = 1.D0)
          PARAMETER  (PREFACT = 9.027033336764101D0)
@@ -194,6 +194,7 @@ C             ...decide as early as possible if a zero batch of
 C                integrals is expected.
 C
 C
+         CALL START_TIMER(STIME0)
          SHELLP = SHELL1 + SHELL2
          SHELLT = SHELLP + SHELL3 + SHELL4
 
@@ -373,7 +374,8 @@ C
          IF (SHELL4.EQ.1) THEN
              SPNORM = SPNORM + SPNORM
          END IF
-
+         
+         CALL START_TIMER (STIME)
          CALL  ERD__SET_IJ_KL_PAIRS
      +
      +              ( NPGTO1,NPGTO2,NPGTO3,NPGTO4,
@@ -396,6 +398,7 @@ C
      +                         ZCORE (1) )
      +
      +
+         CALL END_TIMER (14, STIME)
          IF (EMPTY) THEN
              NBATCH = 0
              RETURN
@@ -431,7 +434,8 @@ C
      +
      +
          BLOCKED = (NIJBLK.LT.NIJ) .OR. (NKLBLK.LT.NKL)
-
+         
+         CALL START_TIMER (STIME)
          CALL  ERD__PREPARE_CTR
      +
      +              ( NCSIZE,
@@ -451,6 +455,7 @@ C
      +                          ZCORE (ZCBATCH) )
      +
      +
+         CALL END_TIMER (13, STIME)
          IPUSED = IPRIM4 + NPGTO34
          IPSAVE = IPUSED + MNPRIM
          IPPAIR = IPSAVE + MXPRIM
@@ -475,7 +480,8 @@ C
                    MKL = NKLEND - NKLBEG + 1
                    MIJKL = MIJ * MKL
                    NPSIZE = NXYZT * MIJKL
-
+                   
+                   CALL START_TIMER (STIME)
                    CALL  ERD__SSSS_PCGTO_BLOCK
      +
      +                        ( NPSIZE,
@@ -536,6 +542,7 @@ C
      +                                    ZCORE (ZCBATCH) )
      +
      +
+                   CALL END_TIMER (15, STIME)
  1100           CONTINUE
  1000        CONTINUE
 
@@ -549,7 +556,7 @@ C
                    MKL = NKLEND - NKLBEG + 1
                    MIJKL = MIJ * MKL
                    NPSIZE = NXYZT * MIJKL
-
+                   CALL START_TIMER (STIME)
                    CALL  ERD__SSSP_PCGTO_BLOCK
      +
      +                        ( NPSIZE,
@@ -611,6 +618,7 @@ C
      +                                    ZCORE (ZCBATCH) )
      +
      +
+                   CALL END_TIMER (16, STIME)
  2200           CONTINUE
  2000        CONTINUE
 
@@ -624,7 +632,7 @@ C
                    MKL = NKLEND - NKLBEG + 1
                    MIJKL = MIJ * MKL
                    NPSIZE = NXYZT * MIJKL
-
+                   CALL START_TIMER (STIME)
                    CALL  ERD__SSPP_PCGTO_BLOCK
      +
      +                        ( NPSIZE,
@@ -686,6 +694,7 @@ C
      +                                    ZCORE (ZCBATCH) )
      +
      +
+                   CALL END_TIMER (17, STIME)
  3300           CONTINUE
  3000        CONTINUE
 
@@ -699,7 +708,7 @@ C
                    MKL = NKLEND - NKLBEG + 1
                    MIJKL = MIJ * MKL
                    NPSIZE = NXYZT * MIJKL
-
+                   CALL START_TIMER (STIME)
                    CALL  ERD__SPPP_PCGTO_BLOCK
      +
      +                        ( NPSIZE,
@@ -761,6 +770,7 @@ C
      +                                    ZCORE (ZCBATCH) )
      +
      +
+                   CALL END_TIMER (18, STIME)
  4400           CONTINUE
  4000        CONTINUE
 
@@ -774,7 +784,7 @@ C
                    MKL = NKLEND - NKLBEG + 1
                    MIJKL = MIJ * MKL
                    NPSIZE = NXYZT * MIJKL
-
+                   CALL START_TIMER (STIME)
                    CALL  ERD__PPPP_PCGTO_BLOCK
      +
      +                        ( NPSIZE,
@@ -835,6 +845,7 @@ C
      +                                    ZCORE (ZCBATCH) )
      +
      +
+                   CALL END_TIMER (19, STIME)
  5500           CONTINUE
  5000        CONTINUE
 
@@ -1033,6 +1044,7 @@ C             ...set final pointer to integrals in ZCORE array.
 C
 C
          NFIRST = IN
+         CALL END_TIMER (20, STIME0)
 C
 C
 C             ...ready!

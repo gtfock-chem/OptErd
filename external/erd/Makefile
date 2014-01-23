@@ -94,6 +94,9 @@ SRC_OPT = erd__1111_csgto.c \
 	erd__xyz_to_ry_matrix.c \
 	erd__prepare_ctr.c
 
+SRC_OPT += erd_profile.c
+SRC_REF += erd_profile.c
+
 ifeq "${arch}" "mic"
 ERDLIB_REF = liberd_ref_mic.a
 ERDLIB_OPT = liberd_opt_mic.a
@@ -112,11 +115,12 @@ FFLAGS = -O3 -fPIC -g
 FFLAGS += -reentrancy threaded -recursive
 FFLAGS += ${OPTFLAGS}
 
-CFLAGS = -O3 -fPIC -g -std=gnu99 -I../Yeppp/include
+CFLAGS = -O3 -fPIC -g -std=gnu99 -I../Yeppp/include -openmp
 CFLAGS += -Wall -w2 -Wunknown-pragmas -Wunused-variable
 CFLAGS += ${OPTFLAGS}
 
 all: ${ERDLIB_OPT} ${ERDLIB_REF}
+	cp erd_profile.h ../../include
 
 ${ERDLIB_REF}: ${OBJS_REF}
 	${AR} $@ $^

@@ -5,11 +5,6 @@
 
 #include "erd.h"
 
-uint64_t erd__e0f0_pcgto_block_ticks[256];
-uint64_t erd__csgto_ticks[256];
-uint64_t erd__xyz_to_ry_abcd_ticks[256];
-uint64_t erd__hrr_matrix_ticks[256];
-uint64_t erd__hrr_transform_ticks[256];
 
 /* ------------------------------------------------------------------------ */
 /*  OPERATION   : ERD__CSGTO */
@@ -206,9 +201,10 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
         notmove, zqinvhf, nrothrr, nrowhrr;
     int zpqpinv;
     double abx, aby, abz, cdx, cdy, cdz;
+#ifdef __ERD_PROFILE__
     uint64_t start_clock, end_clock;
     int tid = omp_get_thread_num();
-    
+#endif    
     --icore;
     --zcore;
 /*             ...fix the A,B,C,D labels from the 1,2,3,4 ones. */
@@ -295,7 +291,9 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
     iprimc = iprimb + npgtoab;
     iprimd = iprimc + npgtocd;
 
-    start_clock = __rdtsc(); 
+#ifdef __ERD_PROFILE__
+    start_clock = __rdtsc();
+#endif
     erd__set_ij_kl_pairs (npgtoa, npgtob, npgtoc, npgtod,
                           xa, ya, za, xb, yb, zb,
                           xc, yc, zc, xd, yd, zd,
@@ -307,8 +305,10 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
                           screen, &empty, &nij, &nkl,
                           &icore[iprima], &icore[iprimb], &icore[iprimc],
                           &icore[iprimd], &zcore[1]);
+#ifdef __ERD_PROFILE__
     end_clock = __rdtsc(); 
-    erd__set_ij_kl_pairs_ticks[tid] += (end_clock - start_clock);
+    erd_ticks[tid][erd__set_ij_kl_pairs_ticks] += (end_clock - start_clock);
+#endif
 
     if (empty)
     {
@@ -337,7 +337,9 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
                           &zc00x, &zc00y, &zc00z,
                           &zd00x, &zd00y, &zd00z,
                           &zint2dx, &zint2dy, &zint2dz);
-    
+#ifdef __ERD_PROFILE__
+    start_clock = __rdtsc();
+#endif    
     erd__prepare_ctr (nij, nkl,
                       npgtoa, npgtob, npgtoc, npgtod,
                       shella, shellb, shellc, shelld,
@@ -347,13 +349,18 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
                       &zcore[znorma], &zcore[znormb],
                       &zcore[znormc], &zcore[znormd],
                       &zcore[zrhoab], &zcore[zrhocd]);
-
+#ifdef __ERD_PROFILE__
+    end_clock = __rdtsc();
+    erd_ticks[tid][erd__prepare_ctr_ticks] += (end_clock - start_clock);
+#endif
 /*             ...evaluate unnormalized rescaled [e0|f0] in blocks */
 /*                over ij and kl pairs and add to final contracted */
 /*                (e0|f0). The keyword REORDER indicates, if the */
 /*                primitive [e0|f0] blocks need to be transposed */
 /*                before being contracted. */
+#ifdef __ERD_PROFILE__
     start_clock = __rdtsc();
+#endif
     erd__e0f0_pcgto_block (nij, nkl, ngqp, nmom,
                            nxyzet, nxyzft, nxyzp, nxyzq,
                            shella, shellp, shellc, shellq,
@@ -384,8 +391,10 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
                            &zcore[zd00x], &zcore[zd00y], &zcore[zd00z],
                            &zcore[zint2dx], &zcore[zint2dy], &zcore[zint2dz],
                            &zcore[zcbatch]);
+#ifdef __ERD_PROFILE__
     end_clock = __rdtsc();
-    erd__e0f0_pcgto_block_ticks[tid] += (end_clock - start_clock);
+    erd_ticks[tid][erd__e0f0_pcgto_block_ticks] += (end_clock - start_clock);
+#endif
 /*             ...the unnormalized cartesian (e0|f0) contracted batch is */
 /*                ready. Expand the contraction indices (if necessary): */
 /*                   batch (nxyzt,r>=s,t>=u) --> batch (nxyzt,r,s,t,u) */
@@ -485,7 +494,9 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
     {
         if (mxshell > 1)
         {
+        #ifdef __ERD_PROFILE__
             start_clock = __rdtsc();
+        #endif
             erd__xyz_to_ry_abcd (nxyza, nxyzb, nxyzc, nxyzd,
                                  nrya, nryb, nryc, nryd,
                                  shella, shellb, shellc, shelld,
@@ -496,8 +507,10 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
                                  &isnrowa, &isnrowb, &isnrowc, &isnrowd,
                                  &isrowa, &isrowb, &isrowc, &isrowd,
                                  &iused, &zused, &icore[1], &zcore[1]);
+        #ifdef __ERD_PROFILE__
             end_clock = __rdtsc();
-            erd__xyz_to_ry_abcd_ticks[tid] += (end_clock - start_clock);
+            erd_ticks[tid][erd__xyz_to_ry_abcd_ticks] += (end_clock - start_clock);
+        #endif
         }
         else
         {
@@ -533,24 +546,32 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
 /*                   batch (ijkl[d'],e0,c') --> batch (ijkl[c'd'],e0) */
     if (shelld != 0)
     {
+    #ifdef __ERD_PROFILE__
         start_clock = __rdtsc();
+    #endif
         erd__hrr_matrix (nrothrr, ncolhrr, nxyzft, nxyzc, nxyzq,
                          shellc, shelld, shellq,
                          ncdcoor, cdx, cdy, cdz,
                          &icore[ihscr], &pos1, &pos2, &nrowhrr,
                          &icore[ihnrow], &icore[ihrow], &zcore[zhrot]);
+    #ifdef __ERD_PROFILE__
         end_clock = __rdtsc();
-        erd__hrr_matrix_ticks[tid] += (end_clock - start_clock);
+        erd_ticks[tid][erd__hrr_matrix_ticks] += (end_clock - start_clock);
+    #endif
 
+    #ifdef __ERD_PROFILE__
         start_clock = __rdtsc();
+    #endif
         erd__hrr_transform (nxyzet, nrowhrr, nxyzc, nxyzd,
                             &icore[ihnrow + pos1 - 1],
                             &icore[ihrow + pos2 - 1],
                             &zcore[zhrot + pos2 - 1], &zcore[in],
                             &zcore[out]);
+    #ifdef __ERD_PROFILE__
         end_clock = __rdtsc();
-        erd__hrr_transform_ticks[tid] += (end_clock - start_clock);
-
+        erd_ticks[tid][erd__hrr_transform_ticks] += (end_clock - start_clock);
+    #endif
+    
         temp = in;
         in = out;
         out = temp;
@@ -558,11 +579,18 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
         {
             if (spheric)
             {
+            #ifdef __ERD_PROFILE__
+                start_clock = __rdtsc();
+            #endif
                 erd__spherical_transform (nxyzet * nxyzc,
                                           nrowd, nryd,
                                           &icore[isnrowd], &icore[isrowd],
                                           &zcore[zsrotd], &zcore[in],
                                           &zcore[out]);
+            #ifdef __ERD_PROFILE__
+                end_clock = __rdtsc();
+                erd_ticks[tid][erd__spherical_transform_ticks] += (end_clock - start_clock);
+            #endif
                 temp = in;
                 in = out;
                 out = temp;
@@ -581,8 +609,15 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
         move = *nbatch / (notmove * nryd);
         if (move > 1)
         {
+        #ifdef __ERD_PROFILE__
+            start_clock = __rdtsc();
+        #endif
             erd__move_ry (4, notmove, move, nryd, indexd - 1,
                           &zcore[in], ixoff, &zcore[out]);
+        #ifdef __ERD_PROFILE__
+            end_clock = __rdtsc();
+            erd_ticks[tid][erd__move_ry_ticks] += (end_clock - start_clock);
+        #endif
             temp = in;
             in = out;
             out = temp;
@@ -592,11 +627,18 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
     {
         if (spheric)
         {
+        #ifdef __ERD_PROFILE__
+                start_clock = __rdtsc();
+        #endif
             erd__spherical_transform (nxyzet * nryd,
                                       nrowc, nryc,
                                       &icore[isnrowc], &icore[isrowc],
                                       &zcore[zsrotc], &zcore[in],
                                       &zcore[out]);
+        #ifdef __ERD_PROFILE__
+                end_clock = __rdtsc();
+                erd_ticks[tid][erd__spherical_transform_ticks] += (end_clock - start_clock);
+        #endif
             temp = in;
             in = out;
             out = temp;
@@ -614,8 +656,15 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
         move = *nbatch / (notmove * nryc);
         if (move > 1)
         {
+        #ifdef __ERD_PROFILE__
+            start_clock = __rdtsc();
+        #endif
             erd__move_ry (4, notmove, move, nryc, indexc - 1,
                           &zcore[in], ixoff, &zcore[out]);
+        #ifdef __ERD_PROFILE__
+            end_clock = __rdtsc();
+            erd_ticks[tid][erd__move_ry_ticks] += (end_clock - start_clock);
+        #endif
             temp = in;
             in = out;
             out = temp;
@@ -630,24 +679,31 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
 /*                   batch (ijkl[b'c'd'],a') --> batch (ijkl[a'b'c'd']) */
     if (shellb != 0)
     {
+    #ifdef __ERD_PROFILE__
         start_clock = __rdtsc();
+    #endif
         erd__hrr_matrix (nrothrr, ncolhrr, nxyzet, nxyza, nxyzp,
                          shella, shellb, shellp,
                          nabcoor, abx, aby, abz,
                          &icore[ihscr], &pos1, &pos2, &nrowhrr,
                          &icore[ihnrow], &icore[ihrow], &zcore[zhrot]);
+    #ifdef __ERD_PROFILE__
         end_clock = __rdtsc();
-        erd__hrr_matrix_ticks[tid] += (end_clock - start_clock);
+        erd_ticks[tid][erd__hrr_matrix_ticks] += (end_clock - start_clock);
+    #endif
 
+    #ifdef __ERD_PROFILE__
         start_clock = __rdtsc();
+    #endif
         erd__hrr_transform (nryc * nryd, nrowhrr, nxyza, nxyzb,
                             &icore[ihnrow + pos1 - 1],
                             &icore[ihrow + pos2 - 1],
                             &zcore[zhrot + pos2 - 1], &zcore[in],
                             &zcore[out]);
+    #ifdef __ERD_PROFILE__
         end_clock = __rdtsc();
-        erd__hrr_transform_ticks[tid] += (end_clock - start_clock);
-
+        erd_ticks[tid][erd__hrr_transform_ticks] += (end_clock - start_clock);
+    #endif
         temp = in;
         in = out;
         out = temp;
@@ -655,11 +711,18 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
         {
             if (spheric)
             {
+            #ifdef __ERD_PROFILE__
+                start_clock = __rdtsc();
+            #endif
                 erd__spherical_transform (nryc * nryd * nxyza,
                                           nrowb, nryb,
                                           &icore[isnrowb], &icore[isrowb],
                                           &zcore[zsrotb], &zcore[in],
                                           &zcore[out]);
+            #ifdef __ERD_PROFILE__
+                end_clock = __rdtsc();
+                erd_ticks[tid][erd__spherical_transform_ticks] += (end_clock - start_clock);
+            #endif
                 temp = in;
                 in = out;
                 out = temp;
@@ -678,8 +741,15 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
         move = *nbatch / (notmove * nryb);
         if (move > 1)
         {
+        #ifdef __ERD_PROFILE__
+            start_clock = __rdtsc();
+        #endif
             erd__move_ry (4, notmove, move, nryb, indexb - 1,
                           &zcore[in], ixoff, &zcore[out]);
+        #ifdef __ERD_PROFILE__
+            end_clock = __rdtsc();
+            erd_ticks[tid][erd__move_ry_ticks] += (end_clock - start_clock);
+        #endif
             temp = in;
             in = out;
             out = temp;
@@ -689,11 +759,19 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
     {
         if (spheric)
         {
+        #ifdef __ERD_PROFILE__
+            start_clock = __rdtsc();
+        #endif
             erd__spherical_transform (nryb * nryc * nryd,
                                       nrowa, nrya,
                                       &icore[isnrowa], &icore[isrowa],
                                       &zcore[zsrota], &zcore[in],
                                       &zcore[out]);
+
+        #ifdef __ERD_PROFILE__
+            end_clock = __rdtsc();
+            erd_ticks[tid][erd__spherical_transform_ticks] += (end_clock - start_clock);
+        #endif
             temp = in;
             in = out;
             out = temp;
@@ -711,8 +789,15 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
         move = *nbatch / (notmove * nrya);
         if (move > 1)
         {
+        #ifdef __ERD_PROFILE__
+            start_clock = __rdtsc();
+        #endif
             erd__move_ry (4, notmove, move, nrya, indexa - 1,
                           &zcore[in], ixoff, &zcore[out]);
+        #ifdef __ERD_PROFILE__
+            end_clock = __rdtsc();
+            erd_ticks[tid][erd__move_ry_ticks] += (end_clock - start_clock);
+        #endif
             temp = in;
             in = out;
             out = temp;
@@ -744,10 +829,13 @@ int erd__csgto_ (int * imax, int * zmax, int * nalpha,
               int * spheric, int * screen, int * icore,
               int * nbatch, int * nfirst, double * zcore)
 {
+#ifdef __ERD_PROFILE__
     uint64_t start_clock, end_clock;
     int tid = omp_get_thread_num();
 
     start_clock = __rdtsc();
+#endif
+
     erd__csgto (*zmax, *npgto1, *npgto2,
                 *npgto3, *npgto4,
                 *shell1, *shell2,
@@ -761,8 +849,11 @@ int erd__csgto_ (int * imax, int * zmax, int * nalpha,
                 *tmax, *tstep, *tvstep,
                 *spheric, *screen,
                 icore, nbatch, nfirst, zcore);
+
+#ifdef __ERD_PROFILE__
     end_clock = __rdtsc();
-    erd__csgto_ticks[tid] += (end_clock - start_clock);  
-                
+    erd_ticks[tid][erd__csgto_ticks] += (end_clock - start_clock);  
+#endif
+
     return 0;
 }

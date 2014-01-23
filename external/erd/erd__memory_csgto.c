@@ -60,10 +60,9 @@ int erd__memory_csgto (int npgto1, int npgto2,
     int empty;
     int nxyza, nxyzb, nxyzc, nxyzd, nxyzt, shella, shellb, shellc,
         shelld, shellp, npgtoa, npgtob,
-        npgtoc, npgtod, shellq, ngqscr, shellt, mnprim, dummyi[49];
-    int dummyl[8];
+        npgtoc, npgtod, shellq, ngqscr, shellt, mnprim, dummyi[14];
     int mxprim;
-    double dummyr[21];
+    double dummyr[12];
     int mxsize, nxyzet, nxyzft;
     int npgtoab, npgtocd, ncolhrr, mxshell, nrothrr;
 
@@ -91,9 +90,9 @@ int erd__memory_csgto (int npgto1, int npgto2,
                    &nrya, &nryb, &nryc, &nryd,
                    &dummyi[0], &dummyi[1],
                    &dummyi[2], &dummyi[3],
-                   &dummyl[4], &dummyl[5],
-                   &dummyl[6], &dummyl[7],
-                   &dummyl[8], &dummyi[9],
+                   &dummyi[4], &dummyi[5],
+                   &dummyi[6], &dummyi[7],
+                   &dummyi[8], &dummyi[9],
                    &dummyi[10], &dummyi[11],
                    &dummyi[12], &dummyi[13],
                    &ncolhrr, &nrothrr,
@@ -138,7 +137,7 @@ int erd__memory_csgto (int npgto1, int npgto2,
     mxshell = MAX(shell1, shell2);
     mxshell = MAX(mxshell, shell3);
     mxshell = MAX(mxshell, shell4);
-    
+
     erd__e0f0_def_blocks (0, npgtoa, npgtob, npgtoc, npgtod,
                           shellp, shellq, nij, nkl,
                           ngqp, ngqscr, nxyzt,
