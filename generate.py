@@ -11,7 +11,7 @@ root_dir = os.path.dirname(__file__)
 
 erd_f90_sources = [os.path.relpath(path, root_dir) for path in glob.glob(os.path.join(root_dir, 'external', 'erd', '*.f'))]
 erd_f77_sources = [os.path.relpath(path, root_dir) for path in glob.glob(os.path.join(root_dir, 'external', 'erd', '*.F'))]
-erd_ref_sources = erd_f90_sources + erd_f77_sources
+erd_ref_sources = erd_f90_sources + erd_f77_sources + [os.path.join("external", "erd", "erd_profile.c")]
 erd_opt_sources = [os.path.join("external", "erd", filename) for filename in [
 	"erd__1111_csgto.c", "erd__1111_def_blocks.c", "erd__2d_coefficients.c", "erd__2d_pq_integrals.c", "erd__cartesian_norms.c", "erd__csgto.c",
 	"erd__ctr_4index_block.c", "erd__dsqmin_line_segments.c", "erd__e0f0_def_blocks.c", "erd__e0f0_pcgto_block.c", "erd__gener_eri_batch.f",
@@ -20,7 +20,7 @@ erd_opt_sources = [os.path.join("external", "erd", filename) for filename in [
 	"erd__pppp_pcgto_block.c", "erd__rys_1_roots_weights.f", "erd__rys_2_roots_weights.f", "erd__rys_3_roots_weights.f", "erd__rys_4_roots_weights.f",
 	"erd__rys_5_roots_weights.f", "erd__rys_roots_weights.f", "erd__rys_x_roots_weights.f", "erd__set_abcd.c", "erd__set_ij_kl_pairs.c",
 	"erd__spherical_transform.c", "erd__sppp_pcgto_block.c", "erd__sspp_pcgto_block.c", "erd__sssp_pcgto_block.c", "erd__ssss_pcgto_block.c",
-	"erd__transpose_batch.c", "erd__xyz_to_ry_abcd.c", "erd__xyz_to_ry_matrix.c", "erd__prepare_ctr.c"
+	"erd__transpose_batch.c", "erd__xyz_to_ry_abcd.c", "erd__xyz_to_ry_matrix.c", "erd__prepare_ctr.c", "erd_profile.c"
 ]] + erd_f77_sources
 erd_c_sources = filter(lambda source_file: source_file.endswith('.c'), erd_opt_sources)
 
@@ -133,7 +133,7 @@ with open('build.ninja', 'w') as makefile:
 			print('build %s : COMPILE_C testprog/testCInt.c' % object_file, file = makefile)
 			print(tab + 'DEP_FILE = %s.d' % object_file, file = makefile)
 			print(tab + 'CC = $CC_%s' % arch.upper(), file = makefile)
-			print(tab + 'CFLAGS = $CFLAGS -Iinclude -D' + {'opt': 'OPTERD_TEST_OPTIMIZED', 'ref': 'OPTERD_TEST_REFERENCE'}[variant], file = makefile)
+			print(tab + 'CFLAGS = $CFLAGS -Iexternal/erd -Iinclude -D' + {'opt': 'OPTERD_TEST_OPTIMIZED', 'ref': 'OPTERD_TEST_REFERENCE'}[variant], file = makefile)
 			print(tab + 'ARCH = %s' % arch.upper(), file = makefile)
 
 			binary_file = 'testprog/%s/Test.%s' % (arch, variant.title())
@@ -146,7 +146,7 @@ with open('build.ninja', 'w') as makefile:
 		print('build %s : COMPILE_C testprog/testCInt2.c' % object_file, file = makefile)
 		print(tab + 'DEP_FILE = testprog/%s/testCInt2.c.d' % arch, file = makefile)
 		print(tab + 'CC = $CC_%s' % arch.upper(), file = makefile)
-		print(tab + 'CFLAGS = $CFLAGS -Iinclude -openmp', file = makefile)
+		print(tab + 'CFLAGS = $CFLAGS -Iexternal/erd -Iinclude -openmp', file = makefile)
 		print(tab + 'ARCH = %s' % arch.upper(), file = makefile)
 
 		binary_file = 'testprog/%s/Test.Perf' % arch
