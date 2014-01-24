@@ -39,7 +39,7 @@ with open('build.ninja', 'w') as makefile:
 	print('CC_NHM = icc -m64 -xSSE4.2', file = makefile)
 	print('CC_SNB = icc -m64 -xAVX', file = makefile)
 	print('CC_MIC = icc -mmic', file = makefile)
-	print('CFLAGS = -O3 -g -std=gnu99 -Iexternal/Yeppp/include -w -Wunknown-pragmas -Wno-unused-variable', file = makefile)
+	print('CFLAGS = -O3 -g -std=gnu99 -D__ERD_PROFILE__ -Iexternal/Yeppp/include -w -Wunknown-pragmas -Wno-unused-variable', file = makefile)
 	print('LDFLAGS = -static-intel -lifcore -openmp', file = makefile)
 	print('AR = xiar', file = makefile)
 
