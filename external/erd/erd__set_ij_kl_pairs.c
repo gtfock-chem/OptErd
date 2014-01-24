@@ -9,7 +9,7 @@
 #define TOL 1e-14
 
 static YEP_INLINE double pow3o4(double x) {
-    return __builtin_sqrt(x * __builtin_sqrt (x));
+    return __builtin_sqrt(x * __builtin_sqrt(x));
 }
 
 static YEP_INLINE double square(double x) {
@@ -28,8 +28,6 @@ static YEP_INLINE double vector_min(const double *YEP_RESTRICT vector, size_t le
     }
     return result;
 }
-
-#define ERD_SCREENING_USE_BRANCH 1
 
 static YEP_NOINLINE void set_pairs(
     int npgtoa, int npgtob, double rnabsq,
@@ -52,33 +50,27 @@ static YEP_NOINLINE void set_pairs(
             const double pqpinv = 1.0 / (p + qmin);
             const double rhoab = __builtin_exp(-ab * rnabsq * pinv);
             const double t = rminsq * p * qmin * pqpinv;
-#if ERD_SCREENING_USE_BRANCH
-            if YEP_UNLIKELY(t == 0.0) {
-                if (ab*ab*ab*pow4(rhoab*smaxcd*pinv) * square(pqpinv) >= pow4(TOL)) {
-                    rho[nij] = rhoab;
-                    prima[nij] = i;
-                    primb[nij] = j;
-                    nij += 1;
-                }
-            } else {
-                const double f0 = __builtin_erf(__builtin_sqrt(t));
-                if (ab*ab*ab*pow4(rhoab*smaxcd_scaled*pinv*f0) * square(pqpinv) >= square(t)) {
-                    rho[nij] = rhoab;
-                    prima[nij] = i;
-                    primb[nij] = j;
-                    nij += 1;
-                }
-            }
-#else
-            const double x = (t == 0.0) ? 0.6660643381659640821266173048051448306007716911490855934343382974343011799144670523476288209785751056 : t;
-            const double f0 = 0x1.C5BF891B4EF6Bp-1 * __builtin_erf(__builtin_sqrt(x));
-            if (ab*ab*ab*pow4(rhoab*smaxcd*pinv*f0) * square(pqpinv) >= TOL*TOL*TOL*TOL*square(x)) {
+
+            /* pi/4 * f0(x) == x */
+            const double x = (t == 0.0) ? 0.043279823828983313427 : t;
+            /* approximates square(erf(sqrt(x))) on [0, 5] */
+            const double f0 = 0.00407565479675641252609948418213623998912072458154598242200929737220744709843048711660458
+                + x * (1.20764773784216992679627679198009535561546045160994177718758068495792765807646134349002377
+                    + x * (-0.668856165551048279761732866991215362420284709052392489348530890378707598253294818725157054
+                        + x * (0.198795058149610610004637933292818184140451276354350294406659821950295705343602350343494287
+                            + x * (-0.0302279795858857468323941559145865292550787118904121714353356215879652816000677315137445060
+                                + x * 0.00183088802814224943984687247959824735309951766250626784494885964622113988142120217488811367
+                            )
+                        )
+                    )
+                );
+            const double f0_bounded = f0 < 1.0 ? f0 : 1.0;
+            if (ab*ab*ab*pow4(rhoab*smaxcd_scaled*pinv) * square(f0_bounded * pqpinv) >= square(x)) {
                 rho[nij] = rhoab;
                 prima[nij] = i;
                 primb[nij] = j;
                 nij += 1;
             }
-#endif
         }
     }
     *nij_ptr = nij;
