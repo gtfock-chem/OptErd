@@ -15,12 +15,12 @@ erd_ref_sources = erd_f90_sources + erd_f77_sources + [os.path.join("external", 
 erd_opt_sources = [os.path.join("external", "erd", filename) for filename in [
 	"erd__1111_csgto.c", "erd__1111_def_blocks.c", "erd__2d_coefficients.c", "erd__2d_pq_integrals.c", "erd__cartesian_norms.c", "erd__csgto.c",
 	"erd__ctr_4index_block.c", "erd__dsqmin_line_segments.c", "erd__e0f0_def_blocks.c", "erd__e0f0_pcgto_block.c", "erd__gener_eri_batch.f",
-	"erd__hrr_matrix.c", "erd__hrr_step.c", "erd__hrr_transform.c", "erd__int2d_to_e000.c", "erd__int2d_to_e0f0.c", "erd__map_ijkl_to_ikjl.c",
+	"erd__hrr_matrix.c", "erd__hrr_step.c", "erd__hrr_transform.c", "erd__int2d_to_e000.c", "erd__int2d_to_e0f0.c",
 	"erd__memory_1111_csgto.c", "erd__memory_csgto.c", "erd__memory_eri_batch.c", "erd__move_ry.c", "erd__normalize_cartesian.c",
 	"erd__pppp_pcgto_block.c", "erd__rys_1_roots_weights.f", "erd__rys_2_roots_weights.f", "erd__rys_3_roots_weights.f", "erd__rys_4_roots_weights.f",
 	"erd__rys_5_roots_weights.f", "erd__rys_roots_weights.f", "erd__rys_x_roots_weights.f", "erd__set_abcd.c", "erd__set_ij_kl_pairs.c",
 	"erd__spherical_transform.c", "erd__sppp_pcgto_block.c", "erd__sspp_pcgto_block.c", "erd__sssp_pcgto_block.c", "erd__ssss_pcgto_block.c",
-	"erd__transpose_batch.c", "erd__xyz_to_ry_abcd.c", "erd__xyz_to_ry_matrix.c", "erd__prepare_ctr.c", "erd_profile.c"
+	"erd__xyz_to_ry_abcd.c", "erd__xyz_to_ry_matrix.c", "erd__prepare_ctr.c", "erd_profile.c"
 ]] + erd_f77_sources
 erd_c_sources = filter(lambda source_file: source_file.endswith('.c'), erd_opt_sources)
 
