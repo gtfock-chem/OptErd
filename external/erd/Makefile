@@ -68,7 +68,6 @@ SRC_OPT = erd__1111_csgto.c \
 	erd__hrr_transform.c \
 	erd__int2d_to_e000.c \
 	erd__int2d_to_e0f0.c \
-	erd__map_ijkl_to_ikjl.c \
 	erd__memory_1111_csgto.c \
 	erd__memory_csgto.c \
 	erd__memory_eri_batch.c \
@@ -89,7 +88,6 @@ SRC_OPT = erd__1111_csgto.c \
 	erd__sspp_pcgto_block.c \
 	erd__sssp_pcgto_block.c \
 	erd__ssss_pcgto_block.c \
-	erd__transpose_batch.c \
 	erd__xyz_to_ry_abcd.c \
 	erd__xyz_to_ry_matrix.c \
 	erd__prepare_ctr.c
@@ -118,6 +116,10 @@ FFLAGS += ${OPTFLAGS}
 CFLAGS = -O3 -std=gnu99 -I../Yeppp/include -openmp
 CFLAGS += -Wall -w2 -Wunknown-pragmas -Wunused-variable
 CFLAGS += ${OPTFLAGS}
+
+ifeq "${arch}" "mic"
+CFLAGS += -no-opt-prefetch
+endif
 
 all: ${ERDLIB_OPT} ${ERDLIB_REF}
 	cp erd_profile.h ../../include

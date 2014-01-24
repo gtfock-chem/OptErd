@@ -46,17 +46,15 @@ int erd__set_ij_kl_pairs (int npgtoa, int npgtob, int npgtoc, int npgtod,
 int erd__map_ijkl_to_ikjl (int ni, int nj, int nk, int nl,
                            double *x, double *y);
 
-int erd__prepare_ctr (int nij, int nkl,
-                      int npgtoa, int npgtob,
+int erd__prepare_ctr (int npgtoa, int npgtob,
                       int npgtoc, int npgtod,
                       int shella, int shellb,
                       int shellc, int shelld,
                       double *alphaa, double *alphab,
                       double *alphac, double *alphad,
-                      double spnorm, double *rho,
+                      double spnorm,
                       double *norma, double *normb,
-                      double *normc, double *normd,
-                      double *rhoab, double *rhocd);
+                      double *normc, double *normd);
 
 int erd__ctr_1st_half (int n, int mij, double *ccr, double *ccs,
                        int *primr, int *prims,

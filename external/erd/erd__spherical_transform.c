@@ -65,16 +65,16 @@ int erd__spherical_transform (int m, int nrow, int nry,
 
         for (n = 0; n < m; ++n)
         {
-            y[n + r * m] = 0.0;
+            y[r * m + n] = 0.0;
         }
         
         for (i = 0; i < mrow; ++i)
         {
-            xcol1 = row[i + r * nrow] - 1;
-            rot1 = rot[i + r * nrow];
+            xcol1 = row[r * nrow + i] - 1;
+            rot1 = rot[r * nrow + i];
             for (n = 0; n < m; ++n)
             {
-                y[n + r * m] += rot1 * x[n + xcol1 * m];
+                y[r * m + n] += rot1 * x[xcol1 * m + n];
             }
         }
     }

@@ -237,15 +237,12 @@ int erd__1111_csgto (int zmax, int npgto1, int npgto2,
 #ifdef __ERD_PROFILE__
     start_clock = __rdtsc();
 #endif
-    erd__prepare_ctr (nij, nkl,
-                      npgto1, npgto2, npgto3, npgto4,
+    erd__prepare_ctr (npgto1, npgto2, npgto3, npgto4,
                       shell1, shell2, shell3, shell4,
                       &alpha[lexp1], &alpha[lexp2],
                       &alpha[lexp3], &alpha[lexp4],
-                      spnorm, &zcore[0],
-                      &zcore[znorm1], &zcore[znorm2],
-                      &zcore[znorm3], &zcore[znorm4],
-                      &zcore[zrho12], &zcore[zrho34]);
+                      spnorm, &zcore[znorm1], &zcore[znorm2],
+                      &zcore[znorm3], &zcore[znorm4]);
 #ifdef __ERD_PROFILE__
     end_clock = __rdtsc();
     erd_ticks[tid][erd__prepare_ctr_ticks_1111] += (end_clock - start_clock);

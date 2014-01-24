@@ -62,17 +62,15 @@
 /*                    CBATCH       =  contraction batch initialized */
 /*                                    to zero (if needed) */
 /* ------------------------------------------------------------------------ */
-int erd__prepare_ctr (int nij, int nkl,
-                      int npgtoa, int npgtob,
+int erd__prepare_ctr (int npgtoa, int npgtob,
                       int npgtoc, int npgtod,
                       int shella, int shellb,
                       int shellc, int shelld,
                       double *alphaa, double *alphab,
                       double *alphac, double *alphad,
-                      double spnorm, double *rho,
+                      double spnorm,
                       double *norma, double *normb,
-                      double *normc, double *normd,
-                      double *rhoab, double *rhocd)
+                      double *normc, double *normd)
 {
     int n;
     int npmin;
@@ -90,15 +88,6 @@ int erd__prepare_ctr (int nij, int nkl,
 /*                                   | RHOAB | RHOCD | */
 /*                We are always safe, if we start copying from the */
 /*                last element of RHO downwards. */
-    for (n = nkl - 1; n >= 0; n--)
-    {
-        rhocd[n] = rho[nij + n];
-    }
-    for (n = nij - 1; n >= 0; n--)
-    {
-        rhoab[n] = rho[n];
-    }
-
     // normalize a and b
     power = (double) shella *0.5 + 0.75;
     for (n = 0; n < npgtoa; n++)

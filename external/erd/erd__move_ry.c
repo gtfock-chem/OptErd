@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <mkl.h>
 
 #include "erd.h"
 
@@ -48,15 +49,33 @@ int erd__move_ry (int nindex, int notmove, int move, int nry,
                   int *ixoff, double *y)
 {
     int i;
+    int j;
+    int k;
 /*             ...check, if the move is simply a transposition */
 /*                or a more general ijkl -> ikjl move. */
     if (notmove == 1)
     {
-        erd__transpose_batch (move, nry, x, y);
+        for (j = 0; j < move; j++)
+        {
+            for (i = 0; i < nry; i++)
+            {
+                y[j * nry + i] = x[i * move + j];
+            }
+        }
     }
     else
     {
-        erd__map_ijkl_to_ikjl (notmove, move, nry, 1, x, y);
+        for (k = 0; k < nry; k++)
+        {
+            for (j = 0; j < move; j++)
+            {
+                for (i = 0; i < notmove; i++)
+                {
+                    y[j * nry * notmove + k * notmove + i] =
+                        x[k * move * notmove + j * notmove + i];
+                }
+            }
+        }
     }
 
     for (i = index; i < nindex; i++)

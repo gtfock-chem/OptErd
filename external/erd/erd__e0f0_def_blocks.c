@@ -198,14 +198,15 @@ int erd__e0f0_def_blocks (int zmax, int npgtoa, int npgtob,
         assert (zone12 + zone3 + zone4 <= zmax);
         
 /*             ...generate the memory allocation pointers. */
-        *zcbatch = 1;
+        *zrhoab = 1;
+        *zrhocd = *zrhoab + nij;        
+        *zcbatch = *zrhocd + nkl;
         *znorma = *zcbatch + ncsize;
         *znormb = *znorma + npgtoa;
         *znormc = *znormb + npgtob;
         *znormd = *znormc + npgtoc;
-        *zrhoab = *znormd + npgtod;
-        *zrhocd = *zrhoab + nij;
-        *zp = *zrhocd + nkl;
+        *zp = *znormd + npgtod;
+        
         *zpx = *zp + nij;
         *zpy = *zpx + nij;
         *zpz = *zpy + nij;

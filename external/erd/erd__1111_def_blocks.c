@@ -147,14 +147,14 @@ int erd__1111_def_blocks (int zmax, int npgto1, int npgto2,
         assert (zone12 + zone3 + zone4 <= zmax);
                      
 /*             ...generate the memory allocation pointers. */
-        *zcbatch = 0;
+        *zrho12 = 0;
+        *zrho34 = *zrho12 + nij;        
+        *zcbatch = *zrho34 + nkl;
         *znorm1 = *zcbatch + ncsize;
         *znorm2 = *znorm1 + npgto1;
         *znorm3 = *znorm2 + npgto2;
         *znorm4 = *znorm3 + npgto3;
-        *zrho12 = *znorm4 + npgto4;
-        *zrho34 = *zrho12 + nij;
-        *zp = *zrho34 + nkl;
+        *zp = *znorm4 + npgto4;
         *zpx = *zp + mij;
         *zpy = *zpx + mij;
         *zpz = *zpy + mij;
