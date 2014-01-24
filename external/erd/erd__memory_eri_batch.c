@@ -52,7 +52,7 @@ int erd__memory_eri_batch_ (int * nalpha, int * ncoeff,
                             int * zmin, int * zopt)
 {
     int maxshell;
-    
+    printf ("@@@@ OptERD @@@@\n");
     maxshell = MAX(*shell1, *shell2);
     maxshell = MAX(maxshell, *shell3);
     if (MAX(maxshell, *shell4) < 2)
