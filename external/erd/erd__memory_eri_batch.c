@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <omp.h>
 
 #include "erd.h"
 
@@ -52,7 +53,11 @@ int erd__memory_eri_batch_ (int * nalpha, int * ncoeff,
                             int * zmin, int * zopt)
 {
     int maxshell;
-    printf ("@@@@ OptERD @@@@\n");
+    int tid;
+    
+    tid = omp_get_thread_num ();
+    if (tid == 0)
+        printf ("@@@@ OptERD @@@@\n");
     maxshell = MAX(*shell1, *shell2);
     maxshell = MAX(maxshell, *shell3);
     if (MAX(maxshell, *shell4) < 2)
