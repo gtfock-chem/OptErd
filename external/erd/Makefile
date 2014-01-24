@@ -111,11 +111,11 @@ OBJS_REF := $(addsuffix .o, $(SRC_REF))
 OBJS_OPT := $(addsuffix .o, $(SRC_OPT))
 endif
 
-FFLAGS = -O3 -fPIC -g
+FFLAGS = -O3 -no-vec
 FFLAGS += -reentrancy threaded -recursive
 FFLAGS += ${OPTFLAGS}
 
-CFLAGS = -O3 -fPIC -g -std=gnu99 -I../Yeppp/include -openmp
+CFLAGS = -O3 -std=gnu99 -I../Yeppp/include -openmp
 CFLAGS += -Wall -w2 -Wunknown-pragmas -Wunused-variable
 CFLAGS += ${OPTFLAGS}
 

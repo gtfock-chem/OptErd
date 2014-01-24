@@ -6,9 +6,9 @@ FC  = /opt/intel/bin/ifort
 AR  = /opt/intel/bin/xiar rcs
 
 ifeq "${arch}" "mic"
-OPTFLAGS = -mmic -no-opt-prefetch
+OPTFLAGS = -mmic
 else
-OPTFLAGS = -xHost
+OPTFLAGS = -m64 -xHost
 endif
 
 OPTFLAGS += -D__ERD_PROFILE__
