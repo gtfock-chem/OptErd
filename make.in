@@ -10,3 +10,5 @@ OPTFLAGS = -mmic -no-opt-prefetch
 else
 OPTFLAGS = -xHost
 endif
+
+OPTFLAGS += -D__ERD_PROFILE__
