@@ -5,7 +5,6 @@
 
 
 #define MAXTHREADS     240
-#define NUM_TICKS      21
 
 
 typedef enum
@@ -28,18 +27,19 @@ typedef enum
     erd__csgto_ticks                    = 12,
 
     // 1111 case
-    erd__prepare_ctr_ticks_1111         = 13,
-    erd__set_ij_kl_pairs_ticks_1111     = 14,
-    erd__ssss_pcgto_block_ticks         = 15,
-    erd__sssp_pcgto_block_ticks         = 16,
-    erd__sspp_pcgto_block_ticks         = 17,
-    erd__sppp_pcgto_block_ticks         = 18,
-    erd__pppp_pcgto_block_ticks         = 19,
-    erd__1111_csgto_ticks               = 20
+    erd__prepare_ctr_ticks_1111         = 0,
+    erd__set_ij_kl_pairs_ticks_1111     = 1,
+    erd__ssss_pcgto_block_ticks         = 13,
+    erd__sssp_pcgto_block_ticks         = 14,
+    erd__sspp_pcgto_block_ticks         = 15,
+    erd__sppp_pcgto_block_ticks         = 16,
+    erd__pppp_pcgto_block_ticks         = 17,
+    erd__1111_csgto_ticks               = 18,
+    erd__num_ticks
 } ErdTicks_t;
 
 
-extern __declspec(align(256)) uint64_t erd_ticks[MAXTHREADS][NUM_TICKS + 8];
+extern __declspec(align(256)) uint64_t erd_ticks[MAXTHREADS][erd__num_ticks + 8];
 
 
 void erd_reset_profile (void);

@@ -8,9 +8,9 @@
 #include "erd_profile.h"
 
 
-__declspec(align(256)) uint64_t erd_ticks[MAXTHREADS][NUM_TICKS + 8];
+__declspec(align(256)) uint64_t erd_ticks[MAXTHREADS][erd__num_ticks + 8];
 
-static char ticks_name[NUM_TICKS][128] = 
+static char ticks_name[erd__num_ticks][128] = 
 {
     "erd__prepare_ctr",
     "erd__set_ij_kl_pairs",
@@ -26,8 +26,6 @@ static char ticks_name[NUM_TICKS][128] =
     "erd__spherical_transform",
     "@erd__csgto",
     
-    "erd__prepare_ctr_1111",
-    "erd__set_ij_kl_pairs_1111",
     "erd__ssss_pcgto_block",
     "erd__sssp_pcgto_block",
     "erd__sspp_pcgto_block",
@@ -48,7 +46,7 @@ void erd_reset_profile (void)
     #pragma omp parallel for
     for (i = 0; i < nthreads; i++)
     {
-        memset (erd_ticks[i], 0, sizeof(uint64_t) * NUM_TICKS);
+        memset (erd_ticks[i], 0, sizeof(uint64_t) * erd__num_ticks);
     }
 }
 
@@ -71,7 +69,7 @@ void erd_print_profile (int mode)
 
     printf ("\n");    
     printf("freq = %.3lf GHz\n", (double)freq/1e9); 
-    for (k = 0; k < NUM_TICKS; k++)
+    for (k = 0; k < erd__num_ticks; k++)
     {
         total_secs = 0.0;
         printf("%25s", ticks_name[k]);
