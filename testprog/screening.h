@@ -2,7 +2,11 @@
 #define __SCREENING_H__
 
 
-#include "CInt.h"
+#if defined(OPTERD_TEST_REFERENCE)
+#include "../legacy/include/CInt.h"
+#else
+#include "../include/CInt.h"
+#endif
 
 
 #define TOLSRC 1e-10

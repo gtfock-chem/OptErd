@@ -12,11 +12,11 @@ OEDLIB = liboed.a
 OBJS := $(addsuffix .o, $(basename $(SRC)))
 endif
 
-FFLAGS = -O3 -fPIC
+FFLAGS = -O3
 FFLAGS += -reentrancy threaded -recursive
 FFLAGS += ${OPTFLAGS}
 
-CFLAGS = -O3 -fPIC
+CFLAGS = -O3
 CFLAGS += ${OPTFLAGS}
 
 all: ${OEDLIB}
