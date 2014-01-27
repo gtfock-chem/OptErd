@@ -201,46 +201,46 @@ void erd__pppp_pcgto_block(int nij, int nkl,
             if (t <= tmax) {
                 const int tgrid = __builtin_lround(t * tvstep);
                 const double delta1 = tgrid * tstep - t;
-                const double delta2 = delta1 * .5;
-                const double delta3 = delta1 * .333333333333333;
-                const double delta4 = delta2 * .5;
-                const double delta5 = delta1 * .2;
-                const double delta6 = delta3 * .5;
-                f0 = (((((ftable[tgrid * ftable_dim1 + 6] * delta6 +
-                          ftable[tgrid * ftable_dim1 + 5]) * delta5 +
-                         ftable[tgrid * ftable_dim1 + 4]) * delta4 +
-                        ftable[tgrid * ftable_dim1 + 3]) * delta3 +
-                       ftable[tgrid * ftable_dim1 + 2]) * delta2 +
-                      ftable[tgrid * ftable_dim1 + 1]) * delta1 +
-                    ftable[tgrid * ftable_dim1];
-                f1 = (((((ftable[tgrid * ftable_dim1 + 7] * delta6 +
-                          ftable[tgrid * ftable_dim1 + 6]) * delta5 +
-                         ftable[tgrid * ftable_dim1 + 5]) * delta4 +
-                        ftable[tgrid * ftable_dim1 + 4]) * delta3 +
-                       ftable[tgrid * ftable_dim1 + 3]) * delta2 +
-                      ftable[tgrid * ftable_dim1 + 2]) * delta1 +
-                    ftable[tgrid * ftable_dim1 + 1];
-                f2 = (((((ftable[tgrid * ftable_dim1 + 8] * delta6 +
-                          ftable[tgrid * ftable_dim1 + 7]) * delta5 +
-                         ftable[tgrid * ftable_dim1 + 6]) * delta4 +
-                        ftable[tgrid * ftable_dim1 + 5]) * delta3 +
-                       ftable[tgrid * ftable_dim1 + 4]) * delta2 +
-                      ftable[tgrid * ftable_dim1 + 3]) * delta1 +
-                    ftable[tgrid * ftable_dim1 + 2];
-                f3 = (((((ftable[tgrid * ftable_dim1 + 9] * delta6 +
-                          ftable[tgrid * ftable_dim1 + 8]) * delta5 +
-                         ftable[tgrid * ftable_dim1 + 7]) * delta4 +
-                        ftable[tgrid * ftable_dim1 + 6]) * delta3 +
-                       ftable[tgrid * ftable_dim1 + 5]) * delta2 +
-                      ftable[tgrid * ftable_dim1 + 4]) * delta1 +
-                    ftable[tgrid * ftable_dim1 + 3];
-                f4 = (((((ftable[tgrid * ftable_dim1 + 10] * delta6 +
-                          ftable[tgrid * ftable_dim1 + 9]) * delta5 +
-                         ftable[tgrid * ftable_dim1 + 8]) * delta4 +
-                        ftable[tgrid * ftable_dim1 + 7]) * delta3 +
-                       ftable[tgrid * ftable_dim1 + 6]) * delta2 +
-                      ftable[tgrid * ftable_dim1 + 5]) * delta1 +
-                    ftable[tgrid * ftable_dim1 + 4];
+                const double delta2 = delta1 * 0x1.0000000000000p-1;
+                const double delta3 = delta1 * 0x1.5555555555555p-2;
+                const double delta4 = delta1 * 0x1.0000000000000p-2;
+                const double delta5 = delta1 * 0x1.999999999999Ap-3;
+                const double delta6 = delta1 * 0x1.5555555555555p-3;
+                f0 = (((((boys_table[tgrid][6] * delta6 +
+                    boys_table[tgrid][5]) * delta5 +
+                        boys_table[tgrid][4]) * delta4 +
+                            boys_table[tgrid][3]) * delta3 +
+                                boys_table[tgrid][2]) * delta2 +
+                                    boys_table[tgrid][1]) * delta1 +
+                                        boys_table[tgrid][0];
+                f1 = (((((boys_table[tgrid][7] * delta6 +
+                    boys_table[tgrid][6]) * delta5 +
+                        boys_table[tgrid][5]) * delta4 +
+                            boys_table[tgrid][4]) * delta3 +
+                                boys_table[tgrid][3]) * delta2 +
+                                    boys_table[tgrid][2]) * delta1 +
+                                        boys_table[tgrid][1];
+                f2 = (((((boys_table[tgrid][8] * delta6 +
+                    boys_table[tgrid][7]) * delta5 +
+                        boys_table[tgrid][6]) * delta4 +
+                            boys_table[tgrid][5]) * delta3 +
+                                boys_table[tgrid][4]) * delta2 +
+                                    boys_table[tgrid][3]) * delta1 +
+                                        boys_table[tgrid][2];
+                f3 = (((((boys_table[tgrid][9] * delta6 +
+                    boys_table[tgrid][8]) * delta5 +
+                        boys_table[tgrid][7]) * delta4 +
+                            boys_table[tgrid][6]) * delta3 +
+                                boys_table[tgrid][5]) * delta2 +
+                                    boys_table[tgrid][4]) * delta1 +
+                                        boys_table[tgrid][3];
+                f4 = (((((boys_table[tgrid][10] * delta6 +
+                    boys_table[tgrid][9]) * delta5 +
+                        boys_table[tgrid][8]) * delta4 +
+                            boys_table[tgrid][7]) * delta3 +
+                                boys_table[tgrid][6]) * delta2 +
+                                    boys_table[tgrid][5]) * delta1 +
+                                        boys_table[tgrid][4];
                 f0 = scale * f0;
                 f1 = scale * f1;
                 f2 = scale * f2;

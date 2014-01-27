@@ -184,15 +184,13 @@ void erd__ssss_pcgto_block (int nij, int nkl,
             if (t <= tmax) {
                 const int tgrid = __builtin_lround(t * tvstep);
                 const double delta = tgrid * tstep - t;
-                f0 = (((((ftable[tgrid * ftable_dim1 + 6] * delta *
-                          .166666666666667 + ftable[tgrid * ftable_dim1 +
-                                                    5]) * delta * .2 +
-                         ftable[tgrid * ftable_dim1 + 4]) * delta * .25 +
-                        ftable[tgrid * ftable_dim1 +
-                               3]) * delta * .333333333333333 +
-                       ftable[tgrid * ftable_dim1 + 2]) * delta * .5 +
-                      ftable[tgrid * ftable_dim1 + 1]) * delta +
-                    ftable[tgrid * ftable_dim1];
+                f0 = (((((boys_table[tgrid][6] * delta * .166666666666667 +
+                    boys_table[tgrid][5]) * delta * .2 +
+                        boys_table[tgrid][4]) * delta * .25 +
+                            boys_table[tgrid][3]) * delta * .333333333333333 +
+                                boys_table[tgrid][2]) * delta * .5 +
+                                    boys_table[tgrid][1]) * delta +
+                                        boys_table[tgrid][0];
             } else {
                 f0 = __builtin_sqrt(M_PI / t) * .5;
             }

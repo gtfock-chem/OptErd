@@ -4,6 +4,7 @@ SRC   = erd__1111_csgto.c \
 	erd__1111_def_blocks.c \
 	erd__2d_coefficients.c \
 	erd__2d_pq_integrals.c \
+	erd__boys_table.c \
 	erd__cartesian_norms.c \
 	erd__csgto.c \
 	erd__ctr_4index_block.c \

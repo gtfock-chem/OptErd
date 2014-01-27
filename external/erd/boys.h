@@ -1,5 +1,12 @@
 #pragma once
 
+#include <stddef.h>
+
+static const size_t ngrid = 920;
+static const size_t mgrid = 10;
+
+extern double boys_table[ngrid + 1][mgrid + 1];
+
 inline double boys0(double x) {
 	const double scale = 0x1.C5BF891B4EF6Bp-1; /* sqrt(pi) / 2 */
 	const double limit = 0x1.0000000000000p+0; /* 1 */

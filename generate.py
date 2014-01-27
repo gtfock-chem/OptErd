@@ -20,7 +20,7 @@ erd_opt_sources = [os.path.join("external", "erd", filename) for filename in [
 	"erd__pppp_pcgto_block.c", "erd__rys_1_roots_weights.f", "erd__rys_2_roots_weights.f", "erd__rys_3_roots_weights.f", "erd__rys_4_roots_weights.f",
 	"erd__rys_5_roots_weights.f", "erd__rys_roots_weights.f", "erd__rys_x_roots_weights.f", "erd__set_abcd.c", "erd__set_ij_kl_pairs.c",
 	"erd__spherical_transform.c", "erd__sppp_pcgto_block.c", "erd__sspp_pcgto_block.c", "erd__sssp_pcgto_block.c", "erd__ssss_pcgto_block.c",
-	"erd__xyz_to_ry_abcd.c", "erd__xyz_to_ry_matrix.c", "erd__prepare_ctr.c", "erd_profile.c"
+	"erd__xyz_to_ry_abcd.c", "erd__xyz_to_ry_matrix.c", "erd__prepare_ctr.c", "erd__boys_table.c", "erd_profile.c"
 ]] + erd_f77_sources
 erd_c_sources = filter(lambda source_file: source_file.endswith('.c'), erd_opt_sources)
 
