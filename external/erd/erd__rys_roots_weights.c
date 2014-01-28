@@ -154,8 +154,8 @@ int erd__rys_roots_weights_ (int * nt, int * ntgqp,
         }
     }
     erd__rys_x_roots_weights_ (nt, ntgqp, ngqp, nmom, &tval[1], &ryszero[1],
-                                &a[1], &b[2], &mom[1], &dia[1], &off[1],
-                                &row1[1], &row2[1], &rts[1], &wts[1]);
+                               &a[1], &b[2], &mom[1], &dia[1], &off[1],
+                               &row1[1], &row2[1], &rts[1], &wts[1]);
 
     return 0;
 }

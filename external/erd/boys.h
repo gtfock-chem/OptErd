@@ -2,13 +2,14 @@
 
 #include <stddef.h>
 
-static const size_t ngrid = 920;
-static const size_t mgrid = 10;
+#define NGRID    920
+#define MGRID     10
+
 static const double tmax = 46.0;
 static const double tvstep = 20.0;
 static const double tstep = 0.05;
 
-extern double boys_table[ngrid + 1][mgrid + 1];
+extern double boys_table[NGRID + 1][MGRID + 1];
 
 inline double boys0(double x) {
 	const double scale = 0x1.C5BF891B4EF6Bp-1; /* sqrt(pi) / 2 */

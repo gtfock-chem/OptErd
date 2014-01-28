@@ -1,3 +1,4 @@
+alignlen = 64
 #arch = mic
 
 CC  = /opt/intel/bin/icc
@@ -7,6 +8,8 @@ AR  = /opt/intel/bin/xiar rcs
 
 ifeq "${arch}" "mic"
 OPTFLAGS = -mmic
+else ifeq "${arch}" "avx"
+OPTFLAGS = -m64 -xAVX
 else
 OPTFLAGS = -m64 -xHost
 endif

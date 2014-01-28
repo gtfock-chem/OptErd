@@ -50,6 +50,7 @@ int main (int argc, char **argv)
     if (ref_data_file == NULL)
     {
         fprintf (stderr, "ivalues.ref does not exist\n");
+        exit (0);
     }
 #endif
     int errcount; 

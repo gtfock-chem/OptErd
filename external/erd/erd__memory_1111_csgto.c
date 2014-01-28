@@ -46,8 +46,7 @@ int erd__memory_1111_csgto (int npgto1, int npgto2,
                             double x2, double y2, double z2,
                             double x3, double y3, double z3,
                             double x4, double y4, double z4,
-                            int *imin, int *iopt,
-                            int *zmin, int *zopt)
+                            int *iopt, int *zopt)
 {
     int zout2, ineed, nxyz1, nxyz2, nxyz3, nxyz4;
     int atom12, atom23;
@@ -136,9 +135,6 @@ int erd__memory_1111_csgto (int npgto1, int npgto2,
 /*                 Zone 1 and 2:  2 batches of final (12|34) size */
     zneed = 2 * nxyzt;
     *zopt = MAX(*zopt, zneed);
-
-    *zmin = *zopt;
-    *imin = *iopt;
 
     return 0;
 }

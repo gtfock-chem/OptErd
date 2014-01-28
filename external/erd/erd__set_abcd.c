@@ -137,7 +137,7 @@ int erd__set_abcd (int npgto1, int npgto2, int npgto3, int npgto4,
                    int *lcca, int *lccb, int *lccc, int *lccd,
                    int *nabcoor, int *ncdcoor,
                    int *ncolhrr, int *nrothrr,
-                   int *nxyzhrr, int *empty)
+                   int *nxyzhrr, int *empty, int *tr1234)
 {
     int add[3] = { 0, 0, 1 };
     int m, ngh, ncc1, ncc2, ncc3, nry1, nry2, nry3, nry4,
@@ -151,7 +151,6 @@ int erd__set_abcd (int npgto1, int npgto2, int npgto3, int npgto4,
     int swap34;
     int atomic;
     double abx, aby, abz, cdx, cdy, cdz;
-    int tr1234;
     int shellp;
     int shellq;
     int shellt;
@@ -242,14 +241,14 @@ int erd__set_abcd (int npgto1, int npgto2, int npgto3, int npgto4,
     if (*shellb == 0 && *shelld == 0)
     {
         *nxyzhrr = nxyze * nxyzf;
-        tr1234 = 0;
+        *tr1234 = 0;
     }
     else
     {
         nhrr1st = MAX(nxyze * nxyz3 * nxyz4, nxyz1 * nxyz2 * nry3 * nry4);
         nhrr2nd = MAX(nxyzf * nxyz1 * nxyz2, nxyz3 * nxyz4 * nry1 * nry2);
         *nxyzhrr = MIN(nhrr1st, nhrr2nd);
-        tr1234 = nhrr1st > nhrr2nd;
+        *tr1234 = nhrr1st > nhrr2nd;
     }
 
 /*             ...according to the previously gathered info, set the */
@@ -261,7 +260,7 @@ int erd__set_abcd (int npgto1, int npgto2, int npgto3, int npgto4,
     ncc1 = npgto1;
     ncc2 = npgto2;
     ncc3 = npgto3;
-    if (!tr1234)
+    if (!(*tr1234))
     {
         *nxyzet = nxyze;
         *nxyzft = nxyzf;

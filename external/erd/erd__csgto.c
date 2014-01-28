@@ -154,7 +154,10 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
                 double x2, double y2, double z2,
                 double x3, double y3, double z3,
                 double x4, double y4, double z4,
-                double *alpha, double *cc,
+                double *alpha1, double *alpha2,
+                double *alpha3, double *alpha4,
+                double *cc1, double *cc2,
+                double *cc3, double *cc4,
                 int spheric, int screen, int *icore,
                 int *nbatch, int *nfirst, double *zcore)
 {
@@ -199,6 +202,16 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
         notmove, zqinvhf, nrothrr, nrowhrr;
     int zpqpinv;
     double abx, aby, abz, cdx, cdy, cdz;
+    double *alphaa;
+    double *alphab;
+    double *alphac;
+    double *alphad;
+    double *cca;
+    double *ccb;
+    double *ccc;
+    double *ccd;
+    
+    
 #ifdef __ERD_PROFILE__
     uint64_t start_clock, end_clock;
     int tid = omp_get_thread_num();
@@ -208,6 +221,7 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
 /*             ...fix the A,B,C,D labels from the 1,2,3,4 ones. */
 /*                Calculate the relevant data for the A,B,C,D batch of */
 /*                integrals. */
+    int tr1234;
     erd__set_abcd (npgto1, npgto2, npgto3, npgto4,
                    shell1, shell2, shell3, shell4,
                    x1, y1, z1, x2, y2, z2,
@@ -223,13 +237,79 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
                    &lexpa, &lexpb, &lexpc, &lexpd,
                    &lcca, &lccb, &lccc, &lccd,
                    &nabcoor, &ncdcoor,
-                   &ncolhrr, &nrothrr, &nxyzhrr, &empty);
+                   &ncolhrr, &nrothrr, &nxyzhrr, &empty, &tr1234);
     if (empty)
     {
         *nbatch = 0;
         return 0;
     }
 
+    int swap12 = (shell1 < shell2);
+    int swap34 = (shell3 < shell4);
+    
+    if (!tr1234)
+    {
+        if (!swap12)
+        {
+            alphaa = alpha1;
+            alphab = alpha2;
+            cca = cc1;
+            ccb = cc2;
+        }
+        else
+        {
+            alphaa = alpha2;
+            alphab = alpha1;
+            cca = cc2;
+            ccb = cc1;
+        }
+        if (!swap34)
+        {
+            alphac = alpha3;
+            alphad = alpha4;
+            ccc = cc3;
+            ccd = cc4;
+        }
+        else
+        {
+            alphac = alpha4;
+            alphad = alpha3;
+            ccc = cc4;
+            ccd = cc3;
+        }
+    }
+    else
+    {
+        if (!swap12)
+        {
+            alphac = alpha1;
+            alphad = alpha2;
+            ccc = cc1;
+            ccd = cc2;
+        }
+        else
+        {
+            alphac = alpha2;
+            alphad = alpha1;
+            ccc = cc2;
+            ccd = cc1;
+        }
+        if (!swap34)
+        {
+            alphaa = alpha3;
+            alphab = alpha4;
+            cca = cc3;
+            ccb = cc4;
+        }
+        else
+        {
+            alphaa = alpha4;
+            alphab = alpha3;
+            cca = cc4;
+            ccb = cc3;
+        }
+    }
+    
     // initialize values
     abx = xa - xb;
     aby = ya - yb;
@@ -296,8 +376,8 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
                           xa, ya, za, xb, yb, zb,
                           xc, yc, zc, xd, yd, zd,
                           rnabsq, rncdsq, PREFACT,
-                          &alpha[lexpa], &alpha[lexpb],
-                          &alpha[lexpc], &alpha[lexpd],
+                          alphaa, alphab,
+                          alphac, alphad,
                           screen, &empty, &nij, &nkl,
                           &icore[iprima], &icore[iprimb], &icore[iprimc],
                           &icore[iprimd], &zcore[1]);
@@ -338,8 +418,8 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
 #endif    
     erd__prepare_ctr (npgtoa, npgtob, npgtoc, npgtod,
                       shella, shellb, shellc, shelld,
-                      &alpha[lexpa], &alpha[lexpb],
-                      &alpha[lexpc], &alpha[lexpd], spnorm,
+                      alphaa, alphab,
+                      alphac, alphad, spnorm,
                       &zcore[znorma], &zcore[znormb],
                       &zcore[znormc], &zcore[znormd]);
 #ifdef __ERD_PROFILE__
@@ -359,10 +439,8 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
                            shella, shellp, shellc, shellq,
                            xa, ya, za, xb, yb, zb,
                            xc, yc, zc, xd, yd, zd,
-                           &alpha[lexpa], &alpha[lexpb],
-                           &alpha[lexpc], &alpha[lexpd],
-                           &cc[lcca], &cc[lccb],
-                           &cc[lccc], &cc[lccd],
+                           alphaa, alphab, alphac, alphad, 
+                           cca, ccb, ccc, ccd, 
                            &icore[iprima], &icore[iprimb],
                            &icore[iprimc], &icore[iprimd],
                            &zcore[znorma], &zcore[znormb],

@@ -49,8 +49,7 @@ int erd__memory_csgto (int npgto1, int npgto2,
                        double x2, double y2, double z2,
                        double x3, double y3, double z3,
                        double x4, double y4, double z4,
-                       int spheric, int *imin, int *iopt,
-                       int *zmin, int *zopt)
+                       int spheric, int *iopt, int *zopt)
 {
     int nxyzhrr, nij, nkl;
     int ngqp, nmom, nrya, nryb, nryc,
@@ -60,7 +59,7 @@ int erd__memory_csgto (int npgto1, int npgto2,
     int empty;
     int nxyza, nxyzb, nxyzc, nxyzd, nxyzt, shella, shellb, shellc,
         shelld, shellp, npgtoa, npgtob,
-        npgtoc, npgtod, shellq, ngqscr, shellt, mnprim, dummyi[14];
+        npgtoc, npgtod, shellq, ngqscr, shellt, mnprim, dummyi[15];
     int mxprim;
     double dummyr[12];
     int mxsize, nxyzet, nxyzft;
@@ -96,7 +95,7 @@ int erd__memory_csgto (int npgto1, int npgto2,
                    &dummyi[10], &dummyi[11],
                    &dummyi[12], &dummyi[13],
                    &ncolhrr, &nrothrr,
-                   &nxyzhrr, &empty);
+                   &nxyzhrr, &empty, &dummyi[14]);
     if (empty)
     {
         return 0;
@@ -234,9 +233,6 @@ int erd__memory_csgto (int npgto1, int npgto2,
     zneed += nrothrr << 1;
     *iopt = MAX (*iopt, ineed);
     *zopt = MAX (*zopt, zneed);
-
-    *zmin = *zopt;
-    *imin = *iopt;
     
     return 0;
 }

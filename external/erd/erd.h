@@ -264,7 +264,7 @@ int erd__set_abcd (int npgto1, int npgto2, int npgto3, int npgto4,
                    int *lcca, int *lccb, int *lccc, int *lccd,
                    int *nabcoor, int *ncdcoor,
                    int *ncolhrr, int *nrothrr,
-                   int *nxyzhrr, int *empty);                        
+                   int *nxyzhrr, int *empty, int *tr1234);                    
 
 int erd__normalize_cartesian (int m, int l, double *norm, double *batch);
 
@@ -364,6 +364,26 @@ int erd__rys_roots_weights_ (int * nt, int * ntgqp,
                              double * dia, double * off,
                              double * row1, double * row2,
                              double * rts, double * wts);
+
+
+int erd__rys_1_roots_weights_ (int * nt, double * tval,
+                               double * rts, double * wts);
+
+int erd__rys_2_roots_weights_ (int * nt, int * ntgqp,
+                               double * tval, double * rts,
+                               double * wts);
+
+int erd__rys_3_roots_weights_ (int * nt, int * ntgqp,
+                               double * tval, double * rts,
+                               double * wts);
+
+int erd__rys_4_roots_weights_ (int * nt, int * ntgqp,
+                               double * tval, double * rts,
+                               double * wts);
+
+int erd__rys_5_roots_weights_ (int * nt, int * ntgqp,
+                               double * tval, double * rts,
+                               double * wts);
 
 
 #endif /* __ERD_H__ */
