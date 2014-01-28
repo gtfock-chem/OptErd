@@ -31,7 +31,7 @@ erd__rys_4_roots_weights_ (int * nt, int * ntgqp,
 {
     /* Initialized data */
 
-    static int jump4[54] =
+    int jump4[54] =
         { 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 6, 6,
         6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
             7, 7, 7, 7, 7, 7, 7, 7, 8
@@ -45,10 +45,10 @@ erd__rys_4_roots_weights_ (int * nt, int * ntgqp,
     double exp (double), sqrt (double);
 
     /* Local variables */
-    static double e;
-    static int m, n;
-    static double t, x, y, r1, r2, r3, r4, w1, w2, w3, w4;
-    static int tcase;
+    double e;
+    int m, n;
+    double t, x, y, r1, r2, r3, r4, w1, w2, w3, w4;
+    int tcase;
 
 /* ------------------------------------------------------------------------ */
 /*  OPERATION   : ERD__RYS_4_ROOTS_WEIGHTS */
