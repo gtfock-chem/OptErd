@@ -90,14 +90,9 @@ int erd__1111_csgto (int zmax, int npgto1, int npgto2,
                      double x2, double y2, double z2,
                      double x3, double y3, double z3,
                      double x4, double y4, double z4,
-                     double *alpha, double *cc,
-                     double *ftable, int mgrid, int ngrid,
-                     double tmax, double tstep, double tvstep, int screen,
+                     double *alpha, double *cc, int screen,
                      int *icore, int *nbatch, int *nfirst, double *zcore)
-{
-    int ftable_dim1;
-    int ftable_offset;
-    
+{    
     int i;
     double x12, y12, z12, x34, y34, z34;
     int zp, zq;
@@ -123,10 +118,6 @@ int erd__1111_csgto (int zmax, int npgto1, int npgto2,
     uint64_t start_clock, end_clock;
     int tid = omp_get_thread_num();
 #endif
-
-    ftable_dim1 = mgrid - 0 + 1;
-    ftable_offset = 0 + ftable_dim1 * 0;
-    ftable -= ftable_offset;
 
     shellp = shell1 + shell2;
     shellt = shellp + shell3 + shell4;
@@ -209,9 +200,7 @@ int erd__1111_csgto (int zmax, int npgto1, int npgto2,
                            rn12sq, rn34sq, PREFACT,
                            &alpha[lexp1], &alpha[lexp2],
                            &alpha[lexp3], &alpha[lexp4],
-                           &ftable[ftable_offset], mgrid, ngrid,
-                           tmax, tstep, tvstep, screen,
-                           &empty, &nij, &nkl,
+                           screen, &empty, &nij, &nkl,
                            &icore[iprim1], &icore[iprim2],
                            &icore[iprim3], &icore[iprim4], &zcore[0]);
 #ifdef __ERD_PROFILE__
@@ -269,8 +258,6 @@ int erd__1111_csgto (int zmax, int npgto1, int npgto2,
                                &alpha[lexp3], &alpha[lexp4],
                                &cc[lcc1], &cc[lcc2],
                                &cc[lcc3], &cc[lcc4],
-                               &ftable[ftable_offset], mgrid,
-                               tmax, tstep, tvstep,
                                &icore[iprim1],
                                &icore[iprim2],
                                &icore[iprim3],
@@ -300,9 +287,7 @@ int erd__1111_csgto (int zmax, int npgto1, int npgto2,
                                &alpha[lexp1], &alpha[lexp2],
                                &alpha[lexp3], &alpha[lexp4],
                                &cc[lcc1], &cc[lcc2],
-                               &cc[lcc3], &cc[lcc4],                               
-                               &ftable[ftable_offset], mgrid,
-                               tmax, tstep, tvstep,
+                               &cc[lcc3], &cc[lcc4],
                                &icore[iprim1],
                                &icore[iprim2],
                                &icore[iprim3],
@@ -333,8 +318,6 @@ int erd__1111_csgto (int zmax, int npgto1, int npgto2,
                                &alpha[lexp3], &alpha[lexp4],
                                &cc[lcc1], &cc[lcc2],
                                &cc[lcc3], &cc[lcc4],
-                               &ftable[ftable_offset], mgrid,
-                               tmax, tstep, tvstep,
                                &icore[iprim1],
                                &icore[iprim2],
                                &icore[iprim3],
@@ -364,9 +347,7 @@ int erd__1111_csgto (int zmax, int npgto1, int npgto2,
                                &alpha[lexp1], &alpha[lexp2],
                                &alpha[lexp3], &alpha[lexp4],
                                &cc[lcc1], &cc[lcc2],
-                               &cc[lcc3], &cc[lcc4], 
-                               &ftable[ftable_offset], mgrid,
-                               tmax, tstep, tvstep,
+                               &cc[lcc3], &cc[lcc4],
                                &icore[iprim1],
                                &icore[iprim2],
                                &icore[iprim3],
@@ -396,8 +377,6 @@ int erd__1111_csgto (int zmax, int npgto1, int npgto2,
                                &alpha[lexp3], &alpha[lexp4],
                                &cc[lcc1], &cc[lcc2],
                                &cc[lcc3], &cc[lcc4],
-                               &ftable[ftable_offset], mgrid,
-                               tmax, tstep, tvstep,
                                &icore[iprim1],
                                &icore[iprim2],
                                &icore[iprim3],
@@ -438,50 +417,6 @@ int erd__1111_csgto (int zmax, int npgto1, int npgto2,
 /*             ...set final pointer to integrals in ZCORE array. */
     *nbatch = nxyzt;
     *nfirst = zcbatch + 1;
-
-    return 0;
-}
-
-
-int erd__1111_csgto_ (int *imax, int *zmax,
-                      int *nalpha, int * ncoeff, int * ncsum,
-                      int * ncgto1, int * ncgto2, int * ncgto3,
-                      int * ncgto4, int * npgto1, int * npgto2,
-                      int * npgto3, int * npgto4, int * shell1,
-                      int * shell2, int * shell3, int * shell4,
-                      double * x1, double * y1, double * z1,
-                      double * x2, double * y2, double * z2,
-                      double * x3, double * y3, double * z3,
-                      double * x4, double * y4, double * z4,
-                      double * alpha, double * cc, int * ccbeg,
-                      int * ccend, double * ftable, int * mgrid,
-                      int * ngrid, double * tmax, double * tstep,
-                      double * tvstep, int * l1cache, int * tile,
-                      int * nctrow, int * screen, int * icore,
-                      int * nbatch, int * nfirst, double * zcore)
-{
-#ifdef __ERD_PROFILE__
-    uint64_t start_clock, end_clock;
-    int tid = omp_get_thread_num();
-    start_clock = __rdtsc();
-#endif
-
-    erd__1111_csgto (*zmax, *npgto1, *npgto2,
-                     *npgto3, *npgto4,
-                     *shell1, *shell2,
-                     *shell3, *shell4,
-                     *x1, *y1, *z1,
-                     *x2, *y2, *z2,
-                     *x3, *y3, *z3,
-                     *x4, *y4, *z4,
-                     alpha, cc,
-                     ftable, *mgrid, *ngrid,
-                     *tmax, *tstep, *tvstep, *screen,
-                     icore, nbatch, nfirst, zcore);
-#ifdef __ERD_PROFILE__
-    end_clock = __rdtsc();
-    erd_ticks[tid][erd__1111_csgto_ticks] += (end_clock - start_clock);  
-#endif
 
     return 0;
 }

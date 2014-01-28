@@ -180,8 +180,6 @@ int erd__e0f0_pcgto_block (int nij, int nkl,
                            double *alphac, double *alphad,
                            double *cca, double *ccb,
                            double *ccc, double *ccd,
-                           double *ftable, int mgrid, int ngrid,
-                           double tmax, double tstep, double tvstep,
                            int *prima, int *primb,
                            int *primc, int *primd,
                            double *norma, double *normb,
@@ -419,8 +417,7 @@ int erd__e0f0_pcgto_block (int nij, int nkl,
     start_clock = __rdtsc();
 #endif
     erd__rys_roots_weights_ (&nijkl, &mgqijkl, &ngqp, &nmom, &tval[1], &b00[1],
-                             ftable, &mgrid, &ngrid,
-                             &tmax, &tstep, &tvstep, &gqscr[g000], &gqscr[g010],
+                             &gqscr[g000], &gqscr[g010],
                              &gqscr[g020], &gqscr[g030], &gqscr[g040],
                              &gqscr[g050], &gqscr[g060], &rts[1], &wts[1]);
 #ifdef __ERD_PROFILE__

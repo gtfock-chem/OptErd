@@ -117,9 +117,7 @@ void erd__sppp_pcgto_block (int nij, int nkl,
                            double *YEP_RESTRICT alpha1, double *YEP_RESTRICT alpha2,
                            double *YEP_RESTRICT alpha3, double *YEP_RESTRICT alpha4,
                            double *YEP_RESTRICT cc1, double *YEP_RESTRICT cc2,
-                           double *YEP_RESTRICT cc3, double *YEP_RESTRICT cc4,                       
-                           double *YEP_RESTRICT ftable, int mgrid,
-                           double tmax, double tstep, double tvstep,
+                           double *YEP_RESTRICT cc3, double *YEP_RESTRICT cc4,
                            int *YEP_RESTRICT prim1, int *YEP_RESTRICT prim2,
                            int *YEP_RESTRICT prim3, int *YEP_RESTRICT prim4,
                            double *YEP_RESTRICT norm1, double *YEP_RESTRICT norm2,
@@ -130,7 +128,6 @@ void erd__sppp_pcgto_block (int nij, int nkl,
                            double *YEP_RESTRICT q, double *YEP_RESTRICT qx,
                            double *YEP_RESTRICT qy, double *YEP_RESTRICT qz, double *YEP_RESTRICT scaleq, double *YEP_RESTRICT cbatch)
 {
-    const int ftable_dim1 = mgrid + 1;
     const double x12 = x1 - x2;
     const double y12 = y1 - y2;
     const double z12 = z1 - z2;

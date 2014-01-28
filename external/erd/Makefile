@@ -11,7 +11,6 @@ SRC   = erd__1111_csgto.c \
 	erd__dsqmin_line_segments.c \
 	erd__e0f0_def_blocks.c \
 	erd__e0f0_pcgto_block.c \
-	erd__gener_eri_batch.f \
 	erd__hrr_matrix.c \
 	erd__hrr_step.c \
 	erd__hrr_transform.c \
@@ -19,7 +18,6 @@ SRC   = erd__1111_csgto.c \
 	erd__int2d_to_e0f0.c \
 	erd__memory_1111_csgto.c \
 	erd__memory_csgto.c \
-	erd__memory_eri_batch.c \
 	erd__move_ry.c \
 	erd__normalize_cartesian.c \
 	erd__pppp_pcgto_block.c \
@@ -28,7 +26,7 @@ SRC   = erd__1111_csgto.c \
 	erd__rys_3_roots_weights.f \
 	erd__rys_4_roots_weights.f \
 	erd__rys_5_roots_weights.f \
-	erd__rys_roots_weights.f \
+	erd__rys_roots_weights.c \
 	erd__rys_x_roots_weights.f \
 	erd__set_abcd.c \
 	erd__set_ij_kl_pairs.c \

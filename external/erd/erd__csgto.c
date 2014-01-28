@@ -155,8 +155,6 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
                 double x3, double y3, double z3,
                 double x4, double y4, double z4,
                 double *alpha, double *cc,
-                double *ftable, int mgrid, int ngrid,
-                double tmax, double tstep, double tvstep,
                 int spheric, int screen, int *icore,
                 int *nbatch, int *nfirst, double *zcore)
 {
@@ -300,8 +298,6 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
                           rnabsq, rncdsq, PREFACT,
                           &alpha[lexpa], &alpha[lexpb],
                           &alpha[lexpc], &alpha[lexpd],
-                          ftable, mgrid, ngrid,
-                          tmax, tstep, tvstep,
                           screen, &empty, &nij, &nkl,
                           &icore[iprima], &icore[iprimb], &icore[iprimc],
                           &icore[iprimd], &zcore[1]);
@@ -367,8 +363,6 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
                            &alpha[lexpc], &alpha[lexpd],
                            &cc[lcca], &cc[lccb],
                            &cc[lccc], &cc[lccd],
-                           ftable, mgrid, ngrid,
-                           tmax, tstep, tvstep,
                            &icore[iprima], &icore[iprimb],
                            &icore[iprimc], &icore[iprimd],
                            &zcore[znorma], &zcore[znormb],
@@ -804,53 +798,6 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
 
 /*             ...set final pointer to integrals in ZCORE array. */
     *nfirst = in;
-
-    return 0;
-}
-
-
-int erd__csgto_ (int * imax, int * zmax, int * nalpha,
-              int * ncoeff, int * ncsum, int * ncgto1,
-              int * ncgto2, int * ncgto3, int * ncgto4,
-              int * npgto1, int * npgto2, int * npgto3,
-              int * npgto4, int * shell1, int * shell2,
-              int * shell3, int * shell4, double * x1,
-              double * y1, double * z1, double * x2,
-              double * y2, double * z2, double * x3,
-              double * y3, double * z3, double * x4,
-              double * y4, double * z4, double * alpha,
-              double * cc, int * ccbeg, int * ccend,
-              double * ftable, int * mgrid, int * ngrid,
-              double * tmax, double * tstep, double * tvstep,
-              int * l1cache, int * tile, int * nctrow,
-              int * spheric, int * screen, int * icore,
-              int * nbatch, int * nfirst, double * zcore)
-{
-#ifdef __ERD_PROFILE__
-    uint64_t start_clock, end_clock;
-    int tid = omp_get_thread_num();
-
-    start_clock = __rdtsc();
-#endif
-
-    erd__csgto (*zmax, *npgto1, *npgto2,
-                *npgto3, *npgto4,
-                *shell1, *shell2,
-                *shell3, *shell4,
-                *x1, *y1, *z1,
-                *x2, *y2, *z2,
-                *x3, *y3, *z3,
-                *x4, *y4, *z4,
-                alpha, cc,
-                ftable, *mgrid, *ngrid,
-                *tmax, *tstep, *tvstep,
-                *spheric, *screen,
-                icore, nbatch, nfirst, zcore);
-
-#ifdef __ERD_PROFILE__
-    end_clock = __rdtsc();
-    erd_ticks[tid][erd__csgto_ticks] += (end_clock - start_clock);  
-#endif
 
     return 0;
 }
