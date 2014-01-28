@@ -21,11 +21,11 @@ SRC   = erd__1111_csgto.c \
 	erd__move_ry.c \
 	erd__normalize_cartesian.c \
 	erd__pppp_pcgto_block.c \
-	erd__rys_1_roots_weights.f \
-	erd__rys_2_roots_weights.f \
-	erd__rys_3_roots_weights.f \
-	erd__rys_4_roots_weights.f \
-	erd__rys_5_roots_weights.f \
+	erd__rys_1_roots_weights.c \
+	erd__rys_2_roots_weights.c \
+	erd__rys_3_roots_weights.c \
+	erd__rys_4_roots_weights.c \
+	erd__rys_5_roots_weights.c \
 	erd__rys_roots_weights.c \
 	erd__rys_x_roots_weights.f \
 	erd__set_abcd.c \

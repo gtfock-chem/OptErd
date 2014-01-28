@@ -10,7 +10,7 @@
 		http://www.netlib.org/f2c/libf2c.zip
 */
 
-#include "f2c.h"
+#include "erd.h"
 
 /*  Copyright (c) 2003-2010 University of Florida */
 
@@ -133,7 +133,7 @@ erd__rys_2_roots_weights_ (int * nt, int * ntgqp,
         }
 /* Computing MIN */
         d__1 = t + 1.;
-        tcase = (int) min (d__1, 41.);
+        tcase = (int) MIN (d__1, 41.);
         switch (jump2[tcase - 1])
         {
         case 1:

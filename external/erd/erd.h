@@ -2,6 +2,7 @@
 #define __ERD_H__
 
 #include <stdint.h>
+#include <math.h>
 #include <omp.h>
 #include <yepPredefines.h>
 
