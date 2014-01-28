@@ -28,7 +28,7 @@ LIBS_REF = ${LIBS_CINT_REF}
 LIBS_OPT = ${LIBS_CINT_OPT}
 LIBS_REF += ../legacy/lib/liberd_mic.a
 LIBS_OPT += ../lib/liberd_mic.a
-
+CFLAGS += -offload=none -diag-disable 161,2423
 else
 UNIT_TEST_REF_EXE = Test.Ref
 UNIT_TEST_OPT_EXE = Test.Opt

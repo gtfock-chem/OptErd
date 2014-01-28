@@ -45,7 +45,8 @@
 /*                  Output: */
 /*                    Y           =  output batch of spherical integrals */
 /* ------------------------------------------------------------------------ */
-int erd__spherical_transform (int m, int nrow, int nry,
+__attribute__((target(mic))) int erd__spherical_transform (
+			      int m, int nrow, int nry,
                               int *lrow, int *row, double *rot,
                               double *x, double *y)
 {   

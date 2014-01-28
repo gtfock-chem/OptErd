@@ -39,7 +39,7 @@
 /*                  Output: */
 /*                       NORM (I)  =  cartesian norms from I=0,1,...,L */
 /* ------------------------------------------------------------------------ */
-int erd__cartesian_norms (int l, double *norm)
+__attribute__((target(mic))) int erd__cartesian_norms (int l, double *norm)
 {
     int i;
     double odd;

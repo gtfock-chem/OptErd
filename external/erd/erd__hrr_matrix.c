@@ -51,7 +51,8 @@
 /*                The xyz-basis for the a- and b-parts in columns */
 /*                of matrix T will be ordered such that a preceeds b. */
 /* ------------------------------------------------------------------------ */
-int erd__hrr_matrix (int nrothrr, int ncolhrr,
+__attribute__((target(mic))) int erd__hrr_matrix (
+		     int nrothrr, int ncolhrr,
                      int nxyzet, int nxyza, int nxyzp,
                      int shella, int shellb, int shellp,
                      int nabcoor, double abx, double aby, double abz,

@@ -39,7 +39,8 @@
 /*                  Output: */
 /*                    BATCH       =  batch of normalized integrals */
 /* ------------------------------------------------------------------------ */
-int erd__normalize_cartesian (int m, int l,
+__attribute__((target(mic))) int erd__normalize_cartesian (
+			      int m, int l,
                               double *norm, double *batch)
 {
     int batch_offset;

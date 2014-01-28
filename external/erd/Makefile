@@ -57,9 +57,10 @@ FFLAGS += ${OPTFLAGS}
 CFLAGS = -O3 -std=gnu99 -I../Yeppp/include -openmp
 CFLAGS += -Wall -w2 -Wunknown-pragmas -Wunused-variable
 CFLAGS += ${OPTFLAGS}
+CFLAGS += -D__ERD_PROFILE__
 
 ifeq "${arch}" "mic"
-CFLAGS += -no-opt-prefetch
+CFLAGS += -no-opt-prefetch -offload=none -diag-disable 161,2423
 endif
 
 all: ${ERDLIB}

@@ -139,7 +139,7 @@
 /*                  --- Zone 4: for contraction only --- */
 /*                   ZWORK = offset for contraction working array */
 /* ------------------------------------------------------------------------ */
-int erd__e0f0_def_blocks (int zmax, int npgtoa, int npgtob,
+__attribute__((target(mic))) int erd__e0f0_def_blocks (int zmax, int npgtoa, int npgtob,
                           int npgtoc, int npgtod,
                           int shellp, int shellq,
                           int nij, int nkl, int ngqp, int ngqscr,

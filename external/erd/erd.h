@@ -23,11 +23,13 @@
 /*******************************************************************/
 // C functions
 
-int erd__move_ry (int nindex, int notmove, int move, int nry,
+__attribute__((target(mic))) int erd__move_ry (
+		  int nindex, int notmove, int move, int nry,
                   int index, double *x,
                   int *ixoff, double *y);
 
-int erd__set_ij_kl_pairs (int npgtoa, int npgtob, int npgtoc, int npgtod,
+__attribute__((target(mic))) int erd__set_ij_kl_pairs (
+			  int npgtoa, int npgtob, int npgtoc, int npgtod,
                           double xa, double ya, double za,
                           double xb, double yb, double zb,
                           double xc, double yc, double zc,
@@ -46,7 +48,8 @@ int erd__set_ij_kl_pairs (int npgtoa, int npgtob, int npgtoc, int npgtod,
 int erd__map_ijkl_to_ikjl (int ni, int nj, int nk, int nl,
                            double *x, double *y);
 
-int erd__prepare_ctr (int npgtoa, int npgtob,
+__attribute__((target(mic))) int erd__prepare_ctr (
+		      int npgtoa, int npgtob,
                       int npgtoc, int npgtod,
                       int shella, int shellb,
                       int shellc, int shelld,
@@ -193,12 +196,14 @@ int erd__ctr_4index_block (int nxyzt, int mij, int mkl,
                            int *primt, int *primu,
                            double *pbatch, double *work, double *cbatch);
 
-int erd__hrr_transform (int m, int nrow,
+__attribute__((target(mic))) int erd__hrr_transform (
+			int m, int nrow,
                         int nxyza, int nxyzb,
                         int *lrow, int *row,
                         double *rot, double *x, double *y);
 
-int erd__xyz_to_ry_abcd (int nxyza, int nxyzb, int nxyzc, int nxyzd,
+__attribute__((target(mic))) int erd__xyz_to_ry_abcd (
+			 int nxyza, int nxyzb, int nxyzc, int nxyzd,
                          int nrya, int nryb, int nryc, int nryd,
                          int shella, int shellb,
                          int shellc, int shelld,
@@ -218,11 +223,13 @@ int erd__xyz_to_ry_matrix (int nxyz, int nry,
                            double *temp, int *nrow,
                            int *row, double *tmat);
 
-int erd__spherical_transform (int m, int nrow, int nry,
+__attribute__((target(mic))) int erd__spherical_transform (
+			      int m, int nrow, int nry,
                               int *lrow, int *row, double *rot,
                               double *x, double *y);
 
-int erd__hrr_step (int nab, int nabo, int mrowin,
+__attribute__((target(mic))) int erd__hrr_step (
+		   int nab, int nabo, int mrowin,
                    int mrowout, int nxyzx, int nxyzp,
                    int nxyza, int nxyzb, int nxyzao,
                    int shellx, int shellp, int shellb,
@@ -230,7 +237,8 @@ int erd__hrr_step (int nab, int nabo, int mrowin,
                    int *cpair, int *nrowin, int *rowin, double *win,
                    int *nrowout, int *rowout, double *wout);
 
-int erd__hrr_matrix (int nrothrr, int ncolhrr,
+__attribute__((target(mic))) int erd__hrr_matrix (
+		     int nrothrr, int ncolhrr,
                      int nxyzet, int nxyza, int nxyzp,
                      int shella, int shellb, int shellp,
                      int nabcoor, double abx, double aby, double abz,
@@ -245,7 +253,8 @@ double erd__dsqmin_line_segments (double xp0, double yp0,
                                   double zq0, double xq1,
                                   double yq1, double zq1);
 
-int erd__set_abcd (int npgto1, int npgto2, int npgto3, int npgto4,
+__attribute__((target(mic))) int erd__set_abcd (
+		   int npgto1, int npgto2, int npgto3, int npgto4,
                    int shell1, int shell2, int shell3, int shell4,
                    double x1, double y1, double z1,
                    double x2, double y2, double z2, 
@@ -267,11 +276,12 @@ int erd__set_abcd (int npgto1, int npgto2, int npgto3, int npgto4,
                    int *ncolhrr, int *nrothrr,
                    int *nxyzhrr, int *empty, int *tr1234);                    
 
-int erd__normalize_cartesian (int m, int l, double *norm, double *batch);
+__attribute__((target(mic))) int erd__normalize_cartesian (int m, int l, double *norm, double *batch);
 
 int erd__cartesian_norms (int l, double *norm);
 
-int erd__e0f0_pcgto_block (int nij, int nkl,
+__attribute__((target(mic))) int erd__e0f0_pcgto_block (
+			   int nij, int nkl,
                            int ngqp, int nmom,
                            int nxyzet, int nxyzft,
                            int nxyzp, int nxyzq,
@@ -306,7 +316,8 @@ int erd__e0f0_pcgto_block (int nij, int nkl,
                            double *int2dx, double *int2dy,
                            double *int2dz, double *batch);
 
-int erd__2d_coefficients (int mij, int mkl, int ngqp,
+__attribute__((target(mic))) int erd__2d_coefficients (
+			  int mij, int mkl, int ngqp,
                           double *p, double *q,
                           double *px, double *py, double *pz,
                           double *qx, double *qy, double *qz,
@@ -318,14 +329,16 @@ int erd__2d_coefficients (int mij, int mkl, int ngqp,
                           double *c00x, double *c00y, double *c00z,
                           double *d00x, double *d00y, double *d00z);
 
-int erd__2d_pq_integrals (int shellp, int shellq, int ngqexq,
+__attribute__((target(mic))) int erd__2d_pq_integrals (
+			  int shellp, int shellq, int ngqexq,
                           double *wts, double *b00, double *b01, double *b10,
                           double *c00x, double *c00y, double *c00z,
                           double *d00x, double *d00y, double *d00z,
                           int case2d, double *int2dx,
                           double *int2dy, double *int2dz);
 
-int erd__int2d_to_e0f0 (int shella, int shellp, int shellc, int shellq,
+__attribute__((target(mic))) int erd__int2d_to_e0f0 (
+			int shella, int shellp, int shellc, int shellq,
                         int ngqexq,
                         int nxyzet, int nxyzft, int nxyzp, int nxyzq,
                         double *int2dx, double *int2dy, double *int2dz,
@@ -338,7 +351,8 @@ int erd__int2d_to_e000 (int shella, int shellp, int ngqp, int nexq, int ngqexq,
                         double *temp1, double *temp2,
                         double *scale, double *batch);
 
-int erd__e0f0_def_blocks (int zmax, int npgtoa, int npgtob,
+__attribute__((target(mic))) int erd__e0f0_def_blocks (
+			  int zmax, int npgtoa, int npgtob,
                           int npgtoc, int npgtod,
                           int shellp, int shellq,
                           int nij, int nkl, int ngqp, int ngqscr,
@@ -358,7 +372,8 @@ int erd__e0f0_def_blocks (int zmax, int npgtoa, int npgtob,
                           int *zd00x, int *zd00y, int *zd00z,
                           int *zint2dx, int *zint2dy, int *zint2dz);
                           
-int erd__rys_roots_weights_ (int * nt, int * ntgqp,
+__attribute__((target(mic))) int erd__rys_roots_weights_ (
+			     int * nt, int * ntgqp,
                              int * ngqp, int * nmom, double * tval,
                              double * ryszero,
                              double * a, double * b, double * mom,
@@ -367,22 +382,22 @@ int erd__rys_roots_weights_ (int * nt, int * ntgqp,
                              double * rts, double * wts);
 
 
-int erd__rys_1_roots_weights_ (int * nt, double * tval,
+__attribute__((target(mic))) int erd__rys_1_roots_weights_ (int * nt, double * tval,
                                double * rts, double * wts);
 
-int erd__rys_2_roots_weights_ (int * nt, int * ntgqp,
+__attribute__((target(mic))) int erd__rys_2_roots_weights_ (int * nt, int * ntgqp,
                                double * tval, double * rts,
                                double * wts);
 
-int erd__rys_3_roots_weights_ (int * nt, int * ntgqp,
+__attribute__((target(mic))) int erd__rys_3_roots_weights_ (int * nt, int * ntgqp,
                                double * tval, double * rts,
                                double * wts);
 
-int erd__rys_4_roots_weights_ (int * nt, int * ntgqp,
+__attribute__((target(mic))) int erd__rys_4_roots_weights_ (int * nt, int * ntgqp,
                                double * tval, double * rts,
                                double * wts);
 
-int erd__rys_5_roots_weights_ (int * nt, int * ntgqp,
+__attribute__((target(mic))) int erd__rys_5_roots_weights_ (int * nt, int * ntgqp,
                                double * tval, double * rts,
                                double * wts);
 

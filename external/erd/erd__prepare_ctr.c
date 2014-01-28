@@ -62,7 +62,8 @@
 /*                    CBATCH       =  contraction batch initialized */
 /*                                    to zero (if needed) */
 /* ------------------------------------------------------------------------ */
-int erd__prepare_ctr (int npgtoa, int npgtob,
+__attribute__((target(mic))) int erd__prepare_ctr (
+		      int npgtoa, int npgtob,
                       int npgtoc, int npgtod,
                       int shella, int shellb,
                       int shellc, int shelld,

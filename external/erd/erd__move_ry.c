@@ -44,7 +44,8 @@
 /*                                     after the move */
 /*                       Y          =  final set of integrals */
 /* ------------------------------------------------------------------------ */
-int erd__move_ry (int nindex, int notmove, int move, int nry,
+__attribute__((target(mic))) int erd__move_ry (
+		  int nindex, int notmove, int move, int nry,
                   int index, double *x,
                   int *ixoff, double *y)
 {

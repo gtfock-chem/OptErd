@@ -47,7 +47,8 @@
 /*                     Y          =  batch of HRR transformed integrals */
 /*                                   (m,ab) */
 /* ------------------------------------------------------------------------ */
-int erd__hrr_transform (int m, int nrow,
+__attribute__((target(mic))) int erd__hrr_transform (
+			int m, int nrow,
                         int nxyza, int nxyzb,
                         int *lrow, int *row,
                         double *rot, double *x, double *y)

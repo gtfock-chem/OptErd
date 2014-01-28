@@ -76,7 +76,7 @@ static YEP_NOINLINE void set_pairs(
     *nij_ptr = nij;
 }
 
-int erd__set_ij_kl_pairs(
+__attribute__((target(mic))) int erd__set_ij_kl_pairs(
     int npgtoa, int npgtob, int npgtoc, int npgtod,
     double xa, double ya, double za,
     double xb, double yb, double zb,

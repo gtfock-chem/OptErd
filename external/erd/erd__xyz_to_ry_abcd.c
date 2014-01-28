@@ -64,7 +64,8 @@
 /*                Only mutually different transformation matrices + */
 /*                associated data are generated. */
 /* ------------------------------------------------------------------------ */
-int erd__xyz_to_ry_abcd (int nxyza, int nxyzb, int nxyzc, int nxyzd,
+__attribute__((target(mic))) int erd__xyz_to_ry_abcd (
+			 int nxyza, int nxyzb, int nxyzc, int nxyzd,
                          int nrya, int nryb, int nryc, int nryd,
                          int shella, int shellb,
                          int shellc, int shelld,

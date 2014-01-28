@@ -117,7 +117,7 @@
 /*                                    empty batch of integrals is */
 /*                                    expected. */
 /* ------------------------------------------------------------------------ */
-int erd__set_abcd (int npgto1, int npgto2, int npgto3, int npgto4,
+__attribute__((target(mic))) int erd__set_abcd (int npgto1, int npgto2, int npgto3, int npgto4,
                    int shell1, int shell2, int shell3, int shell4,
                    double x1, double y1, double z1,
                    double x2, double y2, double z2, 

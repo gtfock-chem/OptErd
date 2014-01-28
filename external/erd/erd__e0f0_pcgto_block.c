@@ -166,7 +166,8 @@
 /*                    BATCH        =  current batch of primitive */
 /*                                    cartesian [E0|F0] integrals */
 /* ------------------------------------------------------------------------ */
-int erd__e0f0_pcgto_block (int nij, int nkl,
+__attribute__((target(mic))) int erd__e0f0_pcgto_block (
+			   int nij, int nkl,
                            int ngqp, int nmom,
                            int nxyzet, int nxyzft,
                            int nxyzp, int nxyzq,

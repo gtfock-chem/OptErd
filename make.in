@@ -13,5 +13,3 @@ OPTFLAGS = -m64 -xAVX
 else
 OPTFLAGS = -m64 -xHost
 endif
-
-OPTFLAGS += -D__ERD_PROFILE__
