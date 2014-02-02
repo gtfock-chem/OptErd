@@ -5,6 +5,8 @@
 #include "erd.h"
 
 
+#pragma offload_attribute(push, target(mic))
+
 /* ------------------------------------------------------------------------ */
 /*  OPERATION   : ERD__INT2D_TO_E000 */
 /*  MODULE      : ELECTRON REPULSION INTEGRALS DIRECT */
@@ -139,3 +141,5 @@ int erd__int2d_to_e000 (int shella, int shellp, int ngqp, int nexq, int ngqexq,
 
     return 0;
 } 
+
+#pragma offload_attribute(pop)

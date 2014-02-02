@@ -3,6 +3,9 @@
 #include <assert.h>
 #include <math.h>
 #include <sys/time.h>
+#include <string.h>
+
+#pragma offload_attribute(push, target(mic))
 
 #if defined(OPTERD_TEST_REFERENCE)
 #include "../legacy/include/CInt.h"
@@ -11,16 +14,51 @@
 #endif
 #include "screening.h"
 
+#pragma offload_attribute(pop)
+
 
 #if (defined(OPTERD_TEST_REFERENCE) + defined(OPTERD_TEST_OPTIMIZED)) != 1
 #error Either OPTERD_TEST_REFERENCE or OPTERD_TEST_OPTIMIZED must be defined
 #endif
 
 
+__attribute__((target(mic))) BasisSet_t basis;
+__attribute__((target(mic))) ERD_t erd;
+__attribute__((target(mic))) double integrals[10000];
+
+void create_data_structures_on_MIC(int num_devices)
+{
+    int i;
+    int status1 = 1, status2 = 1, status3 = 1;
+    char *buf;
+    int bufsize;
+    CInt_packBasisSet (basis, (void **)&buf, &bufsize);
+
+    for (i = 0; i < num_devices; i++)
+    {
+#pragma offload target(mic: i) in(bufsize) in(buf: length(bufsize)) nocopy(basis) inout(status1, status2)
+        {
+            basis = NULL;
+            status1 = CInt_createBasisSet (&basis);
+            if(status1 == 0)
+            {
+                status2 = CInt_unpackBasisSet (basis, buf);
+                status3 = CInt_freeInitDataBasisSet (basis);
+            }
+        }
+
+        printf("status1 = %d, status2 = %d, bufsize=%d\n", status1, status2, bufsize);
+
+#pragma offload target(mic:i) nocopy(basis, erd)
+        {
+            CInt_createERD (basis, &erd);
+        }
+    }
+    free(buf);
+}
+
 int main (int argc, char **argv)
 {
-    BasisSet_t basis;
-    ERD_t erd;
     int M;
     int N;
     int P;
@@ -29,7 +67,6 @@ int main (int argc, char **argv)
     int ns;
     int nnz;
     double totalcalls = 0;
-    double *integrals;
     int *shellptr;
     int *shellid;
     int *shellrid;
@@ -72,6 +109,24 @@ int main (int argc, char **argv)
     //printf ("max memory footprint per thread = %lf KB\n",
     //    CInt_getMaxMemory (erd)/1024.0);
     
+    // Find the number of MIC cards available
+    int num_devices = 0;   
+#ifdef __INTEL_OFFLOAD
+    num_devices = _Offload_number_of_devices();
+#endif
+
+    if(num_devices == 0)
+    {
+        printf("No target devices available. Exiting\n");
+        exit(0);
+    }
+    else
+    {
+        printf("Number of Target devices installed: %d\n\n",num_devices);
+    }
+    // Create Basis and ERD on one MIC card
+    create_data_structures_on_MIC (1);
+
     // Free basis data used in initialization but no longer required.
     CInt_freeInitDataBasisSet (basis);
 
@@ -117,9 +172,13 @@ int main (int argc, char **argv)
                         continue;                        
                     totalcalls = totalcalls + 1;
                     gettimeofday (&tv1, NULL);
-                    CInt_computeShellQuartet (basis, erd, M, N, P, Q,
-                                              &integrals, &nints);
-
+#pragma offload target(mic:0) in(M, N, P, Q) nocopy(basis, erd) out(integrals, nints)
+                    {
+                        double *integrals_mic;
+                        CInt_computeShellQuartet (basis, erd, M, N, P, Q,
+                                &integrals_mic, &nints);
+                        memcpy(integrals, integrals_mic, nints * sizeof(double));
+                    }
                     gettimeofday (&tv2, NULL);
                     timepass += (tv2.tv_sec - tv1.tv_sec) +
                         (tv2.tv_usec - tv1.tv_usec) / 1000.0 / 1000.0;

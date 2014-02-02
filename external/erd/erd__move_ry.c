@@ -6,6 +6,8 @@
 #include "erd.h"
 
 
+#pragma offload_attribute(push, target(mic))
+
 /* ------------------------------------------------------------------------ */
 /*  OPERATION   : ERD__MOVE_RY */
 /*  MODULE      : ELECTRON REPULSION INTEGRALS DIRECT */
@@ -44,7 +46,7 @@
 /*                                     after the move */
 /*                       Y          =  final set of integrals */
 /* ------------------------------------------------------------------------ */
-__attribute__((target(mic))) int erd__move_ry (
+int erd__move_ry (
 		  int nindex, int notmove, int move, int nry,
                   int index, double *x,
                   int *ixoff, double *y)
@@ -86,3 +88,5 @@ __attribute__((target(mic))) int erd__move_ry (
 
     return 0;
 }
+
+#pragma offload_attribute(pop)

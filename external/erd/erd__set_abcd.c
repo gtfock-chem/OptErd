@@ -7,6 +7,8 @@
 #include "erd.h"
 
 
+#pragma offload_attribute(push, target(mic))
+
 /* ------------------------------------------------------------------------ */
 /*  OPERATION   : ERD__SET_ABCD */
 /*  MODULE      : ELECTRON REPULSION INTEGRALS DIRECT */
@@ -117,7 +119,7 @@
 /*                                    empty batch of integrals is */
 /*                                    expected. */
 /* ------------------------------------------------------------------------ */
-__attribute__((target(mic))) int erd__set_abcd (int npgto1, int npgto2, int npgto3, int npgto4,
+int erd__set_abcd (int npgto1, int npgto2, int npgto3, int npgto4,
                    int shell1, int shell2, int shell3, int shell4,
                    double x1, double y1, double z1,
                    double x2, double y2, double z2, 
@@ -571,3 +573,5 @@ __attribute__((target(mic))) int erd__set_abcd (int npgto1, int npgto2, int npgt
     }
     return 0;
 }
+
+#pragma offload_attribute(pop)

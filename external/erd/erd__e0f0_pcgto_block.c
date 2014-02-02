@@ -7,6 +7,8 @@
 #include "erd.h"
 
 
+#pragma offload_attribute(push, target(mic))
+
 /* ------------------------------------------------------------------------ */
 /*  OPERATION   : ERD_E0F0_PCGTO_BLOCK */
 /*  MODULE      : ELECTRON REPULSION INTEGRALS DIRECT */
@@ -166,7 +168,7 @@
 /*                    BATCH        =  current batch of primitive */
 /*                                    cartesian [E0|F0] integrals */
 /* ------------------------------------------------------------------------ */
-__attribute__((target(mic))) int erd__e0f0_pcgto_block (
+int erd__e0f0_pcgto_block (
 			   int nij, int nkl,
                            int ngqp, int nmom,
                            int nxyzet, int nxyzft,
@@ -577,3 +579,5 @@ __attribute__((target(mic))) int erd__e0f0_pcgto_block (
 
     return 0;
 }
+
+#pragma offload_attribute(pop)

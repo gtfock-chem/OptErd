@@ -6,6 +6,8 @@
 #include "erd.h"
 
 
+#pragma offload_attribute(push, target(mic))
+
 /* ------------------------------------------------------------------------ */
 /*  OPERATION   : ERD__CSGTO */
 /*  MODULE      : ELECTRON REPULSION INTEGRALS DIRECT */
@@ -146,7 +148,7 @@
 /*                [E0|F0] integrals will be essential for numerical */
 /*                stability during contraction. */
 /* ------------------------------------------------------------------------ */
-__attribute__((target(mic))) int erd__csgto (int zmax, int npgto1, int npgto2,
+int erd__csgto (int zmax, int npgto1, int npgto2,
                 int npgto3, int npgto4,
                 int shell1, int shell2,
                 int shell3, int shell4,
@@ -879,3 +881,5 @@ __attribute__((target(mic))) int erd__csgto (int zmax, int npgto1, int npgto2,
 
     return 0;
 }
+
+#pragma offload_attribute(pop)

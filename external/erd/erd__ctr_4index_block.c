@@ -5,6 +5,8 @@
 #include "erd.h"
 
 
+#pragma offload_attribute(push, target(mic))
+
 /* ------------------------------------------------------------------------ */
 /*  OPERATION   : ERD__CTR_HALF */
 /*  MODULE      : ELECTRON REPULSION INTEGRALS DIRECT */
@@ -274,3 +276,5 @@ erd__ctr_4index_block (int nxyzt, int mij, int mkl,
 
     return 0;
 }
+
+#pragma offload_attribute(pop)

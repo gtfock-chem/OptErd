@@ -5,6 +5,8 @@
 #include "erd.h"
 
 
+#pragma offload_attribute(push, target(mic))
+
 /* ------------------------------------------------------------------------ */
 /*  OPERATION   : ERD__XYZ_TO_RY_ABCD */
 /*  MODULE      : ELECTRON REPULSION INTEGRALS DIRECT */
@@ -64,7 +66,7 @@
 /*                Only mutually different transformation matrices + */
 /*                associated data are generated. */
 /* ------------------------------------------------------------------------ */
-__attribute__((target(mic))) int erd__xyz_to_ry_abcd (
+int erd__xyz_to_ry_abcd (
 			 int nxyza, int nxyzb, int nxyzc, int nxyzd,
                          int nrya, int nryb, int nryc, int nryd,
                          int shella, int shellb,
@@ -267,3 +269,5 @@ __attribute__((target(mic))) int erd__xyz_to_ry_abcd (
      
     return 0;
 }
+
+#pragma offload_attribute(pop)

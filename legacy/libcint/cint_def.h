@@ -29,6 +29,8 @@ CIntStatus_t CInt_loadBasisSet( BasisSet_t basis,
                                 char *bsfile,
                                 char *xyzfile );
 
+CIntStatus_t CInt_freeInitDataBasisSet (BasisSet_t basis);
+
 CIntStatus_t CInt_destroyBasisSet( BasisSet_t basis );
 
 CIntStatus_t CInt_packBasisSet( BasisSet_t basis,

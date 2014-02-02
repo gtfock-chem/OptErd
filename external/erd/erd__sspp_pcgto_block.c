@@ -6,6 +6,8 @@
 #include "boys.h"
 //#define ERD_TABLE_FREE_BOYS_FUNCTIONS
 
+#pragma offload_attribute(push, target(mic))
+
 /* ------------------------------------------------------------------------ */
 /*  OPERATION   : ERD__SSPP_PCGTO_BLOCK */
 /*  MODULE      : ELECTRON REPULSION INTEGRALS DIRECT */
@@ -477,3 +479,5 @@ void erd__sspp_pcgto_block (int nij, int nkl,
         }
     }
 }
+
+#pragma offload_attribute(pop)

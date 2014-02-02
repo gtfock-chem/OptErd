@@ -5,6 +5,8 @@
 #include "erd.h"
 
 
+#pragma offload_attribute(push, target(mic))
+
 /* ------------------------------------------------------------------------ */
 /*  OPERATION   : ERD__SPHERICAL_TRANSFORM */
 /*  MODULE      : ELECTRON REPULSION INTEGRALS DIRECT */
@@ -45,7 +47,7 @@
 /*                  Output: */
 /*                    Y           =  output batch of spherical integrals */
 /* ------------------------------------------------------------------------ */
-__attribute__((target(mic))) int erd__spherical_transform (
+int erd__spherical_transform (
 			      int m, int nrow, int nry,
                               int *lrow, int *row, double *rot,
                               double *x, double *y)
@@ -82,3 +84,5 @@ __attribute__((target(mic))) int erd__spherical_transform (
 
     return 0;
 }
+
+#pragma offload_attribute(pop)

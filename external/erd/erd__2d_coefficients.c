@@ -4,6 +4,7 @@
 
 #include "erd.h"
 
+#pragma offload_attribute(push, target(mic))
 
 /* ------------------------------------------------------------------------ */
 /*  OPERATION   : ERD__2D_COEFFICIENTS */
@@ -453,3 +454,5 @@ int erd__2d_coefficients (int mij, int mkl, int ngqp,
 
     return 0;
 }
+
+#pragma offload_attribute(pop)

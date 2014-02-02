@@ -6,6 +6,8 @@
 #include "erd.h"
 
 
+#pragma offload_attribute(push, target(mic))
+
 /* ------------------------------------------------------------------------ */
 /*  OPERATION   : ERD__XYZ_TO_RY_MATRIX */
 /*  MODULE      : ELECTRON REPULSION INTEGRALS DIRECT */
@@ -385,3 +387,5 @@ int erd__xyz_to_ry_matrix (int nxyz, int nry,
 
     return 0;
 }
+
+#pragma offload_attribute(pop)

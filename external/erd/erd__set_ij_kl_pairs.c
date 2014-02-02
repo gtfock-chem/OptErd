@@ -8,6 +8,8 @@
 
 #define TOL 1e-14
 
+#pragma offload_attribute(push, target(mic))
+
 static YEP_INLINE double pow3o4(double x) {
     return __builtin_sqrt(x * __builtin_sqrt(x));
 }
@@ -76,7 +78,7 @@ static YEP_NOINLINE void set_pairs(
     *nij_ptr = nij;
 }
 
-__attribute__((target(mic))) int erd__set_ij_kl_pairs(
+int erd__set_ij_kl_pairs(
     int npgtoa, int npgtob, int npgtoc, int npgtod,
     double xa, double ya, double za,
     double xb, double yb, double zb,
@@ -162,3 +164,5 @@ __attribute__((target(mic))) int erd__set_ij_kl_pairs(
     *nkl_ptr = nkl;
     return 0;
 }
+
+#pragma offload_attribute(pop)

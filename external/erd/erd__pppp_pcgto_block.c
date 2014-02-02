@@ -7,6 +7,8 @@
 //#define ERD_TABLE_FREE_BOYS_FUNCTIONS
 
 
+#pragma offload_attribute(push, target(mic))
+
 /* ------------------------------------------------------------------------ */
 /*  OPERATION   : ERD__PPPP_PCGTO_BLOCK */
 /*  MODULE      : ELECTRON REPULSION INTEGRALS DIRECT */
@@ -668,3 +670,5 @@ void erd__pppp_pcgto_block(int nij, int nkl,
         }
     }
 }
+
+#pragma offload_attribute(pop)

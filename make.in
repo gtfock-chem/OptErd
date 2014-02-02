@@ -1,5 +1,6 @@
 alignlen = 64
 #arch = mic
+#arch = hetero
 
 CC  = /opt/intel/bin/icc
 CXX = /opt/intel/bin/icpc

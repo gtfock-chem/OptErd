@@ -5,6 +5,8 @@
 #include "erd.h"
 
 
+#pragma offload_attribute(push, target(mic))
+
 /* ------------------------------------------------------------------------ */
 /*  OPERATION   : ERD__HRR_TRANSFORM */
 /*  MODULE      : ELECTRON REPULSION INTEGRALS DIRECT */
@@ -47,7 +49,7 @@
 /*                     Y          =  batch of HRR transformed integrals */
 /*                                   (m,ab) */
 /* ------------------------------------------------------------------------ */
-__attribute__((target(mic))) int erd__hrr_transform (
+int erd__hrr_transform (
 			int m, int nrow,
                         int nxyza, int nxyzb,
                         int *lrow, int *row,
@@ -94,3 +96,5 @@ __attribute__((target(mic))) int erd__hrr_transform (
 
     return 0;
 }
+
+#pragma offload_attribute(pop)

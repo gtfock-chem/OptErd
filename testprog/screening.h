@@ -14,7 +14,7 @@
 
 void schwartz_screening (BasisSet_t basis, int **shellptr,
                          int **shellid, int **shellrid,
-                         double **shellvalue);
+                         double **shellvalue, int *nnz);
 
 
 #endif /* __SCREENING_H__ */

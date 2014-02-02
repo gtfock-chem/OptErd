@@ -6,6 +6,8 @@
 #include "erd.h"
 
 
+#pragma offload_attribute(push, target(mic))
+
 /* ------------------------------------------------------------------------ */
 /*  OPERATION   : ERD__PREPARE_CTR */
 /*  MODULE      : ELECTRON REPULSION INTEGRALS DIRECT */
@@ -62,7 +64,7 @@
 /*                    CBATCH       =  contraction batch initialized */
 /*                                    to zero (if needed) */
 /* ------------------------------------------------------------------------ */
-__attribute__((target(mic))) int erd__prepare_ctr (
+int erd__prepare_ctr (
 		      int npgtoa, int npgtob,
                       int npgtoc, int npgtod,
                       int shella, int shellb,
@@ -178,3 +180,5 @@ __attribute__((target(mic))) int erd__prepare_ctr (
 
     return 0;
 }
+
+#pragma offload_attribute(pop)

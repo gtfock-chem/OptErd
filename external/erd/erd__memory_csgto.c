@@ -4,6 +4,8 @@
 #include "erd.h"
 
 
+#pragma offload_attribute(push, target(mic))
+
 /* ------------------------------------------------------------------------ */
 /*  OPERATION   : ERD__MEMORY_CSGTO */
 /*  MODULE      : ELECTRON REPULSION INTEGRALS DIRECT */
@@ -236,3 +238,5 @@ int erd__memory_csgto (int npgto1, int npgto2,
     
     return 0;
 }
+
+#pragma offload_attribute(pop)

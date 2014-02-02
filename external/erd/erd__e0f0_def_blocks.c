@@ -6,6 +6,8 @@
 #include "erd.h"
 
 
+#pragma offload_attribute(push, target(mic))
+
 /* ------------------------------------------------------------------------ */
 /*  OPERATION   : ERD__E0F0_DEF_BLOCKS */
 /*  MODULE      : ELECTRON REPULSION INTEGRALS DIRECT */
@@ -139,7 +141,7 @@
 /*                  --- Zone 4: for contraction only --- */
 /*                   ZWORK = offset for contraction working array */
 /* ------------------------------------------------------------------------ */
-__attribute__((target(mic))) int erd__e0f0_def_blocks (int zmax, int npgtoa, int npgtob,
+int erd__e0f0_def_blocks (int zmax, int npgtoa, int npgtob,
                           int npgtoc, int npgtod,
                           int shellp, int shellq,
                           int nij, int nkl, int ngqp, int ngqscr,
@@ -246,3 +248,5 @@ __attribute__((target(mic))) int erd__e0f0_def_blocks (int zmax, int npgtoa, int
 
     return 0;
 }
+
+#pragma offload_attribute(pop)

@@ -8,6 +8,7 @@
 #include "boys.h"
 
 
+#pragma offload_attribute(push, target(mic))
 /* ------------------------------------------------------------------------ */
 /*  OPERATION   : ERD__RYS_ROOTS_WEIGHTS */
 /*  MODULE      : ELECTRON REPULSION INTEGRALS DIRECT */
@@ -159,3 +160,5 @@ int erd__rys_roots_weights_ (int * nt, int * ntgqp,
 
     return 0;
 }
+
+#pragma offload_attribute(pop)

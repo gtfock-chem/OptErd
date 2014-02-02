@@ -6,6 +6,8 @@
 #include "erd.h"
 
 
+#pragma offload_attribute(push, target(mic))
+
 /* ------------------------------------------------------------------------ */
 /*  OPERATION   : ERD__HRR_STEP */
 /*  MODULE      : ELECTRON REPULSION INTEGRALS DIRECT */
@@ -429,3 +431,5 @@ int erd__hrr_step (int nab, int nabo, int mrowin,
 
     return 0;
 }
+
+#pragma offload_attribute(pop)

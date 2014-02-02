@@ -530,14 +530,27 @@ CIntStatus_t CInt_loadBasisSet (BasisSet_t basis, char *bsfile, char *molfile)
 }
 
 
-CIntStatus_t CInt_destroyBasisSet (BasisSet_t basis)
+CIntStatus_t CInt_freeInitDataBasisSet (BasisSet_t basis)
 {
-    free (basis->f_start_id);
-    free (basis->f_end_id);
+    free (basis->eid);
     free (basis->xn);
     free (basis->yn);
     free (basis->zn);
     free (basis->ncharge);
+    free (basis->eptr);
+    free (basis->atom_start);
+    free (basis->ptrshell);
+    free (basis->nexp0);
+    free (basis->momentum0);
+
+    return CINT_STATUS_SUCCESS;
+}
+
+
+CIntStatus_t CInt_destroyBasisSet (BasisSet_t basis)
+{
+    free (basis->f_start_id);
+    free (basis->f_end_id);
 
     free (basis);
 

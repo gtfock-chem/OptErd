@@ -5,6 +5,8 @@
 #include "erd.h"
 
 
+#pragma offload_attribute(push, target(mic))
+
 /* ------------------------------------------------------------------------ */
 /*  OPERATION   : ERD__NORMALIZE_CARTESIAN */
 /*  MODULE      : ELECTRON REPULSION INTEGRALS DIRECT */
@@ -39,7 +41,7 @@
 /*                  Output: */
 /*                    BATCH       =  batch of normalized integrals */
 /* ------------------------------------------------------------------------ */
-__attribute__((target(mic))) int erd__normalize_cartesian (
+int erd__normalize_cartesian (
 			      int m, int l,
                               double *norm, double *batch)
 {
@@ -71,3 +73,5 @@ __attribute__((target(mic))) int erd__normalize_cartesian (
 
     return 0;
 }
+
+#pragma offload_attribute(pop)

@@ -6,6 +6,8 @@
 #include "erd.h"
 
 
+#pragma offload_attribute(push, target(mic))
+
 /* ------------------------------------------------------------------------ */
 /*  OPERATION   : ERD__HRR_MATRIX */
 /*  MODULE      : ELECTRON REPULSION INTEGRALS DIRECT */
@@ -51,7 +53,7 @@
 /*                The xyz-basis for the a- and b-parts in columns */
 /*                of matrix T will be ordered such that a preceeds b. */
 /* ------------------------------------------------------------------------ */
-__attribute__((target(mic))) int erd__hrr_matrix (
+int erd__hrr_matrix (
 		     int nrothrr, int ncolhrr,
                      int nxyzet, int nxyza, int nxyzp,
                      int shella, int shellb, int shellp,
@@ -161,3 +163,5 @@ __attribute__((target(mic))) int erd__hrr_matrix (
     *in2 = *in2 + 1;
     return 0;
 }
+
+#pragma offload_attribute(pop)

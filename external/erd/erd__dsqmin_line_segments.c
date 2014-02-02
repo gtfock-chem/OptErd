@@ -5,6 +5,8 @@
 #include "erd.h"
 
 
+#pragma offload_attribute(push, target(mic))
+
 /* ------------------------------------------------------------------------ */
 /*  OPERATION   : ERD__DSQMIN_LINE_SEGMENTS */
 /*  MODULE      : ELECTRON REPULSION INTEGRALS DIRECT */
@@ -260,3 +262,5 @@ double erd__dsqmin_line_segments (double xp0, double yp0,
 
     return ret_val;
 }
+
+#pragma offload_attribute(pop)

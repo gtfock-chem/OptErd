@@ -10,7 +10,7 @@
 
 void schwartz_screening (BasisSet_t basis, int **shellptr,
                          int **shellid, int **shellrid,
-                         double **shellvalue)
+                         double **shellvalue, int *nnz)
 {
     ERD_t erd;
     int nshells;
@@ -27,7 +27,7 @@ void schwartz_screening (BasisSet_t basis, int **shellptr,
     double *integrals;
     int *_shellptr;
     double eta;
-    int nnz;
+    int _nnz;
     double *_shellvalue;
     int *_shellid;
     int *_shellrid;
@@ -71,7 +71,7 @@ void schwartz_screening (BasisSet_t basis, int **shellptr,
     }
 
     // init shellptr
-    nnz = 0;
+    _nnz = 0;
     eta = TOLSRC*TOLSRC/allmax;
     _shellptr = (int *)malloc (sizeof(int) * (nshells + 1));
     assert (_shellptr != NULL);
@@ -83,19 +83,19 @@ void schwartz_screening (BasisSet_t basis, int **shellptr,
             mvalue = vpairs[M * nshells  + N];
             if (mvalue > eta)
             {
-                nnz++;
+                _nnz++;
             }
         }
-        _shellptr[M + 1] = nnz;
+        _shellptr[M + 1] = _nnz;
     }
  
-    _shellvalue  = (double *)malloc (sizeof(double) * nnz);
-    _shellid  = (int *)malloc (sizeof(int) * nnz);
-    _shellrid  = (int *)malloc (sizeof(int) * nnz);
+    _shellvalue  = (double *)malloc (sizeof(double) * _nnz);
+    _shellid  = (int *)malloc (sizeof(int) * _nnz);
+    _shellrid  = (int *)malloc (sizeof(int) * _nnz);
     assert (_shellvalue != NULL &&
             _shellid != NULL &&
              _shellrid != NULL);    
-    nnz = 0;   
+    _nnz = 0;   
     for (M = 0; M < nshells; M++)
     {
         for (N = 0; N < nshells; N++)
@@ -103,14 +103,14 @@ void schwartz_screening (BasisSet_t basis, int **shellptr,
             mvalue = vpairs[M * nshells  + N];
             if (mvalue > eta)
             {
-                _shellvalue[nnz] = mvalue;                       
-                _shellid[nnz] = N;
-                _shellrid[nnz] = M;
-                nnz++;
+                _shellvalue[_nnz] = mvalue;                       
+                _shellid[_nnz] = N;
+                _shellrid[_nnz] = M;
+                _nnz++;
             }
         }
     }
-
+    (*nnz) = _nnz;
     free (vpairs);
     CInt_destroyERD (erd);
 

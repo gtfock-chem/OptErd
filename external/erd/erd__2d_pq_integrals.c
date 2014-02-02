@@ -15,6 +15,8 @@
 #include <stdio.h>
 #include <immintrin.h>
 
+#pragma offload_attribute(push, target(mic))
+
 /*  Copyright (c) 2003-2010 University of Florida */
 
 /*  This program is free software; you can redistribute it and/or modify */
@@ -906,3 +908,5 @@ erd__2d_pq_integrals (int shellp, int shellq,
 
     return 0;
 }                               /* erd__2d_pq_integrals__ */
+
+#pragma offload_attribute(pop)

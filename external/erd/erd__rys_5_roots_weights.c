@@ -12,6 +12,8 @@
 
 #include "erd.h"
 
+#pragma offload_attribute(push, target(mic))
+
 /*  Copyright (c) 2003-2010 University of Florida */
 
 /*  This program is free software; you can redistribute it and/or modify */
@@ -805,3 +807,5 @@ erd__rys_5_roots_weights_ (int * nt, int * ntgqp,
 
     return 0;
 }                               /* erd__rys_5_roots_weights__ */
+
+#pragma offload_attribute(pop)

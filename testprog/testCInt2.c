@@ -23,6 +23,7 @@ int main (int argc, char **argv)
     BasisSet_t basis;
     ERD_t *erd;
     int ns;
+    int nnz;
     int i;
     int nthreads;
     double *totalcalls = 0;
@@ -54,7 +55,8 @@ int main (int argc, char **argv)
     // load basis set
     CInt_createBasisSet (&basis);
     CInt_loadBasisSet (basis, argv[1], argv[2]);
-    schwartz_screening (basis, &shellptr, &shellid, &shellrid, &shellvalue);
+    CInt_freeInitDataBasisSet (basis);
+    schwartz_screening (basis, &shellptr, &shellid, &shellrid, &shellvalue, &nnz);
 
     printf ("Molecule info:\n");
     printf ("  #Atoms\t= %d\n", CInt_getNumAtoms (basis));

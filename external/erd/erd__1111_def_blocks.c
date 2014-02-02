@@ -4,6 +4,7 @@
 
 #include "erd.h"
 
+#pragma offload_attribute(push, target(mic))
 
 /* ------------------------------------------------------------------------ */
 /*  OPERATION   : ERD__1111_DEF_BLOCKS */
@@ -168,3 +169,5 @@ int erd__1111_def_blocks (int zmax, int npgto1, int npgto2,
 
     return 0;
 }
+
+#pragma offload_attribute(pop)

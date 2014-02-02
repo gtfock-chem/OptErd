@@ -5,6 +5,7 @@
 #define NGRID    920
 #define MGRID     10
 
+#pragma offload_attribute(push, target(mic))
 static const double tmax = 46.0;
 static const double tvstep = 20.0;
 static const double tstep = 0.05;
@@ -56,3 +57,5 @@ inline double boys4(double x) {
 	const double f = (scale * __builtin_erf(sqrt_x) / sqrt_x - (6.5625 + 4.375 * x + 1.75 * x_square + 0.5 * x_cube) * __builtin_exp(-x)) / x_pow4;
 	return f < limit ? f : limit;
 }
+
+#pragma offload_attribute(pop)
