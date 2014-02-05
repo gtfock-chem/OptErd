@@ -80,19 +80,19 @@ ${LEGACY_PERF_TEST_EXE}: $(LEGACY_PERF_TEST_OBJS) ${LIBS_REF}
 	$(CC) ${CFLAGS} ${INC} -c $< -o $@
 
 %.ref.o : %.c Makefile
-	$(CC) ${CFLAGS} -DOPTERD_TEST_REFERENCE ${INC} -c $< -o $@
+	$(CC) ${CFLAGS} -DOPTERD_TEST_REFERENCE -I../legacy/include ${INC} -c $< -o $@
 
 %.opt.o : %.c Makefile
-	$(CC) ${CFLAGS} -DOPTERD_TEST_OPTIMIZED ${INC} -c $< -o $@
+	$(CC) ${CFLAGS} -DOPTERD_TEST_OPTIMIZED -I../include ${INC} -c $< -o $@
 
 mic/%.o : %.c Makefile
 	$(CC) ${CFLAGS} ${INC} -c $< -o $@
 
 mic/%.ref.o : %.c Makefile
-	$(CC) ${CFLAGS} -DOPTERD_TEST_REFERENCE ${INC} -c $< -o $@
+	$(CC) ${CFLAGS} -DOPTERD_TEST_REFERENCE -I../legacy/include ${INC} -c $< -o $@
 
 mic/%.opt.o : %.c Makefile
-	$(CC) ${CFLAGS} -DOPTERD_TEST_OPTIMIZED ${INC} -c $< -o $@
+	$(CC) ${CFLAGS} -DOPTERD_TEST_OPTIMIZED -I../include ${INC} -c $< -o $@
 
 clean:
 	rm -f *.o *.s *.d *~ mic/*.o testCInt*.o Test.*

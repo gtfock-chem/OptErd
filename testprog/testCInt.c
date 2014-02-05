@@ -4,13 +4,7 @@
 #include <math.h>
 #include <sys/time.h>
 
-#if defined(OPTERD_TEST_REFERENCE)
-#include "../legacy/include/CInt.h"
-#else
-#include "../include/CInt.h"
-#endif
-#include "screening.h"
-
+#include <screening.h>
 
 #if (defined(OPTERD_TEST_REFERENCE) + defined(OPTERD_TEST_OPTIMIZED)) != 1
 #error Either OPTERD_TEST_REFERENCE or OPTERD_TEST_OPTIMIZED must be defined

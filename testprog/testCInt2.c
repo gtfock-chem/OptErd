@@ -8,15 +8,8 @@
 #include <math.h>
 #include <sys/time.h>
 
-#include "screening.h"
-#if defined(OPTERD_TEST_REFERENCE)
-#include "../legacy/include/CInt.h"
-#include "../legacy/include/erd_profile.h"
-#else
-#include "../include/CInt.h"
-#include "../include/erd_profile.h"
-#endif
-
+#include <screening.h>
+#include <erd_profile.h>
 
 int main (int argc, char **argv)
 {
