@@ -18,8 +18,8 @@ CC_NHM_OFFLOAD = icc -m64 -xSSE4.2 -offload-option,mic,compiler,"-z defs -no-opt
 CC_SNB_OFFLOAD = icc -m64 -xAVX -offload-option,mic,compiler,"-z defs -no-opt-prefetch"
 CC_IVB_OFFLOAD = icc -m64 -xCORE-AVX-I -offload-option,mic,compiler,"-z defs -no-opt-prefetch"
 CC_HSW_OFFLOAD = icc -m64 -xCORE-AVX2 -offload-option,mic,compiler,"-z defs -no-opt-prefetch"
-CFLAGS = -O3 -g -std=gnu99 -D__ALIGNLEN__=$alignlen -Iexternal/Yeppp/include -Wall -w2 -Wunknown-pragmas -Wunused-variable -Wunknown-pragmas -Wno-unused-variable -openmp
-LDFLAGS = -static-intel -lifcore -openmp
+CFLAGS = -O3 -g -std=gnu99 -no-intel-extensions -D__ALIGNLEN__=$alignlen -Iexternal/Yeppp/include -Wall -w2 -Wunknown-pragmas -Wunused-variable -Wunknown-pragmas -Wno-unused-variable -openmp
+LDFLAGS = -static-intel -no-intel-extensions -lifcore -openmp
 AR = xiar
 rule COMPILE_F90
   command = $FC $FFLAGS -o $out -c $in

@@ -109,8 +109,8 @@ with open('build.ninja', 'w') as makefile:
 	print('CC_SNB_OFFLOAD = icc -m64 -xAVX ' + offload_cflags, file = makefile)
 	print('CC_IVB_OFFLOAD = icc -m64 -xCORE-AVX-I ' + offload_cflags, file = makefile)
 	print('CC_HSW_OFFLOAD = icc -m64 -xCORE-AVX2 ' + offload_cflags, file = makefile)
-	print('CFLAGS = -O3 -g -std=gnu99 -D__ALIGNLEN__=$alignlen -Iexternal/Yeppp/include -Wall -w2 -Wunknown-pragmas -Wunused-variable -Wunknown-pragmas -Wno-unused-variable -openmp', file = makefile)
-	print('LDFLAGS = -static-intel -lifcore -openmp', file = makefile)
+	print('CFLAGS = -O3 -g -std=gnu99 -no-intel-extensions -D__ALIGNLEN__=$alignlen -Iexternal/Yeppp/include -Wall -w2 -Wunknown-pragmas -Wunused-variable -Wunknown-pragmas -Wno-unused-variable -openmp', file = makefile)
+	print('LDFLAGS = -static-intel -no-intel-extensions -lifcore -openmp', file = makefile)
 	print('AR = xiar', file = makefile)
 
 	suffix = {
