@@ -1,3 +1,11 @@
+#include "jacobi.h"
+
+#ifdef __INTEL_OFFLOAD
+#pragma offload_attribute(push, target(mic))
+#endif
+
+
+
 /* (2i+1) / ((4i-1) * (4i+3)) for i = 1...100 */
 const double r2[100] = {
 	0x1.2492492492492p-3,  0x1.09F959C427E56p-4,  0x1.5B8A15B8A15B9p-5,  0x1.02B1DA46102B2p-5,
@@ -124,3 +132,7 @@ const double bjac[99] = {
 	0x1.0000F3CA4B903p-4, 0x1.0000EE9DEF1EDp-4, 0x1.0000E99B490A6p-4, 0x1.0000E4C09D8B8p-4,
 	0x1.0000E00C47ABFp-4, 0x1.0000DB7CB7E1Ap-4, 0x1.0000D71072C37p-4
 };
+
+#ifdef __INTEL_OFFLOAD
+#pragma offload_attribute(pop)
+#endif
