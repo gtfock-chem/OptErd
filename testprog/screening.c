@@ -88,7 +88,7 @@ void schwartz_screening (BasisSet_t basis, int **shellptr,
         }
         _shellptr[M + 1] = _nnz;
     }
- 
+
     _shellvalue  = (double *)malloc (sizeof(double) * _nnz);
     _shellid  = (int *)malloc (sizeof(int) * _nnz);
     _shellrid  = (int *)malloc (sizeof(int) * _nnz);

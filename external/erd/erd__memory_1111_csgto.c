@@ -59,7 +59,7 @@ int erd__memory_1111_csgto (int npgto1, int npgto2,
     int nxyzt;
     int atomic;
     int shellp, npgto12, shellt, npgto34;
-    
+
     *iopt = 0;
     *zopt = 0;
    
@@ -97,7 +97,7 @@ int erd__memory_1111_csgto (int npgto1, int npgto2,
 /*                routine handling the IJ and KL pair determination */
 /*                should be placed. */
     zneed = PAD_LEN(npgto12) + PAD_LEN(npgto34);
-    ineed = 2 * PAD_LEN2(npgto12) + PAD_LEN2(npgto34);
+    ineed = 2 * PAD_LEN2(npgto12) + 2 * PAD_LEN2(npgto34);
     *iopt = MAX(*iopt, ineed);
     *zopt = MAX(*zopt, zneed);
 

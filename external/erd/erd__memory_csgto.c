@@ -117,7 +117,7 @@ int erd__memory_csgto (int npgto1, int npgto2,
     nij = npgtoab;
     nkl = npgtocd;
     zneed = PAD_LEN(npgtoab) + PAD_LEN(npgtocd);
-    ineed = 2 * PAD_LEN2(npgtoab) + PAD_LEN2(npgtocd);
+    ineed = 2 * PAD_LEN2(npgtoab) + 2 * PAD_LEN2(npgtocd);
     *iopt = MAX (*iopt, ineed);
     *zopt = MAX (*zopt, zneed);
 
