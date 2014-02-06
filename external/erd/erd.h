@@ -350,8 +350,7 @@ int erd__e0f0_def_blocks (int zmax, int npgtoa, int npgtob,
                           int *zd00x, int *zd00y, int *zd00z,
                           int *zint2dx, int *zint2dy, int *zint2dz);
                           
-int erd__rys_roots_weights_ (int * nt, int * ntgqp,
-                             int * ngqp, int * nmom, double * tval,
+int erd__rys_roots_weights_ (int * nt, int * ngqp, int * nmom, double * tval,
                              double * ryszero,
                              double * a, double * b, double * mom,
                              double * dia, double * off,
@@ -362,21 +361,24 @@ int erd__rys_roots_weights_ (int * nt, int * ntgqp,
 int erd__rys_1_roots_weights_ (int * nt, double * tval,
                                double * rts, double * wts);
 
-int erd__rys_2_roots_weights_ (int * nt, int * ntgqp,
-                               double * tval, double * rts,
+int erd__rys_2_roots_weights_ (int * nt, double * tval, double * rts,
                                double * wts);
 
-int erd__rys_3_roots_weights_ (int * nt, int * ntgqp,
-                               double * tval, double * rts,
+int erd__rys_3_roots_weights_ (int * nt, double * tval, double * rts,
                                double * wts);
 
-int erd__rys_4_roots_weights_ (int * nt, int * ntgqp,
-                               double * tval, double * rts,
+int erd__rys_4_roots_weights_ (int * nt, double * tval, double * rts,
                                double * wts);
 
-int erd__rys_5_roots_weights_ (int * nt, int * ntgqp,
-                               double * tval, double * rts,
+int erd__rys_5_roots_weights_ (int * nt, double * tval, double * rts,
                                double * wts);
+
+int erd__rys_x_roots_weights_ (int * nt, int * ngqp, int * nmom, double * tval,
+                               double * ryszero, double * a,
+                               double * b, double * mom,
+                               double * dia, double * off,
+                               double * row1, double * row2,
+                               double * rts, double * wts);
 
 #ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(pop)

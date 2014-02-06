@@ -69,8 +69,7 @@
 /*                    RTS          =  the roots array */
 /*                    WTS          =  the weights array */
 /* ------------------------------------------------------------------------ */
-int erd__rys_roots_weights_ (int * nt, int * ntgqp,
-                             int * ngqp, int * nmom, double * tval,
+int erd__rys_roots_weights_ (int * nt, int * ngqp, int * nmom, double * tval,
                              double * ryszero,
                              double * a, double * b, double * mom,
                              double * dia, double * off,
@@ -117,16 +116,16 @@ int erd__rys_roots_weights_ (int * nt, int * ntgqp,
     erd__rys_1_roots_weights_ (nt, &tval[1], &rts[1], &wts[1]);
     return 0;
   L2000:
-    erd__rys_2_roots_weights_ (nt, ntgqp, &tval[1], &rts[1], &wts[1]);
+    erd__rys_2_roots_weights_ (nt, &tval[1], &rts[1], &wts[1]);
     return 0;
   L3000:
-    erd__rys_3_roots_weights_ (nt, ntgqp, &tval[1], &rts[1], &wts[1]);
+    erd__rys_3_roots_weights_ (nt, &tval[1], &rts[1], &wts[1]);
     return 0;
   L4000:
-    erd__rys_4_roots_weights_ (nt, ntgqp, &tval[1], &rts[1], &wts[1]);
+    erd__rys_4_roots_weights_ (nt, &tval[1], &rts[1], &wts[1]);
     return 0;
   L5000:
-    erd__rys_5_roots_weights_ (nt, ntgqp, &tval[1], &rts[1], &wts[1]);
+    erd__rys_5_roots_weights_ (nt, &tval[1], &rts[1], &wts[1]);
     return 0;
 
 
@@ -157,7 +156,7 @@ int erd__rys_roots_weights_ (int * nt, int * ntgqp,
             ryszero[n] = sqrt (3.141592653589793 / t) * .5;
         }
     }
-    erd__rys_x_roots_weights_ (nt, ntgqp, ngqp, nmom, &tval[1], &ryszero[1],
+    erd__rys_x_roots_weights_ (nt, ngqp, nmom, &tval[1], &ryszero[1],
                                &a[1], &b[2], &mom[1], &dia[1], &off[1],
                                &row1[1], &row2[1], &rts[1], &wts[1]);
 

@@ -419,7 +419,7 @@ int erd__e0f0_pcgto_block (int nij, int nkl,
 #ifdef __ERD_PROFILE__
     start_clock = __rdtsc();
 #endif
-    erd__rys_roots_weights_ (&nijkl, &mgqijkl, &ngqp, &nmom, &tval[1], &b00[1],
+    erd__rys_roots_weights_ (&nijkl, &ngqp, &nmom, &tval[1], &b00[1],
                              &gqscr[g000], &gqscr[g010],
                              &gqscr[g020], &gqscr[g030], &gqscr[g040],
                              &gqscr[g050], &gqscr[g060], &rts[1], &wts[1]);

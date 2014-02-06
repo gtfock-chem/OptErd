@@ -27,7 +27,7 @@ SRC   = erd__1111_csgto.c \
 	erd__rys_4_roots_weights.c \
 	erd__rys_5_roots_weights.c \
 	erd__rys_roots_weights.c \
-	erd__rys_x_roots_weights.f \
+	erd__rys_x_roots_weights.c \
 	erd__set_abcd.c \
 	erd__set_ij_kl_pairs.c \
 	erd__spherical_transform.c \

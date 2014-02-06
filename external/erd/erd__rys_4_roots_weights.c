@@ -1,14 +1,7 @@
-/* erd__rys_4_roots_weights.f -- translated by f2c (version 20100827).
-   You must link the resulting object file with libf2c:
-	on Microsoft Windows system, link with libf2c.lib;
-	on Linux or Unix systems, link with .../path/to/libf2c.a -lm
-	or, if you install libf2c.a in a standard place, with -lf2c -lm
-	-- in that order, at the end of the command line, as in
-		cc *.o -lf2c -lm
-	Source for libf2c is in /netlib/f2c/libf2c.zip, e.g.,
-
-		http://www.netlib.org/f2c/libf2c.zip
-*/
+#include <stdio.h>
+#include <stdlib.h>
+#include <assert.h>
+#include <mkl.h>
 
 #include "erd.h"
 
@@ -16,43 +9,6 @@
 #pragma offload_attribute(push, target(mic))
 #endif
 
-/*  Copyright (c) 2003-2010 University of Florida */
-
-/*  This program is free software; you can redistribute it and/or modify */
-/*  it under the terms of the GNU General Public License as published by */
-/*  the Free Software Foundation; either version 2 of the License, or */
-/*  (at your option) any later version. */
-/*  This program is distributed in the hope that it will be useful, */
-/*  but WITHOUT ANY WARRANTY; without even the implied warranty of */
-/*  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the */
-/*  GNU General Public License for more details. */
-/*  The GNU General Public License is included in this distribution */
-/*  in the file COPYRIGHT. */
-/* Subroutine */ int
-erd__rys_4_roots_weights_ (int * nt, int * ntgqp,
-                            double * tval, double * rts,
-                            double * wts)
-{
-    /* Initialized data */
-
-    int jump4[54] =
-        { 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 6, 6,
-        6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
-            7, 7, 7, 7, 7, 7, 7, 7, 8
-    };
-
-    /* System generated locals */
-    int i__1;
-    double d__1;
-
-    /* Builtin functions */
-    double exp (double), sqrt (double);
-
-    /* Local variables */
-    double e;
-    int m, n;
-    double t, x, y, r1, r2, r3, r4, w1, w2, w3, w4;
-    int tcase;
 
 /* ------------------------------------------------------------------------ */
 /*  OPERATION   : ERD__RYS_4_ROOTS_WEIGHTS */
@@ -63,58 +19,50 @@ erd__rys_4_roots_weights_ (int * nt, int * ntgqp,
 /*                in case the number of roots and weights required */
 /*                is = 4. All T's are treated at once so the complete */
 /*                set of roots and weights is returned. */
-
 /*                For the moment taken essentially unchanged from the */
 /*                GAMESS package (routine ROOT4, but removing their */
 /*                'spaghetti' code from the 70's of unreadable */
 /*                internested IFs and GOTOs!). */
-
 /*                One interesting aspect of the GAMESS routines is that */
 /*                their code returns scaled roots, i.e. their roots */
 /*                do not ly between the range 0 and 1. To get to the */
 /*                proper roots as needed for our package, we simply */
 /*                set: */
-
 /*                   root (our) = root (gamess) / (1 + root (games)) */
-
-
 /*                  Input: */
-
 /*                    NT           =  # of T-exponents */
 /*                    NTGQP        =  # of roots times # of T-exponents */
 /*                                    (= 4 * NT) */
 /*                    TVAL         =  the set of NT T-exponents defining */
 /*                                    the Rys weight functions */
-
 /*                  Output: */
-
 /*                    RTS          =  all NTGQP quadrature roots */
 /*                    WTS          =  all NTGQP quadrature weights */
-
-
-/*  AUTHOR      : Norbert Flocke */
 /* ------------------------------------------------------------------------ */
+int erd__rys_4_roots_weights_ (int * nt, double * tval, double * rts,
+                               double * wts)
+{
+    int jump4[54] =
+        { 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 6, 6,
+        6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+            7, 7, 7, 7, 7, 7, 7, 7, 8
+    };
 
-
-/*             ...include files and declare variables. */
-
-
-    /* Parameter adjustments */
+    int i__1;
+    double d__1;
+    double e;
+    int m, n;
+    double t, x, y, r1, r2, r3, r4, w1, w2, w3, w4;
+    int tcase;
+    
     --tval;
     --wts;
     --rts;
 
-    /* Function Body */
-
-
 /* ------------------------------------------------------------------------ */
-
-
 /*                 ******************************** */
 /*             ... *  # of roots and weights = 4  * */
 /*                 ******************************** */
-
-
     m = 1;
     i__1 = *nt;
     for (n = 1; n <= i__1; ++n)
@@ -122,11 +70,7 @@ erd__rys_4_roots_weights_ (int * nt, int * ntgqp,
         t = tval[n];
         if (t <= 3e-7)
         {
-
-
 /*             ...T-range: T essentially 0 */
-
-
             r1 = .0348198973061471 - t * .00409645850660395;
             r2 = .381567185080042 - t * .0448902570656719;
             r3 = 1.73730726945891 - t * .204389090547327;
@@ -167,8 +111,6 @@ erd__rys_4_roots_weights_ (int * nt, int * ntgqp,
 
 
 /*             ...T-range: 0 < T < 1 */
-
-
       L4100:
         wts[m] = ((((((t * -1.14649303201279e-8 + 1.88015570196787e-7) * t -
                       2.33305875372323e-6) * t + 2.68880044371597e-5) * t -
@@ -219,8 +161,6 @@ erd__rys_4_roots_weights_ (int * nt, int * ntgqp,
 
 
 /*             ...T-range: 1 =< T < 5 */
-
-
       L4200:
         x = t - 3.;
         wts[m] = ((((((((((x * -4.65801912689961e-14 + 7.586695071068e-13) *
@@ -291,8 +231,6 @@ erd__rys_4_roots_weights_ (int * nt, int * ntgqp,
 
 
 /*             ...T-range: 5 =< T < 10 */
-
-
       L4300:
         x = t - 7.5;
         wts[m] = ((((((((((x * -1.65995045235997e-15 + 6.91838935879598e-14) *
@@ -364,8 +302,6 @@ erd__rys_4_roots_weights_ (int * nt, int * ntgqp,
 
 
 /*             ...T-range: 10 =< T < 15 */
-
-
       L4400:
         e = exp (-t);
         x = 1. / t;
@@ -433,8 +369,6 @@ erd__rys_4_roots_weights_ (int * nt, int * ntgqp,
 
 
 /*             ...T-range: 15 =< T < 20 */
-
-
       L4500:
         e = exp (-t);
         x = 1. / t;
@@ -504,8 +438,6 @@ erd__rys_4_roots_weights_ (int * nt, int * ntgqp,
 
 
 /*             ...T-range: 20 =< T < 35 */
-
-
       L4600:
         e = exp (-t);
         x = 1. / t;
@@ -580,8 +512,6 @@ erd__rys_4_roots_weights_ (int * nt, int * ntgqp,
 
 
 /*             ...T-range: 35 =< T < 53 */
-
-
       L4700:
         x = t * t;
         e = exp (-t) * x * x;
@@ -617,8 +547,6 @@ erd__rys_4_roots_weights_ (int * nt, int * ntgqp,
 
 
 /*             ...T-range: T >= 53 */
-
-
       L4800:
         w1 = sqrt (.785398163397448 / t);
         w2 = w1 * .234479815323517;
@@ -645,12 +573,8 @@ erd__rys_4_roots_weights_ (int * nt, int * ntgqp,
         ;
     }
 
-
-/*             ...ready! */
-
-
     return 0;
-}                               /* erd__rys_4_roots_weights__ */
+}
 
 #ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(pop)

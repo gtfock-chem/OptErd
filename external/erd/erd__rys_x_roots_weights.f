@@ -142,7 +142,6 @@ C
 C
          IMPLICIT   NONE
 
-         INCLUDE    'erd__jacobi.inc'
 
          INTEGER    I,J,M,N
          INTEGER    IMAX,JMAX
@@ -182,6 +181,11 @@ C
 
          DOUBLE PRECISION   RTS     (1:NTGQP)
          DOUBLE PRECISION   WTS     (1:NTGQP)
+         DOUBLE PRECISION    R2     (1:100)
+         DOUBLE PRECISION    SINV   (1:100)
+         DOUBLE PRECISION    CSMALL (1:16)
+         DOUBLE PRECISION    AJAC   (1:100)
+         DOUBLE PRECISION    BJAC   (2:100)
 
          PARAMETER  (ZERO    =  0.D0)
          PARAMETER  (EXTREM  =  1.0D-300)
