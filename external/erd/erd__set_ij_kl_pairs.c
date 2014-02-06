@@ -13,7 +13,9 @@
 #include <immintrin.h>
 #endif
 
+#ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(push, target(mic))
+#endif
 
 static YEP_INLINE double pow3o4(double x) {
     return __builtin_sqrt(x * __builtin_sqrt(x));
@@ -436,7 +438,8 @@ int erd__set_ij_kl_pairs(
 
     uint32_t nij = 0;
     uint32_t nkl = 0;
-
+    uint32_t padnij = 0;
+    
     // if not screening
     if (!(screen)) {
         for (int i = 0; i < npgtoa; i += 1) {
@@ -449,17 +452,19 @@ int erd__set_ij_kl_pairs(
                 nij += 1;
             }
         }
-
+        padnij = PAD_LEN (nij);
+        
         for (int k = 0; k < npgtoc; k += 1) {
             const double c = alphac[k];
             for (int l = 0; l < npgtod; l += 1) {
                 const double d = alphad[l];
-                rho[nij + nkl] = __builtin_exp(-c * d * rncdsq / (c + d));
+                rho[padnij + nkl] = __builtin_exp(-c * d * rncdsq / (c + d));
                 primc[nkl] = k;
                 primd[nkl] = l;
                 nkl += 1;
             }
         }
+        return 0;
     }
 
     // compute min
@@ -488,8 +493,9 @@ int erd__set_ij_kl_pairs(
         *nkl_ptr = nkl;
         return 0;
     }
-
-    set_pairs(npgtoc, npgtod, rncdsq, alphac, alphad, &nkl, primc, primd, &rho[nij], pmin, smaxab, rminsq);
+    padnij = PAD_LEN (nij);
+    
+    set_pairs(npgtoc, npgtod, rncdsq, alphac, alphad, &nkl, primc, primd, &rho[padnij], pmin, smaxab, rminsq);
     if (nkl == 0) {
         *empty = 1;
 
@@ -503,4 +509,6 @@ int erd__set_ij_kl_pairs(
     return 0;
 }
 
+#ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(pop)
+#endif

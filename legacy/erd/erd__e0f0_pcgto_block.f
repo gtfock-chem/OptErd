@@ -353,6 +353,7 @@ C
 C
          CASEAT = 5
 
+         CALL START_TIMER (STIME)
          IF (ATOMAB) THEN
              M = 0
              DO 100 IJ = NIJBEG,NIJEND
@@ -614,7 +615,6 @@ C             ...calculate all roots and weights. Array B00 is passed
 C                as a scratch array.
 C
 C
-         CALL START_TIMER (STIME)
          CALL    ERD__RYS_ROOTS_WEIGHTS
      +
      +                ( MIJKL,MGQIJKL,
@@ -693,8 +693,8 @@ C
      +
              CALL END_TIMER (4, STIME)
              
+             CALL START_TIMER (STIME)                 
              IF (SHELLQ.EQ.0) THEN
-                 CALL START_TIMER (STIME)
                  CALL    ERD__INT2D_TO_E000
      +
      +                        ( SHELLA,SHELLP,
@@ -707,9 +707,7 @@ C
      +                                    BATCH )
      +
      +
-                 CALL END_TIMER (5, STIME)
              ELSE IF (SHELLP.EQ.0) THEN
-                 CALL START_TIMER (STIME)
                  CALL    ERD__INT2D_TO_E000
      +
      +                        ( SHELLC,SHELLQ,
@@ -722,9 +720,7 @@ C
      +                                    BATCH )
      +
      +
-                 CALL END_TIMER (5, STIME)
              ELSE
-                 CALL START_TIMER (STIME)
                  CALL    ERD__INT2D_TO_E0F0
      +
      +                        ( SHELLA,SHELLP,SHELLC,SHELLQ,
@@ -737,11 +733,10 @@ C
      +                                    BATCH )
      +
      +
-                 CALL END_TIMER (5, STIME)
              END IF
-
+             CALL END_TIMER (5, STIME)             
          ELSE
-
+             CALL START_TIMER (STIME)
              CALL    ERD__2D_ATOM_COEFFICIENTS
      +
      +                    ( MIJ,MKL,MIJKL,
@@ -754,6 +749,8 @@ C
      +                                B00,B01,B10 )
      +
      +
+             CALL END_TIMER (3, STIME)
+             CALL START_TIMER (STIME)
              CALL    ERD__2D_ATOM_PQ_INTEGRALS
      +
      +                    ( SHELLP,SHELLQ,
@@ -767,6 +764,8 @@ C
      +                                INT2DZ )
      +
      +
+             CALL END_TIMER (4, STIME)
+             CALL START_TIMER (STIME)
              IF (SHELLQ.EQ.0) THEN
 
                  CALL    ERD__ATOM_INT2D_TO_E000
@@ -810,6 +809,7 @@ C
      +
      +
              END IF
+             CALL END_TIMER (5, STIME)
 
          END IF
 C

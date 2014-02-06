@@ -7,7 +7,9 @@
 #include "erd.h"
 
 
+#ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(push, target(mic))
+#endif
 
 /* ------------------------------------------------------------------------ */
 /*  OPERATION   : ERD__SET_ABCD */
@@ -134,15 +136,12 @@ int erd__set_abcd (int npgto1, int npgto2, int npgto3, int npgto4,
                    int *nxyza, int *nxyzb, int *nxyzc, int *nxyzd,
                    int *nxyzet, int *nxyzft,
                    int *nrya, int *nryb, int *nryc, int *nryd,
-                   int *indexa, int *indexb, int *indexc, int *indexd,
-                   int *lexpa, int *lexpb, int *lexpc, int *lexpd,
-                   int *lcca, int *lccb, int *lccc, int *lccd,
                    int *nabcoor, int *ncdcoor,
                    int *ncolhrr, int *nrothrr,
                    int *nxyzhrr, int *empty, int *tr1234)
 {
     int add[3] = { 0, 0, 1 };
-    int m, ngh, ncc1, ncc2, ncc3, nry1, nry2, nry3, nry4,
+    int m, ngh, nry1, nry2, nry3, nry4,
         ngho, ncol, nrot, nrow;
     int case1, case2;
     int nxyz1, nxyz2, nxyz3, nxyz4;
@@ -259,9 +258,6 @@ int erd__set_abcd (int npgto1, int npgto2, int npgto3, int npgto4,
 /*                and contraction coefficients. Also set the info for */
 /*                evaluation of the [e0|f0] batches and for the HRR */
 /*                steps later on. */
-    ncc1 = npgto1;
-    ncc2 = npgto2;
-    ncc3 = npgto3;
     if (!(*tr1234))
     {
         *nxyzet = nxyze;
@@ -282,12 +278,6 @@ int erd__set_abcd (int npgto1, int npgto2, int npgto3, int npgto4,
             *nxyzb = nxyz2;
             *nrya = nry1;
             *nryb = nry2;
-            *indexa = 1;
-            *indexb = 2;
-            *lexpa = 0;
-            *lexpb = *lexpa + npgto1;
-            *lcca = 0;
-            *lccb = *lcca + ncc1;
         }
         else
         {
@@ -305,12 +295,6 @@ int erd__set_abcd (int npgto1, int npgto2, int npgto3, int npgto4,
             *nxyzb = nxyz1;
             *nrya = nry2;
             *nryb = nry1;
-            *indexa = 2;
-            *indexb = 1;
-            *lexpb = 0;
-            *lexpa = *lexpb + npgto1;
-            *lccb = 0;
-            *lcca = *lccb + ncc1;
         }
         if (!swap34)
         {
@@ -328,12 +312,6 @@ int erd__set_abcd (int npgto1, int npgto2, int npgto3, int npgto4,
             *nxyzd = nxyz4;
             *nryc = nry3;
             *nryd = nry4;
-            *indexc = 3;
-            *indexd = 4;
-            *lexpc = npgto1 + npgto2;
-            *lexpd = *lexpc + npgto3;
-            *lccc = ncc1 + ncc2;
-            *lccd = *lccc + ncc3;
         }
         else
         {
@@ -351,12 +329,6 @@ int erd__set_abcd (int npgto1, int npgto2, int npgto3, int npgto4,
             *nxyzd = nxyz3;
             *nryc = nry4;
             *nryd = nry3;
-            *indexc = 4;
-            *indexd = 3;
-            *lexpd = npgto1 + npgto2;
-            *lexpc = *lexpd + npgto3;
-            *lccd = ncc1 + ncc2;
-            *lccc = *lccd + ncc3;
         }
     }
     else
@@ -379,12 +351,6 @@ int erd__set_abcd (int npgto1, int npgto2, int npgto3, int npgto4,
             *nxyzd = nxyz2;
             *nryc = nry1;
             *nryd = nry2;
-            *indexc = 1;
-            *indexd = 2;
-            *lexpc = 0;
-            *lexpd = *lexpc + npgto1;
-            *lccc = 0;
-            *lccd = *lccc + ncc1;
         }
         else
         {
@@ -402,12 +368,6 @@ int erd__set_abcd (int npgto1, int npgto2, int npgto3, int npgto4,
             *nxyzd = nxyz1;
             *nryc = nry2;
             *nryd = nry1;
-            *indexc = 2;
-            *indexd = 1;
-            *lexpd = 0;
-            *lexpc = *lexpd + npgto1;
-            *lccd = 0;
-            *lccc = *lccd + ncc1;
         }
         if (!swap34)
         {
@@ -425,12 +385,6 @@ int erd__set_abcd (int npgto1, int npgto2, int npgto3, int npgto4,
             *nxyzb = nxyz4;
             *nrya = nry3;
             *nryb = nry4;
-            *indexa = 3;
-            *indexb = 4;
-            *lexpa = npgto1 + npgto2;
-            *lexpb = *lexpa + npgto3;
-            *lcca = ncc1 + ncc2;
-            *lccb = *lcca + ncc3;
         }
         else
         {
@@ -448,20 +402,14 @@ int erd__set_abcd (int npgto1, int npgto2, int npgto3, int npgto4,
             *nxyzb = nxyz3;
             *nrya = nry4;
             *nryb = nry3;
-            *indexa = 4;
-            *indexb = 3;
-            *lexpb = npgto1 + npgto2;
-            *lexpa = *lexpb + npgto3;
-            *lccb = ncc1 + ncc2;
-            *lcca = *lccb + ncc3;
         }
     }
-    abx = xa - xb;
-    aby = ya - yb;
-    abz = za - zb;
-    cdx = xc - xd;
-    cdy = yc - yd;
-    cdz = zc - zd;
+    abx = *xa - *xb;
+    aby = *ya - *yb;
+    abz = *za - *zb;
+    cdx = *xc - *xd;
+    cdy = *yc - *yd;
+    cdz = *zc - *zd;
     *nabcoor = 3;
     if (fabs(abx) == 0.0)
     {
@@ -574,4 +522,6 @@ int erd__set_abcd (int npgto1, int npgto2, int npgto3, int npgto4,
     return 0;
 }
 
+#ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(pop)
+#endif

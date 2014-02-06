@@ -6,7 +6,9 @@
 #include "boys.h"
 //#define ERD_TABLE_FREE_BOYS_FUNCTIONS
 
+#ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(push, target(mic))
+#endif
 
 /* ------------------------------------------------------------------------ */
 /*  OPERATION   : ERD__SSSS_PCGTO_BLOCK */
@@ -199,4 +201,6 @@ void erd__ssss_pcgto_block (int nij, int nkl,
     }
 }
 
+#ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(pop)
+#endif

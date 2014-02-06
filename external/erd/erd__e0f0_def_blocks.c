@@ -5,8 +5,9 @@
 
 #include "erd.h"
 
-
+#ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(push, target(mic))
+#endif
 
 /* ------------------------------------------------------------------------ */
 /*  OPERATION   : ERD__E0F0_DEF_BLOCKS */
@@ -146,8 +147,7 @@ int erd__e0f0_def_blocks (int zmax, int npgtoa, int npgtob,
                           int shellp, int shellq,
                           int nij, int nkl, int ngqp, int ngqscr,
                           int nxyzt, int memory, int *nint2d, int *zcbatch,
-                          int *znorma, int *znormb, int *znormc,
-                          int *znormd, int *zrhoab, int *zrhocd,
+                          int *znorm, int *zrhoab, int *zrhocd,
                           int *zp, int *zpx, int *zpy,
                           int *zpz, int *zpax, int *zpay,
                           int *zpaz, int *zpinvhf, int *zscpk2,
@@ -167,81 +167,92 @@ int erd__e0f0_def_blocks (int zmax, int npgtoa, int npgtob,
     int zone12;
     int mgqijkl;
     int ncsize; 
+    int maxshell;
+    int pad_nij;
+    int pad_nkl;
+    int pad_mijkl;
+    int pad_mgqijkl;
+    int pad_ngqscr;
 
-  
-    zone3 = npgtoa + npgtob + npgtoc + npgtod + nij + nkl;
-
+    maxshell = MAX(npgtoa, npgtob);
+    maxshell = MAX(maxshell, npgtoc);
+    maxshell = MAX(maxshell, npgtod);
+    maxshell = PAD_LEN(maxshell); 
 /*             ...if the MEMORY keyword is activated, the routine */
 /*                will only determine the optimum and minimum flp */
 /*                memory (in that order), place them respectively */
 /*                into the NKLBLK and NIJBLK variables and exit. */
+    pad_nij = PAD_LEN (nij);
+    pad_nkl = PAD_LEN (nkl);    
+    zone3 = maxshell + pad_nij + pad_nkl;
+    
+    ncsize = nxyzt;
+    ncsize = PAD_LEN(ncsize);
+    zone12 = ncsize;
+    
+    mijkl = nij * nkl;
+    pad_mijkl = PAD_LEN(mijkl);
+    mgqijkl = ngqp * mijkl;
+    pad_mgqijkl = PAD_LEN(mgqijkl);
+
+    pad_ngqscr = PAD_LEN(ngqscr);
+    
     if (memory)
-    {
-        ncsize = nxyzt;
-        mijkl = nij * nkl;
-        mgqijkl = ngqp * mijkl;
-        zone12 = ncsize;
-        zone4 = ngqscr + mijkl * 2 +
-            (nij + nkl) * 9 + mgqijkl * 12 +
-            (mgqijkl * (shellp + 1) * (shellq + 1)) * 3;
+    {        
+        zone4 = pad_ngqscr + pad_mijkl * 2 +
+            (pad_nij + pad_nkl) * 9 + mgqijkl * 12 +
+            (pad_mgqijkl * (shellp + 1) * (shellq + 1)) * 3;
         *nint2d = zone12 + zone3 + zone4;
     }
     else
     {
-        ncsize = nxyzt;
-        mijkl = nij * nkl;
-        mgqijkl = ngqp * mijkl;
         *nint2d = mgqijkl * (shellp + 1) * (shellq + 1);
-        zone12 = ncsize;
-        zone4 = ngqscr + mijkl * 2 +
-                (nij + nkl) * 9 +
-                mgqijkl * 12 +
+        zone4 = pad_ngqscr + pad_mijkl * 2 +
+                (pad_nij + pad_nkl) * 9 +
+                pad_mgqijkl * 12 +
                 *nint2d * 3;
         assert (zone12 + zone3 + zone4 <= zmax);
         
 /*             ...generate the memory allocation pointers. */
         *zrhoab = 1;
-        *zrhocd = *zrhoab + nij;        
-        *zcbatch = *zrhocd + nkl;
-        *znorma = *zcbatch + ncsize;
-        *znormb = *znorma + npgtoa;
-        *znormc = *znormb + npgtob;
-        *znormd = *znormc + npgtoc;
-        *zp = *znormd + npgtod;
+        *zrhocd = *zrhoab + pad_nij;        
+        *zcbatch = *zrhocd + pad_nkl;
+        *znorm = *zcbatch + ncsize;
+        *zp = *znorm + maxshell;       
+        *zpx = *zp + pad_nij;
+        *zpy = *zpx + pad_nij;
+        *zpz = *zpy + pad_nij;
+        *zpax = *zpz + pad_nij;
+        *zpay = *zpax + pad_nij;
+        *zpaz = *zpay + pad_nij;
+        *zpinvhf = *zpaz + pad_nij;
+        *zscpk2 = *zpinvhf + pad_nij;
+        *zq = *zscpk2 + pad_nij;
+        *zqx = *zq + pad_nkl;
+        *zqy = *zqx + pad_nkl;
+        *zqz = *zqy + pad_nkl;
+        *zqcx = *zqz + pad_nkl;
+        *zqcy = *zqcx + pad_nkl;
+        *zqcz = *zqcy + pad_nkl;
+        *zqinvhf = *zqcz + pad_nkl;
+        *zscqk2 = *zqinvhf + pad_nkl;
+        *zrts = *zscqk2 + pad_nkl;
         
-        *zpx = *zp + nij;
-        *zpy = *zpx + nij;
-        *zpz = *zpy + nij;
-        *zpax = *zpz + nij;
-        *zpay = *zpax + nij;
-        *zpaz = *zpay + nij;
-        *zpinvhf = *zpaz + nij;
-        *zscpk2 = *zpinvhf + nij;
-        *zq = *zscpk2 + nij;
-        *zqx = *zq + nkl;
-        *zqy = *zqx + nkl;
-        *zqz = *zqy + nkl;
-        *zqcx = *zqz + nkl;
-        *zqcy = *zqcx + nkl;
-        *zqcz = *zqcy + nkl;
-        *zqinvhf = *zqcz + nkl;
-        *zscqk2 = *zqinvhf + nkl;
-        *zrts = *zscqk2 + nkl;
-        *zwts = *zrts + mgqijkl;
-        *zgqscr = *zwts + mgqijkl;
-        *ztval = *zgqscr + ngqscr;
-        *zpqpinv = *ztval + mijkl;
-        *zscpqk4 = *zpqpinv + mijkl;
-        *zb00 = *zscpqk4 + mgqijkl;
-        *zb01 = *zb00 + mgqijkl;
-        *zb10 = *zb01 + mgqijkl;
-        *zc00x = *zb10 + mgqijkl;
-        *zc00y = *zc00x + mgqijkl;
-        *zc00z = *zc00y + mgqijkl;
-        *zd00x = *zc00z + mgqijkl;
-        *zd00y = *zd00x + mgqijkl;
-        *zd00z = *zd00y + mgqijkl;
-        *zint2dx = *zd00z + mgqijkl;
+        *zwts = *zrts + pad_mgqijkl;
+        *zgqscr = *zwts + pad_mgqijkl;
+        *ztval = *zgqscr + pad_ngqscr;
+        *zpqpinv = *ztval + pad_mijkl;
+        *zscpqk4 = *zpqpinv + pad_mijkl;
+        *zb00 = *zscpqk4 + pad_mgqijkl;
+        *zb01 = *zb00 + pad_mgqijkl;
+        *zb10 = *zb01 + pad_mgqijkl;
+        *zc00x = *zb10 + pad_mgqijkl;
+        *zc00y = *zc00x + pad_mgqijkl;
+        *zc00z = *zc00y + pad_mgqijkl;
+        *zd00x = *zc00z + pad_mgqijkl;
+        *zd00y = *zd00x + pad_mgqijkl;
+        *zd00z = *zd00y + pad_mgqijkl;
+        *zint2dx = *zd00z + pad_mgqijkl;
         *zint2dy = *zint2dx + *nint2d;
         *zint2dz = *zint2dy + *nint2d;
     }
@@ -249,4 +260,7 @@ int erd__e0f0_def_blocks (int zmax, int npgtoa, int npgtob,
     return 0;
 }
 
+
+#ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(pop)
+#endif

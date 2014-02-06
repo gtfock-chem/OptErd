@@ -6,8 +6,9 @@
 
 #include "erd.h"
 
-
+#ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(push, target(mic))
+#endif
 
 /* ------------------------------------------------------------------------ */
 /*  OPERATION   : ERD_E0F0_PCGTO_BLOCK */
@@ -168,8 +169,7 @@
 /*                    BATCH        =  current batch of primitive */
 /*                                    cartesian [E0|F0] integrals */
 /* ------------------------------------------------------------------------ */
-int erd__e0f0_pcgto_block (
-			   int nij, int nkl,
+int erd__e0f0_pcgto_block (int nij, int nkl,
                            int ngqp, int nmom,
                            int nxyzet, int nxyzft,
                            int nxyzp, int nxyzq,
@@ -570,7 +570,7 @@ int erd__e0f0_pcgto_block (
     erd__int2d_to_e0f0 (shella, shellp, shellc, shellq,
             mgqijkl_aligned, nxyzet, nxyzft, nxyzp, nxyzq,
             int2dx_aligned, int2dy_aligned, int2dz_aligned,
-            b00_aligned, b01_aligned, scalepq_aligned, batch_aligned);
+            scalepq_aligned, batch_aligned);
 #ifdef __ERD_PROFILE__
     end_clock = __rdtsc();
     erd_ticks[tid][erd__int2d_to_e0f0_ticks] += (end_clock - start_clock);
@@ -580,4 +580,6 @@ int erd__e0f0_pcgto_block (
     return 0;
 }
 
+#ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(pop)
+#endif

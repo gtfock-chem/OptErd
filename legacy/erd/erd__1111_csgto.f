@@ -206,6 +206,7 @@ C
 
          IF (ATOMIC .AND. (MOD(SHELLT,2).EQ.1)) THEN
              NBATCH = 0
+             CALL END_TIMER (22, STIME0)
              RETURN
          END IF
 C
@@ -398,9 +399,10 @@ C
      +                         ZCORE (1) )
      +
      +
-         CALL END_TIMER (14, STIME)
+         CALL END_TIMER (15, STIME)
          IF (EMPTY) THEN
              NBATCH = 0
+             CALL END_TIMER (22, STIME0)
              RETURN
          END IF
 C
@@ -455,7 +457,7 @@ C
      +                          ZCORE (ZCBATCH) )
      +
      +
-         CALL END_TIMER (13, STIME)
+         CALL END_TIMER (14, STIME)
          IPUSED = IPRIM4 + NPGTO34
          IPSAVE = IPUSED + MNPRIM
          IPPAIR = IPSAVE + MXPRIM
@@ -511,6 +513,8 @@ C
      +                               ZCORE (ZPBATCH) )
      +
      +
+                   CALL END_TIMER (16, STIME)
+                   CALL START_TIMER (STIME)                  
                    CALL  ERD__CTR_4INDEX_BLOCK
      +
      +                        ( NPSIZE,NCSIZE,NWSIZE,
@@ -542,7 +546,7 @@ C
      +                                    ZCORE (ZCBATCH) )
      +
      +
-                   CALL END_TIMER (15, STIME)
+                   CALL END_TIMER (21, STIME)
  1100           CONTINUE
  1000        CONTINUE
 
@@ -587,6 +591,8 @@ C
      +                               ZCORE (ZPBATCH) )
      +
      +
+                   CALL END_TIMER (17, STIME)
+                   CALL START_TIMER (STIME)                                     
                    CALL  ERD__CTR_4INDEX_BLOCK
      +
      +                        ( NPSIZE,NCSIZE,NWSIZE,
@@ -618,7 +624,7 @@ C
      +                                    ZCORE (ZCBATCH) )
      +
      +
-                   CALL END_TIMER (16, STIME)
+                   CALL END_TIMER (21, STIME)
  2200           CONTINUE
  2000        CONTINUE
 
@@ -663,6 +669,8 @@ C
      +                               ZCORE (ZPBATCH) )
      +
      +
+                   CALL END_TIMER (18, STIME)
+                   CALL START_TIMER (STIME)                                     
                    CALL  ERD__CTR_4INDEX_BLOCK
      +
      +                        ( NPSIZE,NCSIZE,NWSIZE,
@@ -694,7 +702,7 @@ C
      +                                    ZCORE (ZCBATCH) )
      +
      +
-                   CALL END_TIMER (17, STIME)
+                   CALL END_TIMER (21, STIME)
  3300           CONTINUE
  3000        CONTINUE
 
@@ -739,6 +747,8 @@ C
      +                               ZCORE (ZPBATCH) )
      +
      +
+                   CALL END_TIMER (19, STIME)
+                   CALL START_TIMER (STIME)                  
                    CALL  ERD__CTR_4INDEX_BLOCK
      +
      +                        ( NPSIZE,NCSIZE,NWSIZE,
@@ -770,7 +780,7 @@ C
      +                                    ZCORE (ZCBATCH) )
      +
      +
-                   CALL END_TIMER (18, STIME)
+                   CALL END_TIMER (21, STIME)
  4400           CONTINUE
  4000        CONTINUE
 
@@ -814,6 +824,8 @@ C
      +                               ZCORE (ZPBATCH) )
      +
      +
+                   CALL END_TIMER (20, STIME)
+                   CALL START_TIMER (STIME)
                    CALL  ERD__CTR_4INDEX_BLOCK
      +
      +                        ( NPSIZE,NCSIZE,NWSIZE,
@@ -845,7 +857,7 @@ C
      +                                    ZCORE (ZCBATCH) )
      +
      +
-                   CALL END_TIMER (19, STIME)
+                   CALL END_TIMER (21, STIME)
  5500           CONTINUE
  5000        CONTINUE
 
@@ -1044,7 +1056,7 @@ C             ...set final pointer to integrals in ZCORE array.
 C
 C
          NFIRST = IN
-         CALL END_TIMER (20, STIME0)
+         CALL END_TIMER (22, STIME0)
 C
 C
 C             ...ready!

@@ -47,7 +47,7 @@ erd_opt_sources = [
 	"erd__rys_4_roots_weights.c", "erd__rys_5_roots_weights.c", "erd__rys_roots_weights.c", "erd__rys_x_roots_weights.f",
 	"erd__set_abcd.c", "erd__set_ij_kl_pairs.c", "erd__spherical_transform.c", "erd__sppp_pcgto_block.c",
 	"erd__sspp_pcgto_block.c", "erd__sssp_pcgto_block.c", "erd__ssss_pcgto_block.c", "erd__xyz_to_ry_abcd.c",
-	"erd__xyz_to_ry_matrix.c", "erd__prepare_ctr.c",
+	"erd__xyz_to_ry_matrix.c",
 	"erd_profile.c"
 ]
 
@@ -97,7 +97,7 @@ with open('build.ninja', 'w') as makefile:
 	print('FC_SNB_OFFLOAD = $FC_SNB', file = makefile)
 	print('FC_IVB_OFFLOAD = $FC_IVB', file = makefile)
 	print('FC_HSW_OFFLOAD = $FC_HSW', file = makefile)
-	print('FFLAGS = -O3 -g -reentrancy threaded -recursive', file = makefile)
+	print('FFLAGS = -O3 -g -fpp -reentrancy threaded -recursive', file = makefile)
 	native_cflags = '-D__ERD_PROFILE__ -offload=none -diag-disable 161,2423'
 	offload_cflags = '-offload-option,mic,compiler,"-z defs -no-opt-prefetch"'
 	print('CC_NHM = icc -m64 -xSSE4.2 ' + native_cflags, file = makefile)

@@ -4,8 +4,9 @@
 
 #include "erd.h"
 
-
+#ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(push, target(mic))
+#endif
 
 /* ------------------------------------------------------------------------ */
 /*  OPERATION   : ERD__HRR_TRANSFORM */
@@ -49,8 +50,7 @@
 /*                     Y          =  batch of HRR transformed integrals */
 /*                                   (m,ab) */
 /* ------------------------------------------------------------------------ */
-int erd__hrr_transform (
-			int m, int nrow,
+int erd__hrr_transform (int m, int nrow,
                         int nxyza, int nxyzb,
                         int *lrow, int *row,
                         double *rot, double *x, double *y)
@@ -97,4 +97,6 @@ int erd__hrr_transform (
     return 0;
 }
 
+#ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(pop)
+#endif

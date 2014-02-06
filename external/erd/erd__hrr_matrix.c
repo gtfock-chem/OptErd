@@ -5,8 +5,10 @@
 
 #include "erd.h"
 
-
+#ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(push, target(mic))
+#endif
+
 
 /* ------------------------------------------------------------------------ */
 /*  OPERATION   : ERD__HRR_MATRIX */
@@ -53,8 +55,7 @@
 /*                The xyz-basis for the a- and b-parts in columns */
 /*                of matrix T will be ordered such that a preceeds b. */
 /* ------------------------------------------------------------------------ */
-int erd__hrr_matrix (
-		     int nrothrr, int ncolhrr,
+int erd__hrr_matrix (int nrothrr, int ncolhrr,
                      int nxyzet, int nxyza, int nxyzp,
                      int shella, int shellb, int shellp,
                      int nabcoor, double abx, double aby, double abz,
@@ -64,7 +65,7 @@ int erd__hrr_matrix (
 {
     int add[3] = {0, 0, 1};
 
-    int i, j, l, m, n, ngh, out1, out2, ngho, base1, base2,
+    int i, j, l, m, n, out1, out2, ngho, base1, base2,
         tleap;
     int nxyzg, nxyzh, nxyzi, shellg, shellh, nrowin, nxyzgo,
         nxyzho;
@@ -84,7 +85,6 @@ int erd__hrr_matrix (
         t[i] = 1.0;
     }
 /*             ...build up the HRR transformation matrix + data. */
-    ngh = nxyzet;
     nxyzg = nxyzet;
     nxyzh = 1;
     nxyzgo = nxyzet;
@@ -111,8 +111,8 @@ int erd__hrr_matrix (
         {
             ++(*nrowout);
         }
-        erd__hrr_step (ngh, ngho, nrowin, *nrowout,
-                       nxyza, nxyzi, nxyzg, nxyzh, nxyzgo,
+        erd__hrr_step (ngho, nrowin, *nrowout,
+                       nxyza, nxyzg, nxyzh, nxyzgo,
                        shella, shellg, shellh - 1,
                        abx, aby, abz,
                        work, &nrow[*in1], &row[*in2], &t[*in2],
@@ -120,7 +120,6 @@ int erd__hrr_matrix (
         nxyzh = nxyzho;
         if (shellh != shellb)
         {
-            ngh = ngho;
             nxyzg = nxyzgo;
             nxyzi = nxyzi - shellg - 1;
             --shellg;
@@ -164,4 +163,6 @@ int erd__hrr_matrix (
     return 0;
 }
 
+#ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(pop)
+#endif
