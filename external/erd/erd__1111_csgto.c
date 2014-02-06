@@ -4,7 +4,10 @@
 
 #include "erd.h"
 
+#ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(push, target(mic))
+#endif
+
 
 /* ------------------------------------------------------------------------ */
 /*  OPERATION   : ERD__1111_CSGTO */
@@ -95,15 +98,16 @@ int erd__1111_csgto (int zmax, int npgto1, int npgto2,
                      double *alpha3, double *alpha4,
                      double *cc1, double *cc2,
                      double *cc3, double *cc4,
+                     double *norm1, double *norm2,
+                     double *norm3, double *norm4,
                      int screen,
                      int *icore, int *nbatch, int *nfirst, double *zcore)
 {    
     int i;
     double x12, y12, z12, x34, y34, z34;
     int zp, zq;
-    int nij, nkl, zpx, lcc1, lcc2, lcc3, lcc4, zpy,
+    int nij, nkl, zpx, zpy,
         zpz, zqx, zqy, zqz;
-    int lexp1, lexp2, lexp3, lexp4;
     int nxyz1, nxyz2, nxyz3, nxyz4;
     int atom12, atom23;
     int atom34;
@@ -113,15 +117,22 @@ int erd__1111_csgto (int zmax, int npgto1, int npgto2,
     double rn34sq;
     int empty;
     int nxyzt, iprim1, iprim2, iprim3, iprim4, zscpk2, zscqk2;
-    int znorm1, znorm2, znorm3, znorm4;
+    int znorm;
     int atomic;
     int shellp, npgto12, npgto34;
     int shellt;
     double spnorm;
     int zcbatch;
+    int npmin;
+    double factor;
 #ifdef __ERD_PROFILE__    
     uint64_t start_clock, end_clock;
+    uint64_t start_clock0, end_clock0;
     int tid = omp_get_thread_num();
+#endif
+
+#ifdef __ERD_PROFILE__
+    start_clock0 = __rdtsc();
 #endif
 
     shellp = shell1 + shell2;
@@ -133,20 +144,12 @@ int erd__1111_csgto (int zmax, int npgto1, int npgto2,
     if (atomic && shellt % 2 == 1)
     {
         *nbatch = 0;
+    #ifdef __ERD_PROFILE__
+        end_clock0 = __rdtsc(); 
+        erd_ticks[tid][erd__1111_csgto_ticks] += (end_clock0 - start_clock0);
+    #endif
         return 0;
     }
-/*             ...set the pointers to the alpha exponents, contraction */
-/*                coefficients and segmented contraction boundaries. */
-    lexp1 = 0;
-    lexp2 = lexp1 + npgto1;
-    lexp3 = lexp2 + npgto2;
-    lexp4 = lexp3 + npgto3;
-    lcc1 = 0;
-    lcc2 = lcc1 + npgto1;
-    lcc3 = lcc2 + npgto2;
-    lcc4 = lcc3 + npgto3;
-
-
 /*             ...determine csh equality between center pairs 1,2 */
 /*                and 3,4 in increasing order of complexity: */
 /*                 centers -> shells -> exponents -> ctr coefficients */
@@ -175,9 +178,9 @@ int erd__1111_csgto (int zmax, int npgto1, int npgto2,
     npgto12 = npgto1 * npgto2;
     npgto34 = npgto3 * npgto4;
     iprim1 = 0;
-    iprim2 = iprim1 + npgto12;
-    iprim3 = iprim2 + npgto12;
-    iprim4 = iprim3 + npgto34;
+    iprim2 = iprim1 + PAD_LEN2(npgto12);
+    iprim3 = iprim2 + PAD_LEN2(npgto12);
+    iprim4 = iprim3 + PAD_LEN2(npgto34);
     spnorm = 1.0;
     if (shell1 == 1)
     {
@@ -214,6 +217,10 @@ int erd__1111_csgto (int zmax, int npgto1, int npgto2,
     if (empty)
     {
         *nbatch = 0;
+    #ifdef __ERD_PROFILE__
+        end_clock0 = __rdtsc(); 
+        erd_ticks[tid][erd__1111_csgto_ticks] += (end_clock0 - start_clock0);
+    #endif
         return 0;
     }
 /*             ...decide on the primitive [12|34] block size and */
@@ -222,19 +229,50 @@ int erd__1111_csgto (int zmax, int npgto1, int npgto2,
 /*                steps for contraction. */
     erd__1111_def_blocks (zmax, npgto1, npgto2, npgto3, npgto4,
                           nij, nkl, nxyzt, 0,
-                          &zcbatch, &znorm1, &znorm2,
-                          &znorm3, &znorm4,
+                          &zcbatch, &znorm,
                           &zrho12, &zrho34,
                           &zp, &zpx, &zpy, &zpz, &zscpk2,
                           &zq, &zqx, &zqy, &zqz, &zscqk2);
 #ifdef __ERD_PROFILE__
     start_clock = __rdtsc();
-#endif
-    erd__prepare_ctr (npgto1, npgto2, npgto3, npgto4,
-                      shell1, shell2, shell3, shell4,
-                      alpha1, alpha2, alpha3, alpha4,
-                      spnorm, &zcore[znorm1], &zcore[znorm2],
-                      &zcore[znorm3], &zcore[znorm4]);
+#endif 
+    factor = PREFACT * spnorm;
+    npmin = npgto1 < npgto2 ? npgto1 : npgto2;
+    npmin = npmin < npgto3 ? npmin : npgto3;
+    npmin = npmin < npgto4 ? npmin : npgto4;
+    if (npgto1 == npmin)
+    {
+        for (i = 0; i < npgto1; i++)
+        {
+            zcore[znorm + i] = factor * norm1[i];
+        }
+        norm1 = &zcore[znorm];
+    }
+    else if (npgto2 == npmin)
+    {
+        for (i = 0; i < npgto2; i++)
+        {
+            zcore[znorm + i] = factor * norm2[i];
+        }
+        norm2 = &zcore[znorm];
+    }
+    else if (npgto3 == npmin)
+    {
+        for (i = 0; i < npgto3; i++)
+        {
+            zcore[znorm + i] = factor * norm3[i];
+        }
+        norm3 = &zcore[znorm];
+    }
+    else
+    {
+        for (i = 0; i < npgto4; i++)
+        {
+            zcore[znorm + i] = factor * norm4[i];
+        }
+        norm4 = &zcore[znorm];
+    }
+    
 #ifdef __ERD_PROFILE__
     end_clock = __rdtsc();
     erd_ticks[tid][erd__prepare_ctr_ticks_1111] += (end_clock - start_clock);
@@ -263,8 +301,7 @@ int erd__1111_csgto (int zmax, int npgto1, int npgto2,
                                &icore[iprim2],
                                &icore[iprim3],
                                &icore[iprim4],
-                               &zcore[znorm1], &zcore[znorm2],
-                               &zcore[znorm3], &zcore[znorm4],
+                               norm1, norm2, norm3, norm4,
                                &zcore[zrho12], &zcore[zrho34],
                                &zcore[zp], &zcore[zpx],
                                &zcore[zpy], &zcore[zpz], &zcore[zscpk2],
@@ -291,8 +328,7 @@ int erd__1111_csgto (int zmax, int npgto1, int npgto2,
                                &icore[iprim2],
                                &icore[iprim3],
                                &icore[iprim4],
-                               &zcore[znorm1], &zcore[znorm2],
-                               &zcore[znorm3], &zcore[znorm4],
+                               norm1, norm2, norm3, norm4,
                                &zcore[zrho12], &zcore[zrho34],
                                &zcore[zp], &zcore[zpx],
                                &zcore[zpy], &zcore[zpz], &zcore[zscpk2],
@@ -319,8 +355,7 @@ int erd__1111_csgto (int zmax, int npgto1, int npgto2,
                                &icore[iprim2],
                                &icore[iprim3],
                                &icore[iprim4],
-                               &zcore[znorm1], &zcore[znorm2],
-                               &zcore[znorm3], &zcore[znorm4],
+                               norm1, norm2, norm3, norm4,
                                &zcore[zrho12], &zcore[zrho34],
                                &zcore[zp], &zcore[zpx],
                                &zcore[zpy], &zcore[zpz], &zcore[zscpk2],
@@ -347,8 +382,7 @@ int erd__1111_csgto (int zmax, int npgto1, int npgto2,
                                &icore[iprim2],
                                &icore[iprim3],
                                &icore[iprim4],
-                               &zcore[znorm1], &zcore[znorm2],
-                               &zcore[znorm3], &zcore[znorm4],
+                               norm1, norm2, norm3, norm4,
                                &zcore[zrho12], &zcore[zrho34],
                                &zcore[zp], &zcore[zpx],
                                &zcore[zpy], &zcore[zpz], &zcore[zscpk2],
@@ -374,8 +408,7 @@ int erd__1111_csgto (int zmax, int npgto1, int npgto2,
                                &icore[iprim2],
                                &icore[iprim3],
                                &icore[iprim4],
-                               &zcore[znorm1], &zcore[znorm2],
-                               &zcore[znorm3], &zcore[znorm4],
+                               norm1, norm2, norm3, norm4,
                                &zcore[zrho12], &zcore[zrho34],
                                &zcore[zp], &zcore[zpx],
                                &zcore[zpy], &zcore[zpz], &zcore[zscpk2],
@@ -411,7 +444,15 @@ int erd__1111_csgto (int zmax, int npgto1, int npgto2,
     *nbatch = nxyzt;
     *nfirst = zcbatch + 1;
 
+#ifdef __ERD_PROFILE__
+    end_clock0 = __rdtsc(); 
+    erd_ticks[tid][erd__1111_csgto_ticks] += (end_clock0 - start_clock0);
+#endif
+
     return 0;
 }
 
+
+#ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(pop)
+#endif

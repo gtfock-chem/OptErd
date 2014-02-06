@@ -4,7 +4,9 @@
 #include "erd.h"
 
 
+#ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(push, target(mic))
+#endif
 
 /* ------------------------------------------------------------------------ */
 /*  OPERATION   : ERD__MEMORY_1111_CSGTO */
@@ -57,10 +59,6 @@ int erd__memory_1111_csgto (int npgto1, int npgto2,
     int nxyzt;
     int atomic;
     int shellp, npgto12, shellt, npgto34;
-    int mxprim;
-    int mnprim;
-    int npminrs;
-    int npmintu;
     
     *iopt = 0;
     *zopt = 0;
@@ -98,8 +96,8 @@ int erd__memory_1111_csgto (int npgto1, int npgto2,
 /*                will be changed in the future, this is where a memory */
 /*                routine handling the IJ and KL pair determination */
 /*                should be placed. */
-    zneed = npgto12 + npgto34;
-    ineed = 2 * zneed;
+    zneed = PAD_LEN(npgto12) + PAD_LEN(npgto34);
+    ineed = 2 * PAD_LEN2(npgto12) + PAD_LEN2(npgto34);
     *iopt = MAX(*iopt, ineed);
     *zopt = MAX(*zopt, zneed);
 
@@ -109,21 +107,9 @@ int erd__memory_1111_csgto (int npgto1, int npgto2,
 /*                generation. */
     erd__1111_def_blocks (0, npgto1, npgto2, npgto3, npgto4,
                           npgto12, npgto34, nxyzt, 1,
-                          &zout2, NULL,
+                          &zout2, NULL, NULL, NULL,
                           NULL, NULL, NULL, NULL, NULL,
-                          NULL, NULL, NULL, NULL, NULL,
-                          NULL, NULL, NULL, NULL, NULL);
-
-    mxprim = MAX(npgto1, npgto2);
-    mxprim = MAX(mxprim, npgto3);
-    mxprim = MAX(mxprim, npgto4);
-
-    npminrs = MIN(npgto1, npgto2);
-    npmintu = MIN(npgto1, npgto2);         
-    mnprim = MAX(npminrs, npmintu);
-    
-    ineed = ineed + 2 * mxprim + mnprim;
-    *iopt = MAX(*iopt, ineed);
+                          NULL, NULL, NULL, NULL, NULL);  
     *zopt = MAX(*zopt, zout2);
 
 
@@ -141,4 +127,6 @@ int erd__memory_1111_csgto (int npgto1, int npgto2,
     return 0;
 }
 
+#ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(pop)
+#endif

@@ -4,7 +4,9 @@
 
 #include "erd.h"
 
+#ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(push, target(mic))
+#endif
 
 /* ------------------------------------------------------------------------ */
 /*  OPERATION   : ERD__INT2D_TO_E0F0 */
@@ -119,8 +121,7 @@ int erd__int2d_to_e0f0 (int shella, int shellp, int shellc, int shellq,
                         int ngqexq,
                         int nxyzet, int nxyzft, int nxyzp, int nxyzq,
                         double *int2dx, double *int2dy, double *int2dz,
-                        double *temp1, double *temp2, double *scale,
-                        double *batch)
+                        double *scale, double *batch)
 {
     int i, j, k, m, se, sf, xe, ye, ze, xf, yf, zf, xep, xfp;
     int xye, xyf, xyep, xyfp, seend, sfend, yeend, yfend, xemax,
@@ -216,4 +217,6 @@ int erd__int2d_to_e0f0 (int shella, int shellp, int shellc, int shellq,
     return 0;
 }
 
+#ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(pop)
+#endif

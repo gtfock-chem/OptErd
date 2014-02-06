@@ -5,8 +5,10 @@
 
 #include "erd.h"
 
-
+#ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(push, target(mic))
+#endif
+
 
 /* ------------------------------------------------------------------------ */
 /*  OPERATION   : ERD__CARTESIAN_NORMS */
@@ -58,4 +60,7 @@ int erd__cartesian_norms (int l, double *norm)
     return 0;
 }
 
+
+#ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(pop)
+#endif

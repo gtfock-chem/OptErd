@@ -5,7 +5,9 @@
 #include "erd.h"
 
 
+#ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(push, target(mic))
+#endif
 
 /* ------------------------------------------------------------------------ */
 /*  OPERATION   : ERD__NORMALIZE_CARTESIAN */
@@ -41,8 +43,7 @@
 /*                  Output: */
 /*                    BATCH       =  batch of normalized integrals */
 /* ------------------------------------------------------------------------ */
-int erd__normalize_cartesian (
-			      int m, int l,
+int erd__normalize_cartesian (int m, int l,
                               double *norm, double *batch)
 {
     int batch_offset;
@@ -74,4 +75,6 @@ int erd__normalize_cartesian (
     return 0;
 }
 
+#ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(pop)
+#endif

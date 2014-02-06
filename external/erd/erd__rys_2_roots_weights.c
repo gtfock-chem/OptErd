@@ -12,7 +12,9 @@
 
 #include "erd.h"
 
+#ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(push, target(mic))
+#endif
 
 /*  Copyright (c) 2003-2010 University of Florida */
 
@@ -398,4 +400,6 @@ erd__rys_2_roots_weights_ (int * nt, int * ntgqp,
     return 0;
 }                               /* erd__rys_2_roots_weights__ */
 
+#ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(pop)
+#endif

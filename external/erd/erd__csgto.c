@@ -5,8 +5,10 @@
 
 #include "erd.h"
 
-
+#ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(push, target(mic))
+#endif
+
 
 /* ------------------------------------------------------------------------ */
 /*  OPERATION   : ERD__CSGTO */
@@ -160,6 +162,8 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
                 double *alpha3, double *alpha4,
                 double *cc1, double *cc2,
                 double *cc3, double *cc4,
+                double *norm1, double *norm2,
+                double *norm3, double *norm4,
                 int spheric, int screen, int *icore,
                 int *nbatch, int *nfirst, double *zcore)
 {
@@ -171,14 +175,13 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
     int nij;
     int nkl;
     int out, zpx, zpy, zpz, zqx, zqy, zqz,
-        pos1, pos2, lcca, lccb, lccc, lccd;
+        pos1, pos2;
     int zc00x, ngqp, move, nmom, nrya, nryb, nryc, nryd,
         temp, zc00y, zc00z, zpax, zpay, zpaz, zqcx, zqcy, zqcz, zd00x,
         zd00y, zd00z;
     int zrts, zwts;
-    int zbase;
-    int ihscr, iused, lexpa, lexpb, lexpc;
-    int lexpd, ixoff[4];
+    int zbase;    
+    int ihscr, iused, ixoff[4];
     int nrota, nrotb, nrotc, nrotd, ihrow, nrowa, zused, nrowb,
         nrowc, nrowd;
     int empty;
@@ -192,7 +195,7 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
     int mxsize;
     int npgtoa, npgtob, npgtoc, npgtod,
         shella, shellb, shellc, shelld, shellp, nxyzet, nxyzft, shellq,
-        shellt, znorma, znormb, znormc, znormd, zcnorm, zrhoab, zrhocd,
+        shellt, znorm, zcnorm, zrhoab, zrhocd,
         zgqscr, zsrota, zsrotb, zsrotc, zsrotd;
     double rnabsq, rncdsq, spnorm;
     int zscpqk4;
@@ -212,18 +215,32 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
     double *ccb;
     double *ccc;
     double *ccd;
-    
-    
+    double *norma;
+    double *normb;
+    double *normc;
+    double *normd;    
+    int npmin;
+    int i;
+    double factor;
+    int tr1234;
+    int swap12;
+    int swap34;
+            
 #ifdef __ERD_PROFILE__
     uint64_t start_clock, end_clock;
+    uint64_t start_clock0, end_clock0;
     int tid = omp_get_thread_num();
 #endif    
     --icore;
     --zcore;
+
+#ifdef __ERD_PROFILE__
+    start_clock0 = __rdtsc();
+#endif
+
 /*             ...fix the A,B,C,D labels from the 1,2,3,4 ones. */
 /*                Calculate the relevant data for the A,B,C,D batch of */
 /*                integrals. */
-    int tr1234;
     erd__set_abcd (npgto1, npgto2, npgto3, npgto4,
                    shell1, shell2, shell3, shell4,
                    x1, y1, z1, x2, y2, z2,
@@ -235,20 +252,20 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
                    &nxyza, &nxyzb, &nxyzc, &nxyzd,
                    &nxyzet, &nxyzft,
                    &nrya, &nryb, &nryc, &nryd,
-                   &indexa, &indexb, &indexc, &indexd,
-                   &lexpa, &lexpb, &lexpc, &lexpd,
-                   &lcca, &lccb, &lccc, &lccd,
                    &nabcoor, &ncdcoor,
                    &ncolhrr, &nrothrr, &nxyzhrr, &empty, &tr1234);
     if (empty)
     {
         *nbatch = 0;
+    #ifdef __ERD_PROFILE__
+        end_clock0 = __rdtsc(); 
+        erd_ticks[tid][erd__csgto_ticks] += (end_clock0 - start_clock0);
+    #endif
         return 0;
     }
 
-    int swap12 = (shell1 < shell2);
-    int swap34 = (shell3 < shell4);
-    
+    swap12 = (shell1 < shell2);
+    swap34 = (shell3 < shell4);  
     if (!tr1234)
     {
         if (!swap12)
@@ -257,6 +274,10 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
             alphab = alpha2;
             cca = cc1;
             ccb = cc2;
+            norma = norm1;
+            normb = norm2;
+            indexa = 1;
+            indexb = 2;
         }
         else
         {
@@ -264,6 +285,10 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
             alphab = alpha1;
             cca = cc2;
             ccb = cc1;
+            norma = norm2;
+            normb = norm1;           
+            indexa = 2;
+            indexb = 1;
         }
         if (!swap34)
         {
@@ -271,6 +296,10 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
             alphad = alpha4;
             ccc = cc3;
             ccd = cc4;
+            normc = norm3;
+            normd = norm4;           
+            indexc = 3;
+            indexd = 4;
         }
         else
         {
@@ -278,6 +307,10 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
             alphad = alpha3;
             ccc = cc4;
             ccd = cc3;
+            normc = norm4;
+            normd = norm3;           
+            indexc = 4;
+            indexd = 3;
         }
     }
     else
@@ -288,6 +321,10 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
             alphad = alpha2;
             ccc = cc1;
             ccd = cc2;
+            normc = norm1;
+            normd = norm2;           
+            indexc = 1;
+            indexd = 2;
         }
         else
         {
@@ -295,6 +332,10 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
             alphad = alpha1;
             ccc = cc2;
             ccd = cc1;
+            normc = norm2;
+            normd = norm1;           
+            indexc = 2;
+            indexd = 1;
         }
         if (!swap34)
         {
@@ -302,6 +343,10 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
             alphab = alpha4;
             cca = cc3;
             ccb = cc4;
+            norma = norm3;
+            normb = norm4;                      
+            indexa = 3;
+            indexb = 4;
         }
         else
         {
@@ -309,6 +354,10 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
             alphab = alpha3;
             cca = cc4;
             ccb = cc3;
+            norma = norm4;
+            normb = norm3;           
+            indexa = 4;
+            indexb = 3;
         }
     }
     
@@ -367,9 +416,9 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
     npgtocd = npgtoc * npgtod;
     nxyzt = nxyzet * nxyzft;
     iprima = 1;
-    iprimb = iprima + npgtoab;
-    iprimc = iprimb + npgtoab;
-    iprimd = iprimc + npgtocd;
+    iprimb = iprima + PAD_LEN2(npgtoab);
+    iprimc = iprimb + PAD_LEN2(npgtoab);
+    iprimd = iprimc + PAD_LEN2(npgtocd);
 
 #ifdef __ERD_PROFILE__
     start_clock = __rdtsc();
@@ -391,6 +440,10 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
     if (empty)
     {
         *nbatch = 0;
+    #ifdef __ERD_PROFILE__
+        end_clock0 = __rdtsc(); 
+        erd_ticks[tid][erd__csgto_ticks] += (end_clock0 - start_clock0);
+    #endif
         return 0;
     }
 
@@ -405,8 +458,7 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
                           shellp, shellq, nij, nkl,
                           ngqp, ngqscr, nxyzt, 0,
                           &nint2d, &zcbatch,
-                          &znorma, &znormb, &znormc, &znormd,
-                          &zrhoab, &zrhocd, &zp, &zpx, &zpy, &zpz, &zpax,
+                          &znorm, &zrhoab, &zrhocd, &zp, &zpx, &zpy, &zpz, &zpax,
                           &zpay, &zpaz, &zpinvhf, &zscpk2,
                           &zq, &zqx, &zqy, &zqz, &zqcx, &zqcy,
                           &zqcz, &zqinvhf, &zscqk2,
@@ -417,13 +469,44 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
                           &zint2dx, &zint2dy, &zint2dz);
 #ifdef __ERD_PROFILE__
     start_clock = __rdtsc();
-#endif    
-    erd__prepare_ctr (npgtoa, npgtob, npgtoc, npgtod,
-                      shella, shellb, shellc, shelld,
-                      alphaa, alphab,
-                      alphac, alphad, spnorm,
-                      &zcore[znorma], &zcore[znormb],
-                      &zcore[znormc], &zcore[znormd]);
+#endif
+    factor = PREFACT * spnorm;
+    npmin = npgtoa < npgtob ? npgtoa : npgtob;
+    npmin = npmin < npgtoc ? npmin : npgtoc;
+    npmin = npmin < npgtod ? npmin : npgtod;
+    if (npgtoa == npmin)
+    {
+        for (i = 0; i < npgtoa; i++)
+        {
+            zcore[znorm + i] = factor * norma[i];
+        }
+        norma = &zcore[znorm];
+    }
+    else if (npgtob == npmin)
+    {
+        for (i = 0; i < npgtob; i++)
+        {
+            zcore[znorm + i] = factor * normb[i];
+        }
+        normb = &zcore[znorm];
+    }
+    else if (npgtoc == npmin)
+    {
+        for (i = 0; i < npgtoc; i++)
+        {
+            zcore[znorm + i] = factor * normc[i];
+        }
+        normc = &zcore[znorm];
+    }
+    else
+    {
+        for (i = 0; i < npgtod; i++)
+        {
+            zcore[znorm + i] = factor * normd[i];
+        }
+        normd = &zcore[znorm];
+    }
+    
 #ifdef __ERD_PROFILE__
     end_clock = __rdtsc();
     erd_ticks[tid][erd__prepare_ctr_ticks] += (end_clock - start_clock);
@@ -445,8 +528,7 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
                            cca, ccb, ccc, ccd, 
                            &icore[iprima], &icore[iprimb],
                            &icore[iprimc], &icore[iprimd],
-                           &zcore[znorma], &zcore[znormb],
-                           &zcore[znormc], &zcore[znormd],
+                           norma, normb, normc, normd,
                            &zcore[zrhoab], &zcore[zrhocd],
                            &zcore[zp], &zcore[zpx], &zcore[zpy], &zcore[zpz],
                            &zcore[zpax], &zcore[zpay], &zcore[zpaz],
@@ -879,7 +961,15 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
 /*             ...set final pointer to integrals in ZCORE array. */
     *nfirst = in;
 
+#ifdef __ERD_PROFILE__
+    end_clock0 = __rdtsc(); 
+    erd_ticks[tid][erd__csgto_ticks] += (end_clock0 - start_clock0);
+#endif
+
     return 0;
 }
 
+
+#ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(pop)
+#endif

@@ -5,7 +5,9 @@
 #include "erd.h"
 
 
+#ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(push, target(mic))
+#endif
 
 /* ------------------------------------------------------------------------ */
 /*  OPERATION   : ERD__INT2D_TO_E000 */
@@ -142,4 +144,6 @@ int erd__int2d_to_e000 (int shella, int shellp, int ngqp, int nexq, int ngqexq,
     return 0;
 } 
 
+#ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(pop)
+#endif

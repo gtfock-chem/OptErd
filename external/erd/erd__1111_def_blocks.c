@@ -4,7 +4,10 @@
 
 #include "erd.h"
 
+#ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(push, target(mic))
+#endif
+
 
 /* ------------------------------------------------------------------------ */
 /*  OPERATION   : ERD__1111_DEF_BLOCKS */
@@ -109,65 +112,68 @@
 int erd__1111_def_blocks (int zmax, int npgto1, int npgto2,
                           int npgto3, int npgto4,
                           int nij, int nkl, int nxyzt,
-                          int memory,
-                          int *zcbatch, 
-                          int *znorm1, int *znorm2,
-                          int *znorm3, int *znorm4,
-                          int *zrho12, int *zrho34,
+                          int memory, int *zcbatch, 
+                          int *znorm, int *zrho12, int *zrho34,
                           int *zp, int *zpx, int *zpy, int *zpz,
                           int *zscpk2, int *zq, int *zqx,
                           int *zqy, int *zqz, int *zscqk2)
 {
-    int mij;
-    int mkl;
     int zone3;
     int zone4;
     int zone12;
     int ncsize;
-   
-    zone3 = npgto1 + npgto2 + npgto3 + npgto4 + nij + nkl;
+    int maxshell;
+
+    maxshell = MAX(npgto1, npgto2);
+    maxshell = MAX(maxshell, npgto3);
+    maxshell = MAX(maxshell, npgto4);
+    maxshell = PAD_LEN(maxshell);
+
+    nij = PAD_LEN(nij);
+    nkl = PAD_LEN(nkl);    
+    zone3 = maxshell + nij + nkl;
+
     ncsize = nxyzt;
+    ncsize = PAD_LEN(ncsize);
     
 /*             ...if the MEMORY keyword is activated, the routine */
 /*                will only determine the optimum and minimum flp */
 /*                memory (in that order), place them respectively */
 /*                into the NKLBLK and NIJBLK variables and exit. */
-    mij = nij;
-    mkl = nkl;
     if (memory)
     {
         zone12 = ncsize;
-        zone4 = (mij + mkl) * 5;
+        zone4 = (nij + nkl) * 5;
         *zcbatch = zone12 + zone3 + zone4;
     }
     else
     {
 /*             ...the actual fitting into the maximum memory given. */ 
         zone12 = ncsize;
-        zone4 = (mij + mkl) * 5;
+        zone4 = (nij + nkl) * 5;
         assert (zone12 + zone3 + zone4 <= zmax);
                      
 /*             ...generate the memory allocation pointers. */
         *zrho12 = 0;
         *zrho34 = *zrho12 + nij;        
         *zcbatch = *zrho34 + nkl;
-        *znorm1 = *zcbatch + ncsize;
-        *znorm2 = *znorm1 + npgto1;
-        *znorm3 = *znorm2 + npgto2;
-        *znorm4 = *znorm3 + npgto3;
-        *zp = *znorm4 + npgto4;
-        *zpx = *zp + mij;
-        *zpy = *zpx + mij;
-        *zpz = *zpy + mij;
-        *zscpk2 = *zpz + mij;
-        *zq = *zscpk2 + mij;
-        *zqx = *zq + mkl;
-        *zqy = *zqx + mkl;
-        *zqz = *zqy + mkl;
-        *zscqk2 = *zqz + mkl;
+        *znorm = *zcbatch + ncsize;
+        *zp = *znorm + maxshell;
+        *zpx = *zp + nij;
+        *zpy = *zpx + nij;
+        *zpz = *zpy + nij;
+        *zscpk2 = *zpz + nij;
+        *zq = *zscpk2 + nij;
+        *zqx = *zq + nkl;
+        *zqy = *zqx + nkl;
+        *zqz = *zqy + nkl;
+        *zscqk2 = *zqz + nkl;
     }
 
     return 0;
 }
 
+
+#ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(pop)
+#endif

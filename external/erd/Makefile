@@ -7,7 +7,6 @@ SRC   = erd__1111_csgto.c \
 	erd__boys_table.c \
 	erd__cartesian_norms.c \
 	erd__csgto.c \
-	erd__ctr_4index_block.c \
 	erd__dsqmin_line_segments.c \
 	erd__e0f0_def_blocks.c \
 	erd__e0f0_pcgto_block.c \
@@ -36,8 +35,7 @@ SRC   = erd__1111_csgto.c \
 	erd__sssp_pcgto_block.c \
 	erd__ssss_pcgto_block.c \
 	erd__xyz_to_ry_abcd.c \
-	erd__xyz_to_ry_matrix.c \
-	erd__prepare_ctr.c
+	erd__xyz_to_ry_matrix.c 
 
 SRC += erd_profile.c
 
@@ -57,16 +55,6 @@ FFLAGS += ${OPTFLAGS}
 CFLAGS = -O3 -std=gnu99 -I../Yeppp/include -openmp
 CFLAGS += -Wall -w2 -Wunknown-pragmas -Wunused-variable
 CFLAGS += ${OPTFLAGS}
-
-ifeq "${arch}" "mic"
-CFLAGS += -no-opt-prefetch
-endif
-
-ifeq "${arch}" "hetero"
-CFLAGS += -offload-option,mic,compiler,"-z defs -no-opt-prefetch"
-else
-CFLAGS += -D__ERD_PROFILE__ -offload=none -diag-disable 161,2423
-endif
 
 all: ${ERDLIB}
 	cp erd_profile.h ../../include

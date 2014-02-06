@@ -4,8 +4,9 @@
 
 #include "erd.h"
 
-
+#ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(push, target(mic))
+#endif
 
 /* ------------------------------------------------------------------------ */
 /*  OPERATION   : ERD__DSQMIN_LINE_SEGMENTS */
@@ -263,4 +264,6 @@ double erd__dsqmin_line_segments (double xp0, double yp0,
     return ret_val;
 }
 
+#ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(pop)
+#endif

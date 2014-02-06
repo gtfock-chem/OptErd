@@ -19,18 +19,22 @@ static char ticks_name[erd__num_ticks][128] =
     "erd__2d_pq_integrals",
     "erd__int2d_to_e0f0",
     "@erd__e0f0_pcgto_block",
+    "erd__ctr_4index_block",
     "erd__xyz_to_ry_abcd",
     "erd__hrr_matrix",
     "erd__hrr_transform",
     "erd__move_ry",
     "erd__spherical_transform",
     "@erd__csgto",
-    
+
+    "erd__1111_prepare_ctr",
+    "erd__1111_set_ij_kl_pairs",    
     "erd__ssss_pcgto_block",
     "erd__sssp_pcgto_block",
     "erd__sspp_pcgto_block",
     "erd__sppp_pcgto_block",
     "erd__pppp_pcgto_block",
+    "erd__1111_ctr_4index_block",
     "@erd__1111_csgto"
 };
 
@@ -72,7 +76,7 @@ void erd_print_profile (int mode)
     for (k = 0; k < erd__num_ticks; k++)
     {
         total_secs = 0.0;
-        printf("%25s", ticks_name[k]);
+        printf("%28s", ticks_name[k]);
         for (i = 0; i < nthreads; i++)
         {
             if (mode == 0)

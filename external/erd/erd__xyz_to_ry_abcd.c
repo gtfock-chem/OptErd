@@ -5,7 +5,9 @@
 #include "erd.h"
 
 
+#ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(push, target(mic))
+#endif
 
 /* ------------------------------------------------------------------------ */
 /*  OPERATION   : ERD__XYZ_TO_RY_ABCD */
@@ -66,8 +68,7 @@
 /*                Only mutually different transformation matrices + */
 /*                associated data are generated. */
 /* ------------------------------------------------------------------------ */
-int erd__xyz_to_ry_abcd (
-			 int nxyza, int nxyzb, int nxyzc, int nxyzd,
+int erd__xyz_to_ry_abcd (int nxyza, int nxyzb, int nxyzc, int nxyzd,
                          int nrya, int nryb, int nryc, int nryd,
                          int shella, int shellb,
                          int shellc, int shelld,
@@ -99,7 +100,7 @@ int erd__xyz_to_ry_abcd (
         z0dt = *z00d + *nrotd;
         *i0d1 = istart;
         *i0d2 = *i0d1 + nryd;
-        erd__xyz_to_ry_matrix (nxyzd, nryd, *nrowd, shelld,
+        erd__xyz_to_ry_matrix (nxyzd, *nrowd, shelld,
                                &zcore[z0dt], &icore[*i0d1],
                                &icore[*i0d2], &zcore[*z00d]);
         *iused = nryd + *nrotd;
@@ -133,7 +134,7 @@ int erd__xyz_to_ry_abcd (
             z0ct = *z00c + *nrotc;
             *i0c1 = *i0d2 + *nrotd;
             *i0c2 = *i0c1 + nryc;
-            erd__xyz_to_ry_matrix (nxyzc, nryc, *nrowc, shellc,
+            erd__xyz_to_ry_matrix (nxyzc, *nrowc, shellc,
                                    &zcore[z0ct], &icore[*i0c1],
                                    &icore[*i0c2], &zcore[*z00c]);
             *iused = *iused + nryc + *nrotc;
@@ -188,7 +189,7 @@ int erd__xyz_to_ry_abcd (
                 *i0b1 = *i0d2 + *nrotd;
                 *i0b2 = *i0b1 + nryb;
             }
-            erd__xyz_to_ry_matrix (nxyzb, nryb, *nrowb, shellb,
+            erd__xyz_to_ry_matrix (nxyzb, *nrowb, shellb,
                                    &zcore[z0bt], &icore[*i0b1],
                                    &icore[*i0b2], &zcore[*z00b]);
             *iused = *iused + nryb + *nrotb;
@@ -259,7 +260,7 @@ int erd__xyz_to_ry_abcd (
                 *i0a1 = *i0d2 + *nrotd;
                 *i0a2 = *i0a1 + nrya;
             }
-            erd__xyz_to_ry_matrix (nxyza, nrya, *nrowa, shella,
+            erd__xyz_to_ry_matrix (nxyza, *nrowa, shella,
                                    &zcore[z0at], &icore[*i0a1],
                                    &icore[*i0a2], &zcore[*z00a]);
             *iused = *iused + nrya + *nrota;
@@ -270,4 +271,6 @@ int erd__xyz_to_ry_abcd (
     return 0;
 }
 
+#ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(pop)
+#endif

@@ -4,7 +4,9 @@
 #include "erd.h"
 
 
+#ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(push, target(mic))
+#endif
 
 /* ------------------------------------------------------------------------ */
 /*  OPERATION   : ERD__MEMORY_CSGTO */
@@ -90,12 +92,6 @@ int erd__memory_csgto (int npgto1, int npgto2,
                    &nxyzet, &nxyzft,
                    &nrya, &nryb, &nryc, &nryd,
                    &dummyi[0], &dummyi[1],
-                   &dummyi[2], &dummyi[3],
-                   &dummyi[4], &dummyi[5],
-                   &dummyi[6], &dummyi[7],
-                   &dummyi[8], &dummyi[9],
-                   &dummyi[10], &dummyi[11],
-                   &dummyi[12], &dummyi[13],
                    &ncolhrr, &nrothrr,
                    &nxyzhrr, &empty, &dummyi[14]);
     if (empty)
@@ -120,8 +116,8 @@ int erd__memory_csgto (int npgto1, int npgto2,
 /*                should be placed. */
     nij = npgtoab;
     nkl = npgtocd;
-    zneed = npgtoab + npgtocd;
-    ineed = zneed * 2;
+    zneed = PAD_LEN(npgtoab) + PAD_LEN(npgtocd);
+    ineed = 2 * PAD_LEN2(npgtoab) + PAD_LEN2(npgtocd);
     *iopt = MAX (*iopt, ineed);
     *zopt = MAX (*zopt, zneed);
 
@@ -142,7 +138,7 @@ int erd__memory_csgto (int npgto1, int npgto2,
     erd__e0f0_def_blocks (0, npgtoa, npgtob, npgtoc, npgtod,
                           shellp, shellq, nij, nkl,
                           ngqp, ngqscr, nxyzt,
-                          1, &zout2, NULL, NULL, NULL,
+                          1, &zout2,
                           NULL, NULL, NULL, NULL, NULL,
                           NULL, NULL, NULL, NULL, NULL,
                           NULL, NULL, NULL, NULL, NULL,
@@ -239,4 +235,6 @@ int erd__memory_csgto (int npgto1, int npgto2,
     return 0;
 }
 
+#ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(pop)
+#endif

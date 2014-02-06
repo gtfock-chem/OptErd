@@ -5,8 +5,9 @@
 
 #include "erd.h"
 
-
+#ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(push, target(mic))
+#endif
 
 /* ------------------------------------------------------------------------ */
 /*  OPERATION   : ERD__HRR_STEP */
@@ -112,8 +113,8 @@
 /*                                    transformation matrix corresponding */
 /*                                    to nonzero row index I and column J */
 /* ------------------------------------------------------------------------ */
-int erd__hrr_step (int nab, int nabo, int mrowin,
-                   int mrowout, int nxyzx, int nxyzp,
+int erd__hrr_step (int nabo, int mrowin,
+                   int mrowout, int nxyzx,
                    int nxyza, int nxyzb, int nxyzao,
                    int shellx, int shellp, int shellb,
                    double abx, double aby, double abz,
@@ -432,4 +433,6 @@ int erd__hrr_step (int nab, int nabo, int mrowin,
     return 0;
 }
 
+#ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(pop)
+#endif

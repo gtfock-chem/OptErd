@@ -6,7 +6,9 @@
 #include "erd.h"
 
 
+#ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(push, target(mic))
+#endif
 
 /* ------------------------------------------------------------------------ */
 /*  OPERATION   : ERD__XYZ_TO_RY_MATRIX */
@@ -120,8 +122,7 @@
 /*                evaluation routine. */
 
 /* ------------------------------------------------------------------------ */
-int erd__xyz_to_ry_matrix (int nxyz, int nry,
-                           int nrowmx, int l,
+int erd__xyz_to_ry_matrix (int nxyz, int nrowmx, int l,
                            double *temp, int *nrow,
                            int *row, double *tmat)
 {
@@ -388,4 +389,6 @@ int erd__xyz_to_ry_matrix (int nxyz, int nry,
     return 0;
 }
 
+#ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(pop)
+#endif

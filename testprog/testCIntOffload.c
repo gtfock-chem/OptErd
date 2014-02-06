@@ -5,57 +5,15 @@
 #include <sys/time.h>
 #include <string.h>
 
-#pragma offload_attribute(push, target(mic))
-
-#if defined(OPTERD_TEST_REFERENCE)
-#include "../legacy/include/CInt.h"
-#else
 #include "../include/CInt.h"
-#endif
 #include "screening.h"
 
+
+#pragma offload_attribute(push, target(mic))
+ERD_t erd_mic;
+double integrals[10000];
 #pragma offload_attribute(pop)
 
-
-#if (defined(OPTERD_TEST_REFERENCE) + defined(OPTERD_TEST_OPTIMIZED)) != 1
-#error Either OPTERD_TEST_REFERENCE or OPTERD_TEST_OPTIMIZED must be defined
-#endif
-
-
-__attribute__((target(mic))) BasisSet_t basis;
-__attribute__((target(mic))) ERD_t erd;
-__attribute__((target(mic))) double integrals[10000];
-
-void create_data_structures_on_MIC(int num_devices)
-{
-    int i;
-    int status1 = 1, status2 = 1, status3 = 1;
-    char *buf;
-    int bufsize;
-    CInt_packBasisSet (basis, (void **)&buf, &bufsize);
-
-    for (i = 0; i < num_devices; i++)
-    {
-#pragma offload target(mic: i) in(bufsize) in(buf: length(bufsize)) nocopy(basis) inout(status1, status2)
-        {
-            basis = NULL;
-            status1 = CInt_createBasisSet (&basis);
-            if(status1 == 0)
-            {
-                status2 = CInt_unpackBasisSet (basis, buf);
-                status3 = CInt_freeInitDataBasisSet (basis);
-            }
-        }
-
-        printf("status1 = %d, status2 = %d, bufsize=%d\n", status1, status2, bufsize);
-
-#pragma offload target(mic:i) nocopy(basis, erd)
-        {
-            CInt_createERD (basis, &erd);
-        }
-    }
-    free(buf);
-}
 
 int main (int argc, char **argv)
 {
@@ -75,22 +33,21 @@ int main (int argc, char **argv)
     struct timeval tv2;
     double timepass;   
     double totalintls = 0;
+    BasisSet_t basis;
 
     if (argc != 3)
     {
         printf ("Usage: %s <basisset> <xyz>\n", argv[0]);
         return 0;
     }
-#if defined(OPTERD_TEST_REFERENCE)
-    FILE *ref_data_file = fopen ("ivalues.ref", "w+");
-#elif defined(OPTERD_TEST_OPTIMIZED)
+
     FILE *ref_data_file = fopen ("ivalues.ref", "r");
     if (ref_data_file == NULL)
     {
         fprintf (stderr, "ivalues.ref does not exist\n");
         exit (0);
     }
-#endif
+
     int errcount; 
     errcount = 0;
     // load basis set   
@@ -104,11 +61,6 @@ int main (int argc, char **argv)
     printf ("  #Funcs\t= %d\n", CInt_getNumFuncs (basis));
     printf ("  #OccOrb\t= %d\n", CInt_getNumOccOrb (basis));
 
-    // compute intergrals
-    CInt_createERD (basis, &erd);
-    //printf ("max memory footprint per thread = %lf KB\n",
-    //    CInt_getMaxMemory (erd)/1024.0);
-    
     // Find the number of MIC cards available
     int num_devices = 0;   
 #ifdef __INTEL_OFFLOAD
@@ -124,11 +76,6 @@ int main (int argc, char **argv)
     {
         printf("Number of Target devices installed: %d\n\n",num_devices);
     }
-    // Create Basis and ERD on one MIC card
-    create_data_structures_on_MIC (1);
-
-    // Free basis data used in initialization but no longer required.
-    CInt_freeInitDataBasisSet (basis);
 
     printf ("Computing integrals ...\n");
     ns = CInt_getNumShells (basis);
@@ -142,13 +89,20 @@ int main (int argc, char **argv)
     double value1;
     double value2;
 
-#if defined(OPTERD_TEST_OPTIMIZED)
+    for (i = 0; i < num_devices; i++)
+    {
+        #pragma offload target(mic:i) nocopy(basis_mic, erd_mic)
+        {
+            CInt_createERD (basis_mic, &erd_mic);
+        }
+    }
+
     int dimMax = CInt_getMaxShellDim (basis);
     int nints0;
     int k;
-    double * integrals0 = (double *)malloc (sizeof(double) * dimMax * dimMax * dimMax * dimMax);
-    assert (integrals0 != NULL);
-#endif    
+    double * integrals0 =
+        (double *)malloc (sizeof(double) * dimMax * dimMax * dimMax * dimMax);
+    assert (integrals0 != NULL);   
     
     for (M = 0; M < ns; M++)
     {
@@ -172,10 +126,14 @@ int main (int argc, char **argv)
                         continue;                        
                     totalcalls = totalcalls + 1;
                     gettimeofday (&tv1, NULL);
-#pragma offload target(mic:0) in(M, N, P, Q) nocopy(basis, erd) out(integrals, nints)
+
+                    #pragma offload target(mic:0) \
+                            in(M, N, P, Q) \
+                            nocopy(basis_mic, erd_mic) \
+                            out(integrals, nints)
                     {
                         double *integrals_mic;
-                        CInt_computeShellQuartet (basis, erd, M, N, P, Q,
+                        CInt_computeShellQuartet (basis_mic, erd_mic, M, N, P, Q,
                                 &integrals_mic, &nints);
                         memcpy(integrals, integrals_mic, nints * sizeof(double));
                     }
@@ -184,15 +142,6 @@ int main (int argc, char **argv)
                         (tv2.tv_usec - tv1.tv_usec) / 1000.0 / 1000.0;
                     totalintls = totalintls + nints;
                     
-#if defined(OPTERD_TEST_REFERENCE)
-                    fwrite (&nints, sizeof(int), 1, ref_data_file);
-                    if (nints != 0)
-                    {
-                        fwrite (integrals, sizeof(double), nints, ref_data_file);
-                    }
-#endif
-
-#if defined(OPTERD_TEST_OPTIMIZED)
                     fread (&nints0, sizeof(int), 1, ref_data_file);
                     if (nints0 != 0)
                     {
@@ -261,7 +210,6 @@ int main (int argc, char **argv)
                     {
                         printf ("ERROR: nints0 %d nints %d\n", nints0, nints);
                     }
-#endif /* defined(OPTERD_TEST_OPTIMIZED) */
 
                     if (errcount > 10)
                     {
@@ -281,10 +229,14 @@ int main (int argc, char **argv)
             1000.0 * 1000.0 * timepass / totalcalls);
 
 end:
-#if defined(OPTERD_TEST_OPTIMIZED)
     free (integrals0);
-#endif
-    CInt_destroyERD (erd);
+    for (i = 0; i < num_devices; i++)
+    {
+        #pragma offload target(mic:i) nocopy(erd_mic)
+        {
+            CInt_destroyERD (erd_mic);
+        }
+    }    
     CInt_destroyBasisSet (basis);
     free (shellptr);
     free (shellid);

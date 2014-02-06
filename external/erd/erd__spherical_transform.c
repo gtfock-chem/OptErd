@@ -5,7 +5,9 @@
 #include "erd.h"
 
 
+#ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(push, target(mic))
+#endif
 
 /* ------------------------------------------------------------------------ */
 /*  OPERATION   : ERD__SPHERICAL_TRANSFORM */
@@ -47,8 +49,7 @@
 /*                  Output: */
 /*                    Y           =  output batch of spherical integrals */
 /* ------------------------------------------------------------------------ */
-int erd__spherical_transform (
-			      int m, int nrow, int nry,
+int erd__spherical_transform (int m, int nrow, int nry,
                               int *lrow, int *row, double *rot,
                               double *x, double *y)
 {   
@@ -85,4 +86,6 @@ int erd__spherical_transform (
     return 0;
 }
 
+#ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(pop)
+#endif

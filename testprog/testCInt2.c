@@ -65,7 +65,7 @@ int main (int argc, char **argv)
     totalnintls = (double *) malloc (sizeof (double) * nthreads * 64);
     assert (totalnintls != NULL);
     
-#pragma omp parallel for
+    #pragma omp parallel for
     for (i = 0; i < nthreads; i++)
     {
         CInt_createERD (basis, &(erd[i]));
@@ -110,7 +110,7 @@ int main (int argc, char **argv)
     reallen = (int)(slen * fraction);
     reallen = ((reallen == 0) ? 1 : reallen);    
     start_clock = __rdtsc(); 
-#pragma omp parallel
+    #pragma omp parallel
     {
         int tid;
         int M;
@@ -129,7 +129,7 @@ int main (int argc, char **argv)
 
         tid = omp_get_thread_num ();
 
-#pragma omp for schedule(dynamic)
+        #pragma omp for schedule(dynamic)
         for (k = 0; k < reallen; k++)
         {
             i = idx[k];

@@ -6,7 +6,9 @@
 #include "erd.h"
 
 
+#ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(push, target(mic))
+#endif
 
 /* ------------------------------------------------------------------------ */
 /*  OPERATION   : ERD__MOVE_RY */
@@ -46,8 +48,7 @@
 /*                                     after the move */
 /*                       Y          =  final set of integrals */
 /* ------------------------------------------------------------------------ */
-int erd__move_ry (
-		  int nindex, int notmove, int move, int nry,
+int erd__move_ry (int nindex, int notmove, int move, int nry,
                   int index, double *x,
                   int *ixoff, double *y)
 {
@@ -89,4 +90,6 @@ int erd__move_ry (
     return 0;
 }
 
+#ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(pop)
+#endif

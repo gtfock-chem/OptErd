@@ -371,6 +371,7 @@ C         WRITE (*,*) ' EQUALCD = ',EQUALCD
 
          IF (EMPTY) THEN
              NBATCH = 0
+             CALL END_TIMER (13, STIME0)
              RETURN
          END IF
 C
@@ -430,6 +431,7 @@ C
          CALL END_TIMER (1, STIME)
          IF (EMPTY) THEN
              NBATCH = 0
+             CALL END_TIMER (13, STIME0)
              RETURN
          END IF
 C
@@ -509,7 +511,6 @@ C                before being contracted.
 C
 C
          REORDER = .TRUE.
-
          DO 1000 NIJBEG = 1,NIJ,NIJBLK
             NIJEND = MIN0 (NIJBEG+NIJBLK-1,NIJ)
             MIJ = NIJEND - NIJBEG + 1
@@ -519,7 +520,7 @@ C
 
                MIJKL = MIJ * MKL
                MGQIJKL = NGQP * MIJKL
-               CALL START_TIMER (STIME)
+               CALL START_TIMER (STIME)               
                CALL  ERD__E0F0_PCGTO_BLOCK
      +
      +                    ( NPSIZE,NINT2D,
@@ -562,7 +563,9 @@ C
      +
      +                                ZCORE (ZPBATCH) )
      +
-     +
+     +               
+                CALL END_TIMER (6, STIME)
+                CALL START_TIMER (STIME)                             
 C               WRITE (*,*) ' Finished e0f0 pcgto block '
 
                CALL  ERD__CTR_4INDEX_BLOCK
@@ -596,10 +599,10 @@ C               WRITE (*,*) ' Finished e0f0 pcgto block '
      +                                ZCORE (ZCBATCH) )
      +
      +
-C               WRITE (*,*) ' Finished 4 index ctr block '
-            CALL END_TIMER (6, STIME)    
+                CALL  END_TIMER (7, STIME)
+C               WRITE (*,*) ' Finished 4 index ctr block '         
  1100       CONTINUE
- 1000    CONTINUE
+ 1000    CONTINUE         
 C
 C
 C             ...the unnormalized cartesian (e0|f0) contracted batch is
@@ -860,7 +863,7 @@ C
      +
      +
 C                 WRITE (*,*) ' Finished xyz to ry abcd '
-                  CALL END_TIMER (7, STIME)
+                  CALL END_TIMER (8, STIME)
              ELSE
                  IUSED = 0
                  ZUSED = 0
@@ -918,7 +921,7 @@ C
      +
      +
 C             WRITE (*,*) ' Finished HRR f0 matrix '
-             CALL END_TIMER (8, STIME)
+             CALL END_TIMER (9, STIME)
              
              CALL START_TIMER (STIME)
              CALL  ERD__HRR_TRANSFORM
@@ -935,7 +938,7 @@ C             WRITE (*,*) ' Finished HRR f0 matrix '
      +
      +
 C             WRITE (*,*) ' Finished HRR f0 '
-             CALL END_TIMER (9, STIME)
+             CALL END_TIMER (10, STIME)
              TEMP = IN
              IN = OUT
              OUT = TEMP
@@ -956,7 +959,7 @@ C             WRITE (*,*) ' Finished HRR f0 '
      +
      +
 C                     WRITE (*,*) ' Finished sph quart d '
-                     CALL END_TIMER (11, STIME)
+                     CALL END_TIMER (12, STIME)
                      TEMP = IN
                      IN = OUT
                      OUT = TEMP
@@ -995,7 +998,7 @@ C                     WRITE (*,*) ' Finished normalize cart d '
      +
      +
 C                 WRITE (*,*) ' Finished move ry d '
-                 CALL END_TIMER (10, STIME)
+                 CALL END_TIMER (11, STIME)
                  TEMP = IN
                  IN = OUT
                  OUT = TEMP
@@ -1018,7 +1021,7 @@ C                 WRITE (*,*) ' Finished move ry d '
      +
      +
 C                 WRITE (*,*) ' Finished sph quart c '
-                 CALL END_TIMER (11, STIME)
+                 CALL END_TIMER (12, STIME)
                  TEMP = IN
                  IN = OUT
                  OUT = TEMP
@@ -1056,7 +1059,7 @@ C                 WRITE (*,*) ' Finished normalize cart c '
      +
      +
 C                 WRITE (*,*) ' Finished move ry c '
-                 CALL END_TIMER (10, STIME)
+                 CALL END_TIMER (11, STIME)
                  TEMP = IN
                  IN = OUT
                  OUT = TEMP
@@ -1092,7 +1095,7 @@ C
      +
      +
 C             WRITE (*,*) ' Finished HRR e0 matrix '
-             CALL END_TIMER (8, STIME)
+             CALL END_TIMER (9, STIME)
              
              CALL START_TIMER (STIME)
              CALL  ERD__HRR_TRANSFORM
@@ -1109,7 +1112,7 @@ C             WRITE (*,*) ' Finished HRR e0 matrix '
      +
      +
 C             WRITE (*,*) ' Finished HRR e0 '
-             CALL END_TIMER (9, STIME)
+             CALL END_TIMER (10, STIME)
              TEMP = IN
              IN = OUT
              OUT = TEMP
@@ -1130,7 +1133,7 @@ C             WRITE (*,*) ' Finished HRR e0 '
      +
      +
 C                     WRITE (*,*) ' Finished sph quart b '
-                     CALL END_TIMER (11, STIME)
+                     CALL END_TIMER (12, STIME)
                      TEMP = IN
                      IN = OUT
                      OUT = TEMP
@@ -1169,7 +1172,7 @@ C                     WRITE (*,*) ' Finished normalized cart b '
      +
      +
 C                 WRITE (*,*) ' Finished move ry b '
-                 CALL END_TIMER (10, STIME)
+                 CALL END_TIMER (11, STIME)
                  TEMP = IN
                  IN = OUT
                  OUT = TEMP
@@ -1192,7 +1195,7 @@ C                 WRITE (*,*) ' Finished move ry b '
      +
      +
 C                 WRITE (*,*) ' Finished sph quart a '
-                 CALL END_TIMER (11, STIME)
+                 CALL END_TIMER (12, STIME)
                  TEMP = IN
                  IN = OUT
                  OUT = TEMP
@@ -1230,7 +1233,7 @@ C                 WRITE (*,*) ' Finished normalized cart a '
      +                                ZCORE (OUT) )
      +
      +
-                 CALL END_TIMER (10, STIME)
+                 CALL END_TIMER (11, STIME)
 C                 WRITE (*,*) ' Finished move ry a '
                  TEMP = IN
                  IN = OUT
@@ -1248,6 +1251,6 @@ C
 C             ...ready!
 C
 C
-         CALL END_TIMER (12, STIME0)
+         CALL END_TIMER (13, STIME0)
          RETURN
          END
