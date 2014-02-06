@@ -13,7 +13,9 @@ C  GNU General Public License for more details.
 C  The GNU General Public License is included in this distribution
 C  in the file COPYRIGHT.
 
+#ifdef __INTEL_OFFLOAD
          !DIR$ ATTRIBUTES OFFLOAD : mic :: ERD__RYS_X_ROOTS_WEIGHTS
+#endif
          SUBROUTINE  ERD__RYS_X_ROOTS_WEIGHTS
      +
      +                    ( NT,NTGQP,

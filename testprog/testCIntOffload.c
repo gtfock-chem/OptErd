@@ -5,7 +5,7 @@
 #include <sys/time.h>
 #include <string.h>
 
-#include "../include/CInt.h"
+#include "CInt.h"
 #include "screening.h"
 
 

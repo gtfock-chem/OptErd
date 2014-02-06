@@ -11,16 +11,6 @@ LDFLAGS = -L./
 
 LIBS =  -lifcore
 
-ifeq "${arch}" "hetero"
-CFLAGS +=  -offload-option,mic,compiler,"-z defs ../libcint/libcintMIC.a ../external/erd/liberdMIC.a"
-UNIT_TEST_OPT_EXE = Test.Opt.Offload
-UNIT_TEST_OPT_OBJS := testCIntOffload.opt.o screening.opt.o
-LIBS_CINT_OPT = ../lib/libcint.a \
-                ../lib/liboed.a
-LIBS_OPT = ${LIBS_CINT_OPT}
-LIBS_OPT += ../lib/liberd.a
-else
-CFLAGS += -offload=none -diag-disable 161,2423
 ifeq "${arch}" "mic"
 UNIT_TEST_REF_EXE = Test.Ref.MIC
 UNIT_TEST_OPT_EXE = Test.Opt.MIC
@@ -56,13 +46,18 @@ LIBS_OPT = ${LIBS_CINT_OPT}
 LIBS_REF += ../legacy/lib/liberd.a
 LIBS_OPT += ../lib/liberd.a
 endif
-endif
 
-ifeq "${build}" "offload"
-all: ${UNIT_TEST_OPT_EXE}
+ifeq "${offload}" "1"
+UNIT_TEST_OFFLOAD_EXE := Test.Offload 
+UNIT_TEST_OFFLOAD_OBJS := testCIntOffload.o screening.o
+INC += -I../include
+all: ${UNIT_TEST_REF_EXE} ${UNIT_TEST_OFFLOAD_EXE} ${LEGACY_PERF_TEST_EXE}
 else
 all: ${UNIT_TEST_REF_EXE} ${UNIT_TEST_OPT_EXE} ${PERF_TEST_EXE} ${LEGACY_PERF_TEST_EXE}
 endif
+
+${UNIT_TEST_OFFLOAD_EXE}: $(UNIT_TEST_OFFLOAD_OBJS) ${LIBS_OPT}
+	$(CC) ${CFLAGS} ${LDFLAGS} $(UNIT_TEST_OFFLOAD_OBJS) -o $@ ${LIBS} ${LIBS_OPT}
 
 ${UNIT_TEST_REF_EXE}: $(UNIT_TEST_REF_OBJS) ${LIBS_REF}
 	$(CC) ${CFLAGS} ${LDFLAGS} $(UNIT_TEST_REF_OBJS) -o $@ ${LIBS} ${LIBS_REF}

@@ -48,7 +48,7 @@ ERDLIB = liberd.a
 OBJS := $(addsuffix .o, $(SRC))
 endif
 
-FFLAGS = -O3 -no-vec
+FFLAGS = -O3
 FFLAGS += -reentrancy threaded -recursive
 FFLAGS += ${OPTFLAGS}
 
@@ -61,7 +61,7 @@ all: ${ERDLIB}
 
 ${ERDLIB}: ${OBJS}
 	${AR} $@ $^
-	cp -r $@ ../../lib/
+	cp -r *.a ../../lib/
 
 %.c.o: %.c
 	${CC} ${CFLAGS} -c $< -o $@

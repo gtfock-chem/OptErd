@@ -48,7 +48,6 @@ int main (int argc, char **argv)
     // load basis set
     CInt_createBasisSet (&basis);
     CInt_loadBasisSet (basis, argv[1], argv[2]);
-    CInt_freeInitDataBasisSet (basis);
     schwartz_screening (basis, &shellptr, &shellid, &shellrid, &shellvalue, &nnz);
 
     printf ("Molecule info:\n");
