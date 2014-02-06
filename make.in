@@ -1,5 +1,5 @@
 alignlen = 64
-#offload = 0
+offload = 0
 #arch = mic
 
 CC  = /opt/intel/bin/icc
@@ -13,6 +13,12 @@ else ifeq "${arch}" "avx"
 OPTFLAGS = -m64 -xAVX
 else
 OPTFLAGS = -m64 -xHost
+endif
+
+ifeq "${offload}" "1"
+ifeq "${arch}" "mic"
+$(error offload=1 can't be used with arch=mic)
+endif
 endif
 
 ifeq "${offload}" "1"

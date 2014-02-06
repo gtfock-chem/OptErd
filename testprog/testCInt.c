@@ -147,7 +147,7 @@ int main (int argc, char **argv)
                             }
                         }
                     }
-                    else if (nints == 0 && nints != 0)
+                    else if (nints == 0 && nints0 != 0)
                     {
                         for (k = 0; k < nints0; k++)
                         {
@@ -170,7 +170,7 @@ int main (int argc, char **argv)
                             {
                                 if (fabs(integrals0[k] - integrals[k]) > 1e-10)
                                 {
-                                    printf ("* ERROR: %d %d %d %d: %le %le\n",
+                                    printf ("1 ERROR: %d %d %d %d: %le %le\n",
                                         M, N, P, Q, integrals0[k], integrals[k]);
                                     errcount++;
                                 }
@@ -180,7 +180,7 @@ int main (int argc, char **argv)
                                 if (fabs(integrals0[k] - integrals[k])/fabs(integrals0[k]) >
                                     1e-6 && errcount < 10)
                                 {
-                                    printf ("* ERROR: %d %d %d %d: %le %le: %le\n",
+                                    printf ("2 ERROR: %d %d %d %d: %le %le: %le\n",
                                         M, N, P, Q, integrals0[k], integrals[k],
                                         fabs(integrals0[k] - integrals[k])/fabs(integrals0[k]));
                                     errcount++;

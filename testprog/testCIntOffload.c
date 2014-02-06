@@ -11,7 +11,7 @@
 
 #pragma offload_attribute(push, target(mic))
 ERD_t erd_mic;
-double integrals[10000];
+double integrals_mic[10000];
 #pragma offload_attribute(pop)
 
 
@@ -34,6 +34,7 @@ int main (int argc, char **argv)
     double timepass;   
     double totalintls = 0;
     BasisSet_t basis;
+    ERD_t erd;
 
     if (argc != 3)
     {
@@ -96,13 +97,16 @@ int main (int argc, char **argv)
             CInt_createERD (basis_mic, &erd_mic);
         }
     }
+    CInt_createERD (basis, &erd);
 
     int dimMax = CInt_getMaxShellDim (basis);
+    int dimMax4 = dimMax * dimMax * dimMax * dimMax;
     int nints0;
     int k;
-    double * integrals0 =
-        (double *)malloc (sizeof(double) * dimMax * dimMax * dimMax * dimMax);
-    assert (integrals0 != NULL);   
+    double *integrals0;
+    double *integrals;    
+    integrals0 = (double *)malloc (sizeof(double) * dimMax4);
+    assert (integrals0 != NULL);
     
     for (M = 0; M < ns; M++)
     {
@@ -130,18 +134,21 @@ int main (int argc, char **argv)
                     #pragma offload target(mic:0) \
                             in(M, N, P, Q) \
                             nocopy(basis_mic, erd_mic) \
-                            out(integrals, nints)
+                            out(integrals_mic, nints)
                     {
-                        double *integrals_mic;
+                        double *ints;
                         CInt_computeShellQuartet (basis_mic, erd_mic, M, N, P, Q,
-                                &integrals_mic, &nints);
-                        memcpy(integrals, integrals_mic, nints * sizeof(double));
+                                &ints, &nints);
+                        memcpy(integrals_mic, ints, nints * sizeof(double));
                     }
+                    int xixi; 
+                    CInt_computeShellQuartet (basis, erd, M, N, P, Q, &integrals, &xixi);
+
                     gettimeofday (&tv2, NULL);
                     timepass += (tv2.tv_sec - tv1.tv_sec) +
                         (tv2.tv_usec - tv1.tv_usec) / 1000.0 / 1000.0;
                     totalintls = totalintls + nints;
-                    
+                  
                     fread (&nints0, sizeof(int), 1, ref_data_file);
                     if (nints0 != 0)
                     {
@@ -156,15 +163,15 @@ int main (int argc, char **argv)
                     {
                         for (k = 0; k < nints; k++)
                         {
-                            if (integrals[k] > 1e-10)
+                            if (integrals_mic[k] > 1e-10)
                             {
                                 printf ("ERROR: %d %d %d %d: %le %le\n",
-                                    M, N, P, Q, 0.0, integrals[k]);
+                                    M, N, P, Q, 0.0, integrals_mic[k]);
                                 errcount++;
                             }
                         }
                     }
-                    else if (nints == 0 && nints != 0)
+                    else if (nints == 0 && nints0 != 0)
                     {
                         for (k = 0; k < nints0; k++)
                         {
@@ -183,23 +190,23 @@ int main (int argc, char **argv)
                         for (k = 0; k < nints0; k++)
                         {
                             if (fabs(integrals0[k]) < 1e-6 ||
-                                fabs(integrals[k]) < 1e-6)
+                                fabs(integrals_mic[k]) < 1e-6)
                             {
-                                if (fabs(integrals0[k] - integrals[k]) > 1e-10)
+                                if (fabs(integrals0[k] - integrals_mic[k]) > 1e-10)
                                 {
-                                    printf ("* ERROR: %d %d %d %d: %le %le\n",
-                                        M, N, P, Q, integrals0[k], integrals[k]);
+                                    printf ("1 ERROR: %d %d %d %d: %le %le\n",
+                                        M, N, P, Q, integrals0[k], integrals_mic[k]);
                                     errcount++;
                                 }
                             }
                             else
                             {
-                                if (fabs(integrals0[k] - integrals[k])/fabs(integrals0[k]) >
+                                if (fabs(integrals0[k] - integrals_mic[k])/fabs(integrals0[k]) >
                                     1e-6 && errcount < 10)
                                 {
-                                    printf ("* ERROR: %d %d %d %d: %le %le: %le\n",
-                                        M, N, P, Q, integrals0[k], integrals[k],
-                                        fabs(integrals0[k] - integrals[k])/fabs(integrals0[k]));
+                                    printf ("2 ERROR: %d %d %d %d: %le %le: %le\n",
+                                        M, N, P, Q, integrals0[k], integrals_mic[k],
+                                        fabs(integrals0[k] - integrals_mic[k])/fabs(integrals0[k]));
                                     errcount++;
                                 }
 
@@ -229,19 +236,20 @@ int main (int argc, char **argv)
             1000.0 * 1000.0 * timepass / totalcalls);
 
 end:
-    free (integrals0);
     for (i = 0; i < num_devices; i++)
     {
         #pragma offload target(mic:i) nocopy(erd_mic)
         {
             CInt_destroyERD (erd_mic);
         }
-    }    
+    }
+    CInt_destroyERD (erd);
     CInt_destroyBasisSet (basis);
     free (shellptr);
     free (shellid);
     free (shellvalue);
     free (shellrid);
+    free (integrals0);
     
     fclose (ref_data_file);
     return 0;
