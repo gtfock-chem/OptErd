@@ -39,7 +39,7 @@ erd_ref_sources = [
 
 erd_opt_sources = [
 	"erd__1111_csgto.c", "erd__1111_def_blocks.c", "erd__2d_coefficients.c", "erd__2d_pq_integrals.c",
-	"erd__boys_table.c", "erd__cartesian_norms.c", "erd__csgto.c", #"erd__ctr_4index_block.c",
+	"erd__boys_table.c", "erd__jacobi_table.c", "erd__cartesian_norms.c", "erd__csgto.c",
 	"erd__dsqmin_line_segments.c", "erd__e0f0_def_blocks.c", "erd__e0f0_pcgto_block.c", "erd__hrr_matrix.c",
 	"erd__hrr_step.c", "erd__hrr_transform.c", "erd__int2d_to_e000.c", "erd__int2d_to_e0f0.c",
 	"erd__memory_1111_csgto.c", "erd__memory_csgto.c", "erd__move_ry.c", "erd__normalize_cartesian.c",
@@ -97,7 +97,7 @@ with open('build.ninja', 'w') as makefile:
 	print('FC_SNB_OFFLOAD = $FC_SNB', file = makefile)
 	print('FC_IVB_OFFLOAD = $FC_IVB', file = makefile)
 	print('FC_HSW_OFFLOAD = $FC_HSW', file = makefile)
-	print('FFLAGS = -O3 -g -fpp -reentrancy threaded -recursive', file = makefile)
+	print('FFLAGS = -O3 -g -reentrancy threaded -recursive', file = makefile)
 	native_cflags = '-D__ERD_PROFILE__ -offload=none -diag-disable 161,2423'
 	offload_cflags = '-offload-option,mic,compiler,"-z defs -no-opt-prefetch"'
 	print('CC_NHM = icc -m64 -xSSE4.2 ' + native_cflags, file = makefile)
@@ -147,7 +147,7 @@ with open('build.ninja', 'w') as makefile:
 	print(tab + 'description = AR[$ARCH] $out', file = makefile)
 
 	print('rule GENERATE_HEADER', file = makefile)
-	print(tab + 'command = cd $WORKDIR && sh $SCRIPT', file = makefile)
+	print(tab + 'command = cd $WORKDIR && bash $SCRIPT', file = makefile)
 	print(tab + 'description = SH $SCRIPT', file = makefile)
 
 	for version in ["ref", "opt"]:

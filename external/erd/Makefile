@@ -5,6 +5,7 @@ SRC   = erd__1111_csgto.c \
 	erd__2d_coefficients.c \
 	erd__2d_pq_integrals.c \
 	erd__boys_table.c \
+	erd__jacobi_table.c \
 	erd__cartesian_norms.c \
 	erd__csgto.c \
 	erd__dsqmin_line_segments.c \
