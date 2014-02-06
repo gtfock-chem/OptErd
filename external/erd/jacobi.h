@@ -1,5 +1,9 @@
 #pragma once
 
+#ifdef __INTEL_OFFLOAD
+#pragma offload_attribute(push, target(mic))
+#endif
+
 /* (2i+1) / ((4i-1) * (4i+3)) for i = 1...100 */
 extern const double r2[100];
 
@@ -13,3 +17,7 @@ extern const double ajac[100];
 
 /* (4*square(i) * (4*square(i) - 4*i + 1)) / ((4i-3) * (4i+1) * square(4i-1)) for i = 1...99 */
 extern const double bjac[99];
+
+#ifdef __INTEL_OFFLOAD
+#pragma offload_attribute(pop)
+#endif

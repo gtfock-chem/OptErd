@@ -378,7 +378,7 @@ int erd__rys_x_roots_weights_ (int * nt, int * ngqp, int * nmom, double * tval,
 /*                A and B for the shifted Jacobi polynomials. */
                 r__ = tinvhf * 3. + r2[0];
                 zmom = sinv[0] * (momip1 - r__ * momi);
-                assert (abs (zmom) >= 1e-300);                
+                assert (fabs (zmom) >= 1e-300);                
                 a[1] = ajac[0];
                 zinv = 1. / zmom;
                 mom[1] *= zinv;
@@ -645,9 +645,9 @@ int erd__rys_x_roots_weights_ (int * nt, int * ngqp, int * nmom, double * tval,
                     {
                         goto L3300;
                     }
-                    test1 = (d__1 = dia[m], abs (d__1)) +
-                        (d__2 = dia[m + 1], abs (d__2));
-                    test2 = test1 + (d__1 = off[m], abs (d__1));
+                    test1 = (d__1 = dia[m], fabs (d__1)) +
+                        (d__2 = dia[m + 1], fabs (d__2));
+                    test2 = test1 + (d__1 = off[m], fabs (d__1));
                     if (test2 == test1)
                     {
                         goto L3300;
