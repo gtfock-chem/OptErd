@@ -49,15 +49,11 @@ ERDLIB = liberd.a
 OBJS := $(addsuffix .o, $(SRC))
 endif
 
-FFLAGS = -O3
-FFLAGS += -reentrancy threaded -recursive
-FFLAGS += ${OPTFLAGS}
-
 CFLAGS = -O3 -std=gnu99 -I../Yeppp/include -openmp
 CFLAGS += -Wall -w2 -Wunknown-pragmas -Wunused-variable
 CFLAGS += ${OPTFLAGS} -restrict
 CFLAGS += -D__ALIGNLEN__=${alignlen}
-CFLAGS += -vec-report=2
+#CFLAGS += -vec-report=2
 
 all: ${ERDLIB}
 	cp erd_profile.h ../../include

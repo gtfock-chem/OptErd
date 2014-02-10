@@ -137,7 +137,7 @@ erd__2d_pq_integrals (int shellp, int shellq,
     int2d_dim1 = ngqexq;
     int2d_dim2 = shellp + 1;
 
-#ifdef USE_AVX_INTRIN
+#ifdef __AVX__
   __m256d one_256 = _mm256_set1_pd(1.0);
 #endif
 
@@ -172,7 +172,7 @@ erd__2d_pq_integrals (int shellp, int shellq,
   L1:
     for (n = 0; n < ngqexq; n+=SIMDW)
     {
-#ifdef USE_AVX_INTRIN
+#ifdef __AVX__
         __m256d wts_256 = _mm256_load_pd(&wts[n]);
         _mm256_store_pd(&int2dx[n], wts_256);
         _mm256_store_pd(&int2dy[n], one_256);
@@ -198,7 +198,7 @@ erd__2d_pq_integrals (int shellp, int shellq,
     for (n = 0; n < ngqexq; n+=SIMDW)
     {
 
-#ifdef USE_AVX_INTRIN
+#ifdef __AVX__
         __m256d int2dx_0_256, int2dx_1_256, int2dx_2_256;
         __m256d int2dy_0_256, int2dy_1_256, int2dy_2_256;
         __m256d int2dz_0_256, int2dz_1_256, int2dz_2_256;
@@ -249,7 +249,7 @@ erd__2d_pq_integrals (int shellp, int shellq,
         {
             double k1 = k - 1;
 
-#ifdef USE_AVX_INTRIN
+#ifdef __AVX__
             __m256d k1_256 = _mm256_broadcast_sd(&k1);
             __m256d b01_256 = _mm256_load_pd(&b01[n]);
             __m256d b1_256 = _mm256_mul_pd(k1_256, b01_256);
@@ -305,7 +305,7 @@ erd__2d_pq_integrals (int shellp, int shellq,
   L3:
     for (n = 0; n < ngqexq; n+=SIMDW)
     {
-#ifdef USE_AVX_INTRIN
+#ifdef __AVX__
         __m256d int2dx_0_256, int2dx_1_256, int2dx_2_256;
         __m256d int2dy_0_256, int2dy_1_256, int2dy_2_256;
         __m256d int2dz_0_256, int2dz_1_256, int2dz_2_256;
@@ -357,7 +357,7 @@ erd__2d_pq_integrals (int shellp, int shellq,
         {
             double i1 = i - 1;
 
-#ifdef USE_AVX_INTRIN
+#ifdef __AVX__
 
             __m256d i1_256 = _mm256_broadcast_sd(&i1);
             __m256d b10_256 = _mm256_load_pd(&b10[n]);
@@ -415,7 +415,7 @@ erd__2d_pq_integrals (int shellp, int shellq,
   L4:
     for (n = 0; n < ngqexq; n+=SIMDW)
     {
-#ifdef USE_AVX_INTRIN
+#ifdef __AVX__
         __m256d int2dx_0_256, int2dx_i1_256, int2dx_k1_256, int2dx_2_256;
         __m256d int2dy_0_256, int2dy_i1_256, int2dy_k1_256, int2dy_2_256;
         __m256d int2dz_0_256, int2dz_i1_256, int2dz_k1_256, int2dz_2_256;
@@ -466,7 +466,7 @@ erd__2d_pq_integrals (int shellp, int shellq,
         {
             double i1 = i - 1;
 
-#ifdef USE_AVX_INTRIN
+#ifdef __AVX__
 
             __m256d i1_256 = _mm256_broadcast_sd(&i1);
             __m256d b10_256 = _mm256_load_pd(&b10[n]);
@@ -513,7 +513,7 @@ erd__2d_pq_integrals (int shellp, int shellq,
 #endif
         }
 
-#ifdef USE_AVX_INTRIN
+#ifdef __AVX__
 
         int2dx_2_256 = _mm256_load_pd(&wts[n]);
         int2dy_2_256 = one_256;
@@ -549,7 +549,7 @@ erd__2d_pq_integrals (int shellp, int shellq,
         {
             double k1 = k - 1;
 
-#ifdef USE_AVX_INTRIN
+#ifdef __AVX__
             __m256d k1_256 = _mm256_broadcast_sd(&k1);
             __m256d b01_256 = _mm256_load_pd(&b01[n]);
             __m256d b1_256 = _mm256_mul_pd(k1_256, b01_256);
@@ -605,7 +605,7 @@ erd__2d_pq_integrals (int shellp, int shellq,
     {
         for (n = 0; n < ngqexq; n+=SIMDW)
         {
-#ifdef USE_AVX_INTRIN
+#ifdef __AVX__
             __m256d int2dx_00_256, int2dx_10_256, int2dx_20_256, int2dx_11_256;
             __m256d int2dy_00_256, int2dy_10_256, int2dy_20_256, int2dy_11_256;
             __m256d int2dz_00_256, int2dz_10_256, int2dz_20_256, int2dz_11_256;
@@ -620,7 +620,7 @@ erd__2d_pq_integrals (int shellp, int shellq,
             {
                 int k1 = k - 1;
 
-#ifdef USE_AVX_INTRIN
+#ifdef __AVX__
                 double k_double = k;
                 __m256d k_256 = _mm256_broadcast_sd(&k_double);
                 __m256d b00_256 = _mm256_load_pd(&b00[n]);
@@ -679,7 +679,7 @@ erd__2d_pq_integrals (int shellp, int shellq,
                 {
                     int i1 = i - 1;
 
-#ifdef USE_AVX_INTRIN
+#ifdef __AVX__
 
                     double i1_double = i1;
                     __m256d i1_256 = _mm256_broadcast_sd(&i1_double);
@@ -750,7 +750,7 @@ erd__2d_pq_integrals (int shellp, int shellq,
     {
         for (n = 0; n < ngqexq; n+=SIMDW)
         {
-#ifdef USE_AVX_INTRIN
+#ifdef __AVX__
             __m256d int2dx_00_256, int2dx_01_256, int2dx_02_256, int2dx_11_256;
             __m256d int2dy_00_256, int2dy_01_256, int2dy_02_256, int2dy_11_256;
             __m256d int2dz_00_256, int2dz_01_256, int2dz_02_256, int2dz_11_256;
@@ -765,7 +765,7 @@ erd__2d_pq_integrals (int shellp, int shellq,
             {
                 int i1 = i - 1;
 
-#ifdef USE_AVX_INTRIN
+#ifdef __AVX__
 
                 double i_double = i;
                 __m256d i_256 = _mm256_broadcast_sd(&i_double);
@@ -824,7 +824,7 @@ erd__2d_pq_integrals (int shellp, int shellq,
                 {
                     int k1 = k - 1;
 
-#ifdef USE_AVX_INTRIN
+#ifdef __AVX__
 
                     double k1_double = k1;
                     __m256d k1_256 = _mm256_broadcast_sd(&k1_double);
