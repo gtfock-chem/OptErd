@@ -13,14 +13,18 @@
 #define MAX(a,b)    ((a) < (b) ? (b) : (a))
 #define MIN(a,b)    ((a) > (b) ? (b) : (a))
 #define PREFACT     9.027033336764101
-#ifdef __MIC__
-#define SIMD_WIDTH 8
+#if defined (__MIC__)
+#define SIMDW      8
+#elif defined (__AVX__)
+#define SIMDW      4
+#elif defined (__SSE__)
+#define SIMDW      2
 #else
-#define SIMD_WIDTH 4
+#define SIMDW      8
 #endif
 
-#define PAD_LEN(N)  ((N+SIMD_WIDTH-1)/SIMD_WIDTH * SIMD_WIDTH )
-#define PAD_LEN2(N) ((N+SIMD_WIDTH*2-1)/(SIMD_WIDTH*2) * SIMD_WIDTH*2 )
+#define PAD_LEN(N)  ((N+SIMDW-1)/SIMDW * SIMDW )
+#define PAD_LEN2(N) ((N+SIMDW*2-1)/(SIMDW*2) * SIMDW*2 )
 
 /*******************************************************************/
 // C functions

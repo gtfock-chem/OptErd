@@ -85,7 +85,7 @@ void erd_print_profile (int mode)
             }
             total_secs += (double)erd_ticks[i][k]/freq;
         }        
-        printf(":\t%.3lf", total_secs/nthreads);
+        printf(",\t%.3lf", total_secs/nthreads);
         printf("\n");
     }
 }

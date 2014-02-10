@@ -239,51 +239,7 @@ int erd__e0f0_pcgto_block (int nij, int nkl,
 /*                P-shell  p |  2    5    8 */
 /*                           | */
 /*                        >p |  3    6    9 */
-/*                           | */
-    --batch;
-    --int2dz;
-    --int2dy;
-    --int2dx;
-    --scalep;
-    --pinvhf;
-    --paz;
-    --pay;
-    --pax;
-    --pz;
-    --py;
-    --px;
-    --p;
-    --primb;
-    --prima;
-    --scaleq;
-    --qinvhf;
-    --qcz;
-    --qcy;
-    --qcx;
-    --qz;
-    --qy;
-    --qx;
-    --q;
-    --primd;
-    --primc;
-    --pqpinv;
-    --tval;
-    --rhoab;
-    --rhocd;
-    --gqscr;
-    --d00z;
-    --d00y;
-    --d00x;
-    --c00z;
-    --c00y;
-    --c00x;
-    --b10;
-    --b01;
-    --b00;
-    --scalepq;
-    --wts;
-    --rts;
-    
+/*                           | */   
 /*             ...predetermine in 'K2' loops the quantities associated */
 /*                with the A,B-part and C,D-part. Set the atom equality */
 /*                case CASEAT here to exploit simplifications due to */
@@ -301,10 +257,12 @@ int erd__e0f0_pcgto_block (int nij, int nkl,
     abz = za - zb;
     cdx = xc - xd;
     cdy = yc - yd;
-    cdz = zc - zd; 
-        
-    for (ij = 1; ij <= nij; ++ij)
-    {
+    cdz = zc - zd;
+    
+    #pragma simd
+    #pragma vector aligned
+    for (ij = 0; ij < nij; ++ij)
+    {        
         i = prima[ij];
         j = primb[ij];
         expa = alphaa[i];
@@ -324,7 +282,9 @@ int erd__e0f0_pcgto_block (int nij, int nkl,
         scalep[ij] *= cca[i] * ccb[j];
     }
 
-    for (kl = 1; kl <= nkl; ++kl)
+    #pragma simd
+    #pragma vector aligned
+    for (kl = 0; kl < nkl; ++kl)
     {
         k = primc[kl];
         l = primd[kl];
@@ -355,27 +315,28 @@ int erd__e0f0_pcgto_block (int nij, int nkl,
 /*                            = 5  -->  4-center (AB|CD) integrals */
 /*                4-center (AB|CD) integrals are checked first */
 /*                (most common occurence in large systems). */
-    m = 1;
-    for (ij = 1; ij <= nij; ++ij)
+    m = 0;
+    for (ij = 0; ij < nij; ++ij)
     {
         pval = p[ij];
         pxval = px[ij];
         pyval = py[ij];
         pzval = pz[ij];
         pscale = scalep[ij];
-        for (kl = 1; kl <= nkl; ++kl)
+        #pragma vector aligned
+        for (kl = 0; kl < nkl; ++kl)
         {
             qval = q[kl];
             pqmult = pval * qval;
             pqplus = pval + qval;
-            invers = 1. / pqplus;
+            invers = 1.0 / pqplus;
             pqx = pxval - qx[kl];
             pqy = pyval - qy[kl];
             pqz = pzval - qz[kl];
             tval[m] = (pqx * pqx + pqy * pqy + pqz * pqz) * pqmult * invers;
             pqpinv[m] = invers;
             scalepq[m] = pscale * scaleq[kl] / (pqmult * sqrt (pqplus));
-            ++m;
+            m++;
         }
     }
 
@@ -383,12 +344,12 @@ int erd__e0f0_pcgto_block (int nij, int nkl,
 /*                MIJKL to MGQIJKL starting from the last elements. */
     if (ngqp > 1)
     {
-        n = mgqijkl + 1;
+        n = mgqijkl;
         for (m = nijkl; m >= 1; --m)
         {
             for (i = 1; i <= ngqp; ++i)
             {
-                scalepq[n - i] = scalepq[m];
+                scalepq[n - i] = scalepq[m - 1];
             }
             n -= ngqp;
         }
@@ -406,7 +367,7 @@ int erd__e0f0_pcgto_block (int nij, int nkl,
 /*                          evaluation of symmetric termat */
 /*                   G060 = offset for second row intermediates during */
 /*                          evaluation of symmetric termat */
-    g000 = 1;
+    g000 = 0;
     g010 = g000 + nmom;
     g020 = g010 + nmom - 1;
     g030 = g020 + nmom;
@@ -419,10 +380,10 @@ int erd__e0f0_pcgto_block (int nij, int nkl,
 #ifdef __ERD_PROFILE__
     start_clock = __rdtsc();
 #endif
-    erd__rys_roots_weights_ (&nijkl, &ngqp, &nmom, &tval[1], &b00[1],
+    erd__rys_roots_weights_ (&nijkl, &ngqp, &nmom, tval, b00,
                              &gqscr[g000], &gqscr[g010],
                              &gqscr[g020], &gqscr[g030], &gqscr[g040],
-                             &gqscr[g050], &gqscr[g060], &rts[1], &wts[1]);
+                             &gqscr[g050], &gqscr[g060], rts, wts);
 #ifdef __ERD_PROFILE__
     end_clock = __rdtsc();
     erd_ticks[tid][erd__rys_roots_weights_ticks] += (end_clock - start_clock);
@@ -445,82 +406,23 @@ int erd__e0f0_pcgto_block (int nij, int nkl,
 #ifdef __ERD_PROFILE__
     start_clock = __rdtsc();
 #endif
-    erd__2d_coefficients (nij, nkl, ngqp, &p[1], &q[1],
-                          &px[1], &py[1], &pz[1], &qx[1], &qy[1], &qz[1],
-                          &pax[1], &pay[1], &paz[1], &qcx[1], &qcy[1], &qcz[1],
-                          &pinvhf[1], &qinvhf[1], &pqpinv[1], &rts[1],
-                          case2d, &b00[1], &b01[1], &b10[1],
-                          &c00x[1], &c00y[1], &c00z[1],
-                          &d00x[1], &d00y[1], &d00z[1]);
+    erd__2d_coefficients (nij, nkl, ngqp, p, q,
+                          px, py, pz, qx, qy, qz,
+                          pax, pay, paz, qcx, qcy, qcz,
+                          pinvhf, qinvhf, pqpinv, rts,
+                          case2d, b00, b01, b10,
+                          c00x, c00y, c00z,
+                          d00x, d00y, d00z);
 #ifdef __ERD_PROFILE__
     end_clock = __rdtsc();
     erd_ticks[tid][erd__2d_coefficients_ticks] += (end_clock - start_clock);
 #endif
 
-    int mgqijkl_aligned = ((mgqijkl + SIMD_WIDTH - 1)/SIMD_WIDTH) * SIMD_WIDTH;
-    int int2d_size_aligned = mgqijkl_aligned * (shellp + 1) * (shellq + 1);
-    double rts_aligned[mgqijkl_aligned]  __attribute__((aligned(64)));
-    double wts_aligned[mgqijkl_aligned]  __attribute__((aligned(64)));
-    double b00_aligned[mgqijkl_aligned]  __attribute__((aligned(64)));
-    double b01_aligned[mgqijkl_aligned]  __attribute__((aligned(64)));
-    double b10_aligned[mgqijkl_aligned]  __attribute__((aligned(64)));
-    double c00x_aligned[mgqijkl_aligned]  __attribute__((aligned(64)));
-    double c00y_aligned[mgqijkl_aligned]  __attribute__((aligned(64)));
-    double c00z_aligned[mgqijkl_aligned]  __attribute__((aligned(64)));
-    double d00x_aligned[mgqijkl_aligned]  __attribute__((aligned(64)));
-    double d00y_aligned[mgqijkl_aligned]  __attribute__((aligned(64)));
-    double d00z_aligned[mgqijkl_aligned]  __attribute__((aligned(64)));
-    double scalepq_aligned[mgqijkl_aligned]  __attribute__((aligned(64)));
-    double int2dx_aligned[int2d_size_aligned]  __attribute__((aligned(64)));
-    double int2dy_aligned[int2d_size_aligned]  __attribute__((aligned(64)));
-    double int2dz_aligned[int2d_size_aligned]  __attribute__((aligned(64)));
-    double batch_aligned[nxyzet * nxyzft]  __attribute__((aligned(64)));
- 
-    memset(rts_aligned, 0, mgqijkl_aligned*sizeof(double));
-    memset(wts_aligned, 0, mgqijkl_aligned*sizeof(double));
-    memset(b00_aligned, 0, mgqijkl_aligned*sizeof(double));
-    memset(b01_aligned, 0, mgqijkl_aligned*sizeof(double));
-    memset(b10_aligned, 0, mgqijkl_aligned*sizeof(double));
-    memset(c00x_aligned, 0, mgqijkl_aligned*sizeof(double));
-    memset(c00y_aligned, 0, mgqijkl_aligned*sizeof(double));
-    memset(c00z_aligned, 0, mgqijkl_aligned*sizeof(double));
-    memset(d00x_aligned, 0, mgqijkl_aligned*sizeof(double));
-    memset(d00y_aligned, 0, mgqijkl_aligned*sizeof(double));
-    memset(d00z_aligned, 0, mgqijkl_aligned*sizeof(double));
-    memset(scalepq_aligned, 0, mgqijkl_aligned*sizeof(double));
-
-/*    for(j = 0; j < nijkl; j++)
+    int mgqijkl_aligned = ((mgqijkl + SIMDW - 1)/SIMDW) * SIMDW;
+    for (i = mgqijkl; i < mgqijkl_aligned; i++)
     {
-        for(k = 0; k < ngqp; k++)
-        {
-            rts_aligned[k * nijkl_aligned + j] = rts[1 + j * ngqp + k];
-            wts_aligned[k * nijkl_aligned + j] = wts[1 + j * ngqp + k];
-            b00_aligned[k * nijkl_aligned + j] = b00[1 + j * ngqp + k];
-            b01_aligned[k * nijkl_aligned + j] = b01[1 + j * ngqp + k];
-            b10_aligned[k * nijkl_aligned + j] = b10[1 + j * ngqp + k];
-            c00x_aligned[k * nijkl_aligned + j] = c00x[1 + j * ngqp + k];
-            c00y_aligned[k * nijkl_aligned + j] = c00y[1 + j * ngqp + k];
-            c00z_aligned[k * nijkl_aligned + j] = c00z[1 + j * ngqp + k];
-            d00x_aligned[k * nijkl_aligned + j] = d00x[1 + j * ngqp + k];
-            d00y_aligned[k * nijkl_aligned + j] = d00y[1 + j * ngqp + k];
-            d00z_aligned[k * nijkl_aligned + j] = d00z[1 + j * ngqp + k];
-            scalepq_aligned[k * nijkl_aligned + j] = scalepq[1 + j * ngqp + k];
-        }
+        scalepq[i] = 0.0;
     }
-*/
-    memcpy(rts_aligned, rts + 1, mgqijkl*sizeof(double));
-    memcpy(wts_aligned, wts + 1, mgqijkl*sizeof(double));
-    memcpy(b00_aligned, b00 + 1, mgqijkl*sizeof(double));
-    memcpy(b01_aligned, b01 + 1, mgqijkl*sizeof(double));
-    memcpy(b10_aligned, b10 + 1, mgqijkl*sizeof(double));
-    memcpy(c00x_aligned, c00x + 1, mgqijkl*sizeof(double));
-    memcpy(c00y_aligned, c00y + 1, mgqijkl*sizeof(double));
-    memcpy(c00z_aligned, c00z + 1, mgqijkl*sizeof(double));
-    memcpy(d00x_aligned, d00x + 1, mgqijkl*sizeof(double));
-    memcpy(d00y_aligned, d00y + 1, mgqijkl*sizeof(double));
-    memcpy(d00z_aligned, d00z + 1, mgqijkl*sizeof(double));
-    memcpy(scalepq_aligned, scalepq + 1, mgqijkl*sizeof(double));
-
 
 #ifdef __ERD_PROFILE__
     start_clock = __rdtsc();
@@ -531,11 +433,10 @@ int erd__e0f0_pcgto_block (int nij, int nkl,
                           &d00y[1], &d00z[1], case2d,
                           &int2dx[1], &int2dy[1], &int2dz[1]);
     */
-    erd__2d_pq_integrals (shellp, shellq, mgqijkl_aligned, wts_aligned,
-                          b00_aligned, b01_aligned, b10_aligned,
-                          c00x_aligned, c00y_aligned, c00z_aligned, d00x_aligned,
-                          d00y_aligned, d00z_aligned, case2d,
-                          int2dx_aligned, int2dy_aligned, int2dz_aligned);
+    erd__2d_pq_integrals (shellp, shellq, mgqijkl_aligned, wts,
+                          b00, b01, b10, c00x, c00y, c00z, d00x,
+                          d00y, d00z, case2d,
+                          int2dx, int2dy, int2dz);
 
 #ifdef __ERD_PROFILE__
     end_clock = __rdtsc();
@@ -568,14 +469,13 @@ int erd__e0f0_pcgto_block (int nij, int nkl,
     }
     */
     erd__int2d_to_e0f0 (shella, shellp, shellc, shellq,
-            mgqijkl_aligned, nxyzet, nxyzft, nxyzp, nxyzq,
-            int2dx_aligned, int2dy_aligned, int2dz_aligned,
-            scalepq_aligned, batch_aligned);
+                        mgqijkl_aligned, nxyzet, nxyzft, nxyzp, nxyzq,
+                        int2dx, int2dy, int2dz,
+                        scalepq, batch);
 #ifdef __ERD_PROFILE__
     end_clock = __rdtsc();
     erd_ticks[tid][erd__int2d_to_e0f0_ticks] += (end_clock - start_clock);
 #endif
-    memcpy(&batch[1], batch_aligned, nxyzet * nxyzft * sizeof(double)); 
 
     return 0;
 }

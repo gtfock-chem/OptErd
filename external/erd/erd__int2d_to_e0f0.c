@@ -199,10 +199,10 @@ int erd__int2d_to_e0f0 (int shella, int shellp, int shellc, int shellq,
         indb = indices[k1][3];
 
         double sum = 0;
-        for(m = 0; m < ngqexq; m+=SIMD_WIDTH)
+        for(m = 0; m < ngqexq; m+=SIMDW)
         {
 #pragma vector aligned
-            for(m1 = 0; m1 < SIMD_WIDTH; m1++)
+            for(m1 = 0; m1 < SIMDW; m1++)
             {
                 sum += scale[m + m1]
                     * int2dx[m + m1 + indx]

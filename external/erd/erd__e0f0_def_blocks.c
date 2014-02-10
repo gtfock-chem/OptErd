@@ -206,7 +206,7 @@ int erd__e0f0_def_blocks (int zmax, int npgtoa, int npgtob,
     }
     else
     {
-        *nint2d = mgqijkl * (shellp + 1) * (shellq + 1);
+        *nint2d = pad_mgqijkl * (shellp + 1) * (shellq + 1);
         zone4 = pad_ngqscr + pad_mijkl * 2 +
                 (pad_nij + pad_nkl) * 9 +
                 pad_mgqijkl * 12 +

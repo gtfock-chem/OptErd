@@ -76,7 +76,7 @@ void erd_print_profile (int mode)
     for (k = 0; k < erd__num_ticks; k++)
     {
         total_secs = 0.0;
-        printf("%25s", ticks_name[k]);
+        printf("%28s", ticks_name[k]);
         for (i = 0; i < nthreads; i++)
         {
             if (mode == 0)
@@ -85,7 +85,7 @@ void erd_print_profile (int mode)
             }
             total_secs += (double)erd_ticks[i][k]/freq;
         }        
-        printf(":\t%.3lf", total_secs/nthreads);
+        printf(",\t%.3lf", total_secs/nthreads);
         printf("\n");
     }
 }
