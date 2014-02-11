@@ -133,8 +133,9 @@ int erd__2d_pq_integrals (int shellp, int shellq,
             int2dy[n + n1] = 1.0;
             int2dz[n + n1] = 1.0;
         }
-    }
 #endif
+    }
+
     return 0;
 
 
