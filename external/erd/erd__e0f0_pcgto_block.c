@@ -323,7 +323,7 @@ int erd__e0f0_pcgto_block (int nij, int nkl,
         pyval = py[ij];
         pzval = pz[ij];
         pscale = scalep[ij];
-        #pragma vector aligned
+        #pragma simd
         for (kl = 0; kl < nkl; ++kl)
         {
             qval = q[kl];
@@ -419,10 +419,7 @@ int erd__e0f0_pcgto_block (int nij, int nkl,
 #endif
 
     int mgqijkl_aligned = ((mgqijkl + SIMDW - 1)/SIMDW) * SIMDW;
-    for (i = mgqijkl; i < mgqijkl_aligned; i++)
-    {
-        scalepq[i] = 0.0;
-    }
+    memset (&(scalepq[mgqijkl]), 0, sizeof(double) * (mgqijkl_aligned - mgqijkl));
 
 #ifdef __ERD_PROFILE__
     start_clock = __rdtsc();

@@ -139,6 +139,7 @@ void erd__sssp_pcgto_block (int nij, int nkl,
     const double y34 = y3 - y4;
     const double z34 = z3 - z4;
 
+    #pragma vector aligned
     for (int ij = 0; ij < nij; ij += 1) {
         const int i = prim1[ij];
         const int j = prim2[ij];
@@ -153,6 +154,7 @@ void erd__sssp_pcgto_block (int nij, int nkl,
         scalep[ij] = cc1[i] * cc2[j] * norm1[i] * norm2[j] * rho12[ij];
     }
 
+    #pragma vector aligned
     for (int kl = 0; kl < nkl; kl += 1) {
         const int k = prim3[kl];
         const int l = prim4[kl];

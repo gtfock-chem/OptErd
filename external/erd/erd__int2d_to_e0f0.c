@@ -201,7 +201,7 @@ int erd__int2d_to_e0f0 (int shella, int shellp, int shellc, int shellq,
         double sum = 0;
         for(m = 0; m < ngqexq; m+=SIMDW)
         {
-#pragma vector aligned
+            #pragma vector aligned
             for(m1 = 0; m1 < SIMDW; m1++)
             {
                 sum += scale[m + m1]
