@@ -76,7 +76,6 @@ int erd__rys_1_roots_weights_ (int *nt, double *tval,
             rts[n] = r1 / (r1 + 1.);
             goto L100;
         }
-/* Computing MIN */
         d__1 = t + 1.;
         tcase = (int) MIN (d__1, 34.);
         switch (jump1[tcase - 1])

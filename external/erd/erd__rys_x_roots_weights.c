@@ -616,7 +616,7 @@ int erd__rys_x_roots_weights_ (int * nt, int * ngqp, int * nmom, double * tval,
         {
             ++nrts;
             rts[nrts] = dia[1];
-            wts[nrts] = momzero;
+            wts[nrts] *= momzero;
         }
         else
         {
@@ -710,7 +710,7 @@ L300:
                 assert (root >= 0. && root < 1.);
                 rts[nrts + i__] = root;
                 d__1 = a[i__];
-                wts[nrts + i__] = momzero * (d__1 * d__1);
+                wts[nrts + i__] *= momzero * (d__1 * d__1);
             }
             nrts += *ngqp;
         }
