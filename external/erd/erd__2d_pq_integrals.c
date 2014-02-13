@@ -88,10 +88,6 @@ int erd__2d_pq_integrals (int shellp, int shellq,
 /*                The case present has been evaluated outside this */
 /*                routine and is transmitted via argument. */
 
-#ifdef __AVX1__
-  __m256d one_256 = _mm256_set1_pd(1.0);
-#endif
-
     switch (case2d)
     {
         case 1:
@@ -118,10 +114,6 @@ int erd__2d_pq_integrals (int shellp, int shellq,
   L1:
     for (n = 0; n < ngqexq; n+=SIMDW)
     {
-#ifdef __AVX1__
-        _mm256_store_pd(&int2dy[n], one_256);
-        _mm256_store_pd(&int2dz[n], one_256);
-#else
         #pragma vector aligned
         #pragma simd
         for (n1 = 0; n1 < SIMDW; n1++)
@@ -129,7 +121,6 @@ int erd__2d_pq_integrals (int shellp, int shellq,
             int2dy[n + n1] = 1.0;
             int2dz[n + n1] = 1.0;
         }
-#endif
     }
 
     return 0;
@@ -139,30 +130,6 @@ int erd__2d_pq_integrals (int shellp, int shellq,
   L2:
     for (n = 0; n < ngqexq; n+=SIMDW)
     {
-#ifdef __AVX1__
-        __m256d int2dx_0_256, int2dx_1_256, int2dx_2_256;
-        __m256d int2dy_0_256, int2dy_1_256, int2dy_2_256;
-        __m256d int2dz_0_256, int2dz_1_256, int2dz_2_256;
-        __m256d d00x_256, d00y_256, d00z_256;
-
-        int2dx_2_256 = _mm256_load_pd(&int2dx[n]);
-        d00x_256 = _mm256_load_pd(&d00x[n]);
-        int2dx_1_256 = _mm256_mul_pd(d00x_256, int2dx_2_256);
-        _mm256_store_pd(&int2dx[n + ngqexq], int2dx_1_256);
-
-        int2dy_2_256 = one_256;
-        _mm256_store_pd(&int2dy[n], int2dy_2_256);
-        d00y_256 = _mm256_load_pd(&d00y[n]);
-        int2dy_1_256 = d00y_256;
-        _mm256_store_pd(&int2dy[n + ngqexq], int2dy_1_256);
-
-        int2dz_2_256 = one_256;
-        _mm256_store_pd(&int2dz[n], int2dz_2_256);
-        d00z_256 = _mm256_load_pd(&d00z[n]);
-        int2dz_1_256 = d00z_256;
-        _mm256_store_pd(&int2dz[n + ngqexq], int2dz_1_256);
-
-#else
         double int2dx_0[SIMDW], int2dx_1[SIMDW], int2dx_2[SIMDW];
         double int2dy_0[SIMDW], int2dy_1[SIMDW], int2dy_2[SIMDW];
         double int2dz_0[SIMDW], int2dz_1[SIMDW], int2dz_2[SIMDW];
@@ -177,37 +144,12 @@ int erd__2d_pq_integrals (int shellp, int shellq,
             int2dy[n + n1 + ngqexq] = int2dy_1[n1] = d00y[n + n1];
             int2dz[n + n1 + ngqexq] = int2dz_1[n1] = d00z[n + n1];
         }
-#endif
 
 /*             ...evaluate I=0 and K=2,SHELLQ (if any). */
         for (k = 2; k <= shellq; ++k)
         {
             double k1 = k - 1;
 
-#ifdef __AVX1__
-            __m256d k1_256 = _mm256_broadcast_sd(&k1);
-            __m256d b01_256 = _mm256_load_pd(&b01[n]);
-            __m256d b1_256 = _mm256_mul_pd(k1_256, b01_256);
-
-            int2dx_0_256 = _mm256_add_pd(_mm256_mul_pd(b1_256, int2dx_2_256),
-                                         _mm256_mul_pd(d00x_256, int2dx_1_256));
-            int2dx_2_256 = int2dx_1_256;
-            int2dx_1_256 = int2dx_0_256;
-            _mm256_store_pd(&int2dx[n + k * ngqexq], int2dx_0_256);
-
-            int2dy_0_256 = _mm256_add_pd(_mm256_mul_pd(b1_256, int2dy_2_256),
-                                         _mm256_mul_pd(d00y_256, int2dy_1_256));
-            int2dy_2_256 = int2dy_1_256;
-            int2dy_1_256 = int2dy_0_256;
-            _mm256_store_pd(&int2dy[n + k * ngqexq], int2dy_0_256);
-
-            int2dz_0_256 = _mm256_add_pd(_mm256_mul_pd(b1_256, int2dz_2_256),
-                                         _mm256_mul_pd(d00z_256, int2dz_1_256));
-            int2dz_2_256 = int2dz_1_256;
-            int2dz_1_256 = int2dz_0_256;
-            _mm256_store_pd(&int2dz[n + k * ngqexq], int2dz_0_256);
-
-#else
             #pragma vector aligned
             #pragma simd
             for(n1 = 0; n1 < SIMDW; n1++)
@@ -228,7 +170,6 @@ int erd__2d_pq_integrals (int shellp, int shellq,
                 int2dz_1[n1] = int2dz_0[n1];
                 int2dz[n + n1 + k * ngqexq] = int2dz_0[n1];
             }
-#endif
         }
     }
     return 0;
@@ -239,30 +180,6 @@ int erd__2d_pq_integrals (int shellp, int shellq,
   L3:
     for (n = 0; n < ngqexq; n+=SIMDW)
     {
-#ifdef __AVX1__
-        __m256d int2dx_0_256, int2dx_1_256, int2dx_2_256;
-        __m256d int2dy_0_256, int2dy_1_256, int2dy_2_256;
-        __m256d int2dz_0_256, int2dz_1_256, int2dz_2_256;
-        __m256d c00x_256, c00y_256, c00z_256;
-
-        int2dx_2_256 = _mm256_load_pd(&int2dx[n]);
-        c00x_256 = _mm256_load_pd(&c00x[n]);
-        int2dx_1_256 = _mm256_mul_pd(c00x_256, int2dx_2_256);
-        _mm256_store_pd(&int2dx[n + ngqexq], int2dx_1_256);
-
-        int2dy_2_256 = one_256;
-        _mm256_store_pd(&int2dy[n], int2dy_2_256);
-        c00y_256 = _mm256_load_pd(&c00y[n]);
-        int2dy_1_256 = c00y_256;
-        _mm256_store_pd(&int2dy[n + ngqexq], int2dy_1_256);
-
-        int2dz_2_256 = one_256;
-        _mm256_store_pd(&int2dz[n], int2dz_2_256);
-        c00z_256 = _mm256_load_pd(&c00z[n]);
-        int2dz_1_256 = c00z_256;
-        _mm256_store_pd(&int2dz[n + ngqexq], int2dz_1_256);
-
-#else
         double int2dx_0[SIMDW], int2dx_1[SIMDW], int2dx_2[SIMDW];
         double int2dy_0[SIMDW], int2dy_1[SIMDW], int2dy_2[SIMDW];
         double int2dz_0[SIMDW], int2dz_1[SIMDW], int2dz_2[SIMDW];
@@ -278,38 +195,12 @@ int erd__2d_pq_integrals (int shellp, int shellq,
             int2dy[n + n1 + ngqexq] = int2dy_1[n1] = c00y[n + n1];
             int2dz[n + n1 + ngqexq] = int2dz_1[n1] = c00z[n + n1];
         }
-#endif
 /*             ...evaluate I=2,SHELLP (if any) and K=0. */
 
         for (i = 2; i <= shellp; ++i)
         {
             double i1 = i - 1;
 
-#ifdef __AVX1__
-
-            __m256d i1_256 = _mm256_broadcast_sd(&i1);
-            __m256d b10_256 = _mm256_load_pd(&b10[n]);
-            __m256d b1_256 = _mm256_mul_pd(i1_256, b10_256);
-
-            int2dx_0_256 = _mm256_add_pd(_mm256_mul_pd(b1_256, int2dx_2_256),
-                                         _mm256_mul_pd(c00x_256, int2dx_1_256));
-            int2dx_2_256 = int2dx_1_256;
-            int2dx_1_256 = int2dx_0_256;
-            _mm256_store_pd(&int2dx[n + i * ngqexq], int2dx_0_256);
-
-            int2dy_0_256 = _mm256_add_pd(_mm256_mul_pd(b1_256, int2dy_2_256),
-                                         _mm256_mul_pd(c00y_256, int2dy_1_256));
-            int2dy_2_256 = int2dy_1_256;
-            int2dy_1_256 = int2dy_0_256;
-            _mm256_store_pd(&int2dy[n + i * ngqexq], int2dy_0_256);
-
-            int2dz_0_256 = _mm256_add_pd(_mm256_mul_pd(b1_256, int2dz_2_256),
-                                         _mm256_mul_pd(c00z_256, int2dz_1_256));
-            int2dz_2_256 = int2dz_1_256;
-            int2dz_1_256 = int2dz_0_256;
-            _mm256_store_pd(&int2dz[n + i * ngqexq], int2dz_0_256);
-
-#else
             #pragma vector aligned
             #pragma simd
             for(n1 = 0; n1 < SIMDW; n1++)
@@ -330,7 +221,6 @@ int erd__2d_pq_integrals (int shellp, int shellq,
                 int2dz_1[n1] = int2dz_0[n1];
                 int2dz[n + n1 + i * ngqexq] = int2dz_0[n1];
             }
-#endif
         }
     }
     return 0;
@@ -342,30 +232,6 @@ int erd__2d_pq_integrals (int shellp, int shellq,
   L4:
     for (n = 0; n < ngqexq; n+=SIMDW)
     {
-#ifdef __AVX1__
-        __m256d int2dx_0_256, int2dx_i1_256, int2dx_k1_256, int2dx_2_256;
-        __m256d int2dy_0_256, int2dy_i1_256, int2dy_k1_256, int2dy_2_256;
-        __m256d int2dz_0_256, int2dz_i1_256, int2dz_k1_256, int2dz_2_256;
-        __m256d c00x_256, c00y_256, c00z_256;
-
-        int2dx_2_256 = _mm256_load_pd(&int2dx[n]);
-        c00x_256 = _mm256_load_pd(&c00x[n]);
-        int2dx_i1_256 = _mm256_mul_pd(c00x_256, int2dx_2_256);
-        _mm256_store_pd(&int2dx[n + ngqexq], int2dx_i1_256);
-
-        int2dy_2_256 = one_256;
-        _mm256_store_pd(&int2dy[n], int2dy_2_256);
-        c00y_256 = _mm256_load_pd(&c00y[n]);
-        int2dy_i1_256 = c00y_256;
-        _mm256_store_pd(&int2dy[n + ngqexq], int2dy_i1_256);
-
-        int2dz_2_256 = one_256;
-        _mm256_store_pd(&int2dz[n], int2dz_2_256);
-        c00z_256 = _mm256_load_pd(&c00z[n]);
-        int2dz_i1_256 = c00z_256;
-        _mm256_store_pd(&int2dz[n + ngqexq], int2dz_i1_256);
-
-#else
         double int2dx_0[SIMDW], int2dx_i1[SIMDW], int2dx_k1[SIMDW], int2dx_2[SIMDW];
         double int2dy_0[SIMDW], int2dy_i1[SIMDW], int2dy_k1[SIMDW], int2dy_2[SIMDW];
         double int2dz_0[SIMDW], int2dz_i1[SIMDW], int2dz_k1[SIMDW], int2dz_2[SIMDW];
@@ -381,36 +247,11 @@ int erd__2d_pq_integrals (int shellp, int shellq,
             int2dy[n + n1 + ngqexq] = int2dy_i1[n1] = c00y[n + n1];
             int2dz[n + n1 + ngqexq] = int2dz_i1[n1] = c00z[n + n1];
         }
-#endif
 
         for (i = 2; i <= shellp; ++i)
         {
             double i1 = i - 1;
 
-#ifdef __AVX1__
-            __m256d i1_256 = _mm256_broadcast_sd(&i1);
-            __m256d b10_256 = _mm256_load_pd(&b10[n]);
-            __m256d b1_256 = _mm256_mul_pd(i1_256, b10_256);
-
-            int2dx_0_256 = _mm256_add_pd(_mm256_mul_pd(b1_256, int2dx_2_256),
-                    _mm256_mul_pd(c00x_256, int2dx_i1_256));
-            int2dx_2_256 = int2dx_i1_256;
-            int2dx_i1_256 = int2dx_0_256;
-            _mm256_store_pd(&int2dx[n + i * ngqexq], int2dx_0_256);
-
-            int2dy_0_256 = _mm256_add_pd(_mm256_mul_pd(b1_256, int2dy_2_256),
-                    _mm256_mul_pd(c00y_256, int2dy_i1_256));
-            int2dy_2_256 = int2dy_i1_256;
-            int2dy_i1_256 = int2dy_0_256;
-            _mm256_store_pd(&int2dy[n + i * ngqexq], int2dy_0_256);
-
-            int2dz_0_256 = _mm256_add_pd(_mm256_mul_pd(b1_256, int2dz_2_256),
-                    _mm256_mul_pd(c00z_256, int2dz_i1_256));
-            int2dz_2_256 = int2dz_i1_256;
-            int2dz_i1_256 = int2dz_0_256;
-            _mm256_store_pd(&int2dz[n + i * ngqexq], int2dz_0_256);
-
-#else
             #pragma vector aligned
             #pragma simd
             for(n1 = 0; n1 < SIMDW; n1++)
@@ -431,28 +272,8 @@ int erd__2d_pq_integrals (int shellp, int shellq,
                 int2dz_i1[n1] = int2dz_0[n1];
                 int2dz[n + n1 + i * ngqexq] = int2dz_0[n1];
             }
-#endif
         }
 
-#ifdef __AVX1__
-
-        int2dx_2_256 = _mm256_load_pd(&int2dx[n]);
-        int2dy_2_256 = one_256;
-        int2dz_2_256 = one_256;
-
-        __m256d d00x_256 = _mm256_load_pd(&d00x[n]);
-        int2dx_k1_256 = _mm256_mul_pd(d00x_256, int2dx_2_256);
-        _mm256_store_pd(&int2dx[n + (shellp + 1) * ngqexq], int2dx_k1_256);
-
-        __m256d d00y_256 = _mm256_load_pd(&d00y[n]);
-        int2dy_k1_256 = d00y_256;
-        _mm256_store_pd(&int2dy[n + (shellp + 1) * ngqexq], int2dy_k1_256);
-
-        __m256d d00z_256 = _mm256_load_pd(&d00z[n]);
-        int2dz_k1_256 = d00z_256;
-        _mm256_store_pd(&int2dz[n + (shellp + 1) * ngqexq], int2dz_k1_256);
-
-#else
         #pragma vector aligned
         #pragma simd
         for(n1 = 0; n1 < SIMDW; n1++)
@@ -465,36 +286,11 @@ int erd__2d_pq_integrals (int shellp, int shellq,
             int2dy[n + n1 + (shellp + 1) * ngqexq] = int2dy_k1[n1] = d00y[n + n1];
             int2dz[n + n1 + (shellp + 1) * ngqexq] = int2dz_k1[n1] = d00z[n + n1];
         }
-#endif
 
         for (k = 2; k <= shellq; ++k)
         {
             double k1 = k - 1;
 
-#ifdef __AVX1__
-            __m256d k1_256 = _mm256_broadcast_sd(&k1);
-            __m256d b01_256 = _mm256_load_pd(&b01[n]);
-            __m256d b1_256 = _mm256_mul_pd(k1_256, b01_256);
-
-            int2dx_0_256 = _mm256_add_pd(_mm256_mul_pd(b1_256, int2dx_2_256),
-                    _mm256_mul_pd(d00x_256, int2dx_k1_256));
-            int2dx_2_256 = int2dx_k1_256;
-            int2dx_k1_256 = int2dx_0_256;
-            _mm256_store_pd(&int2dx[n + k * (shellp + 1) * ngqexq], int2dx_0_256);
-
-            int2dy_0_256 = _mm256_add_pd(_mm256_mul_pd(b1_256, int2dy_2_256),
-                    _mm256_mul_pd(d00y_256, int2dy_k1_256));
-            int2dy_2_256 = int2dy_k1_256;
-            int2dy_k1_256 = int2dy_0_256;
-            _mm256_store_pd(&int2dy[n + k * (shellp + 1) * ngqexq], int2dy_0_256);
-
-            int2dz_0_256 = _mm256_add_pd(_mm256_mul_pd(b1_256, int2dz_2_256),
-                    _mm256_mul_pd(d00z_256, int2dz_k1_256));
-            int2dz_2_256 = int2dz_k1_256;
-            int2dz_k1_256 = int2dz_0_256;
-            _mm256_store_pd(&int2dz[n + k * (shellp + 1) * ngqexq], int2dz_0_256);
-
-#else
             #pragma vector aligned
             #pragma simd
             for(n1 = 0; n1 < SIMDW; n1++)
@@ -515,7 +311,6 @@ int erd__2d_pq_integrals (int shellp, int shellq,
                 int2dz_k1[n1] = int2dz_0[n1];
                 int2dz[n + n1 + k * (shellp + 1) * ngqexq] = int2dz_0[n1];
             }
-#endif
         }
     }
 
@@ -528,49 +323,14 @@ int erd__2d_pq_integrals (int shellp, int shellq,
     {
         for (n = 0; n < ngqexq; n+=SIMDW)
         {
-#ifdef __AVX1__
-            __m256d int2dx_00_256, int2dx_10_256, int2dx_20_256, int2dx_11_256;
-            __m256d int2dy_00_256, int2dy_10_256, int2dy_20_256, int2dy_11_256;
-            __m256d int2dz_00_256, int2dz_10_256, int2dz_20_256, int2dz_11_256;
-
-#else
             double int2dx_00[SIMDW], int2dx_10[SIMDW], int2dx_20[SIMDW], int2dx_11[SIMDW];
             double int2dy_00[SIMDW], int2dy_10[SIMDW], int2dy_20[SIMDW], int2dy_11[SIMDW];
             double int2dz_00[SIMDW], int2dz_10[SIMDW], int2dz_20[SIMDW], int2dz_11[SIMDW];
-#endif
 
             for (k = 1; k <= shellq; ++k)
             {
                 int k1 = k - 1;
 
-#ifdef __AVX1__
-                double k_double = k;
-                __m256d k_256 = _mm256_broadcast_sd(&k_double);
-                __m256d b00_256 = _mm256_load_pd(&b00[n]);
-                __m256d b0_256 = _mm256_mul_pd(k_256, b00_256);
-
-                __m256d int2dx_k1_0_256 = _mm256_load_pd(&int2dx[n + k1 * (shellp + 1) * ngqexq]);
-                int2dx_20_256 = _mm256_load_pd(&int2dx[n + k * (shellp + 1) * ngqexq]);
-                __m256d c00x_256 = _mm256_load_pd(&c00x[n]);
-                int2dx_10_256 = _mm256_add_pd(_mm256_mul_pd(b0_256, int2dx_k1_0_256),
-                                              _mm256_mul_pd(c00x_256, int2dx_20_256));
-                _mm256_store_pd(&int2dx[n + (k * (shellp + 1) + 1) * ngqexq], int2dx_10_256);
-
-                __m256d int2dy_k1_0_256 = _mm256_load_pd(&int2dy[n + k1 * (shellp + 1) * ngqexq]);
-                int2dy_20_256 = _mm256_load_pd(&int2dy[n + k * (shellp + 1) * ngqexq]);
-                __m256d c00y_256 = _mm256_load_pd(&c00y[n]);
-                int2dy_10_256 = _mm256_add_pd(_mm256_mul_pd(b0_256, int2dy_k1_0_256),
-                                              _mm256_mul_pd(c00y_256, int2dy_20_256));
-                _mm256_store_pd(&int2dy[n + (k * (shellp + 1) + 1) * ngqexq], int2dy_10_256);
-
-                __m256d int2dz_k1_0_256 = _mm256_load_pd(&int2dz[n + k1 * (shellp + 1) * ngqexq]);
-                int2dz_20_256 = _mm256_load_pd(&int2dz[n + k * (shellp + 1) * ngqexq]);
-                __m256d c00z_256 = _mm256_load_pd(&c00z[n]);
-                int2dz_10_256 = _mm256_add_pd(_mm256_mul_pd(b0_256, int2dz_k1_0_256),
-                                              _mm256_mul_pd(c00z_256, int2dz_20_256));
-                _mm256_store_pd(&int2dz[n + (k * (shellp + 1) + 1) * ngqexq], int2dz_10_256);
-
-#else
                 #pragma vector aligned
                 #pragma simd
                 for(n1 = 0; n1 < SIMDW; n1++)
@@ -599,44 +359,9 @@ int erd__2d_pq_integrals (int shellp, int shellq,
                     int2dy[n + n1 + (k * (shellp + 1) + 1) * ngqexq] = int2dy_10[n1];
                     int2dz[n + n1 + (k * (shellp + 1) + 1) * ngqexq] = int2dz_10[n1];
                 }
-#endif
                 for (i = 2; i <= shellp; ++i)
                 {
                     int i1 = i - 1;
-#ifdef __AVX1__
-                    double i1_double = i1;
-                    __m256d i1_256 = _mm256_broadcast_sd(&i1_double);
-                    __m256d b10_256 = _mm256_load_pd(&b10[n]);
-                    __m256d b1_256 = _mm256_mul_pd(i1_256, b10_256);
-
-                    int2dx_11_256 = _mm256_load_pd(&int2dx[n + (i1 + k1 * (shellp + 1)) * ngqexq]);
-                    int2dx_00_256 = _mm256_add_pd(_mm256_add_pd(
-                                                  _mm256_mul_pd(b0_256, int2dx_11_256),
-                                                  _mm256_mul_pd(b1_256, int2dx_20_256)),
-                                                  _mm256_mul_pd(c00x_256, int2dx_10_256));
-                    int2dx_20_256 = int2dx_10_256;
-                    int2dx_10_256 = int2dx_00_256;
-                    _mm256_store_pd(&int2dx[n + (i + k * (shellp + 1)) * ngqexq], int2dx_00_256);
-
-                    int2dy_11_256 = _mm256_load_pd(&int2dy[n + (i1 + k1 * (shellp + 1)) * ngqexq]);
-                    int2dy_00_256 = _mm256_add_pd(_mm256_add_pd(
-                                                  _mm256_mul_pd(b0_256, int2dy_11_256),
-                                                  _mm256_mul_pd(b1_256, int2dy_20_256)),
-                                                  _mm256_mul_pd(c00y_256, int2dy_10_256));
-                    int2dy_20_256 = int2dy_10_256;
-                    int2dy_10_256 = int2dy_00_256;
-                    _mm256_store_pd(&int2dy[n + (i + k * (shellp + 1)) * ngqexq], int2dy_00_256);
-
-                    int2dz_11_256 = _mm256_load_pd(&int2dz[n + (i1 + k1 * (shellp + 1)) * ngqexq]);
-                    int2dz_00_256 = _mm256_add_pd(_mm256_add_pd(
-                                                  _mm256_mul_pd(b0_256, int2dz_11_256),
-                                                  _mm256_mul_pd(b1_256, int2dz_20_256)),
-                                                  _mm256_mul_pd(c00z_256, int2dz_10_256));
-                    int2dz_20_256 = int2dz_10_256;
-                    int2dz_10_256 = int2dz_00_256;
-                    _mm256_store_pd(&int2dz[n + (i + k * (shellp + 1)) * ngqexq], int2dz_00_256);
-
-#else
                     #pragma vector aligned
                     #pragma simd
                     for(n1 = 0; n1 < SIMDW; n1++)
@@ -666,7 +391,6 @@ int erd__2d_pq_integrals (int shellp, int shellq,
                         int2dy[n + n1 + (i + k * (shellp + 1)) * ngqexq] = int2dy_00[n1];
                         int2dz[n + n1 + (i + k * (shellp + 1)) * ngqexq] = int2dz_00[n1];
                     }
-#endif
                 }
             }
         }
@@ -675,49 +399,14 @@ int erd__2d_pq_integrals (int shellp, int shellq,
     {
         for (n = 0; n < ngqexq; n+=SIMDW)
         {
-#ifdef __AVX1__
-            __m256d int2dx_00_256, int2dx_01_256, int2dx_02_256, int2dx_11_256;
-            __m256d int2dy_00_256, int2dy_01_256, int2dy_02_256, int2dy_11_256;
-            __m256d int2dz_00_256, int2dz_01_256, int2dz_02_256, int2dz_11_256;
-
-#else
             double int2dx_00[SIMDW], int2dx_01[SIMDW], int2dx_02[SIMDW], int2dx_11[SIMDW];
             double int2dy_00[SIMDW], int2dy_01[SIMDW], int2dy_02[SIMDW], int2dy_11[SIMDW];
             double int2dz_00[SIMDW], int2dz_01[SIMDW], int2dz_02[SIMDW], int2dz_11[SIMDW];
-#endif
 
             for (i = 1; i <= shellp; ++i)
             {
                 int i1 = i - 1;
 
-#ifdef __AVX1__
-                double i_double = i;
-                __m256d i_256 = _mm256_broadcast_sd(&i_double);
-                __m256d b00_256 = _mm256_load_pd(&b00[n]);
-                __m256d b0_256 = _mm256_mul_pd(i_256, b00_256);
-
-                __m256d int2dx_0_i1_256 = _mm256_load_pd(&int2dx[n + i1 * ngqexq]);
-                int2dx_02_256 = _mm256_load_pd(&int2dx[n + i * ngqexq]);
-                __m256d d00x_256 = _mm256_load_pd(&d00x[n]);
-                int2dx_01_256 = _mm256_add_pd(_mm256_mul_pd(b0_256, int2dx_0_i1_256),
-                                              _mm256_mul_pd(d00x_256, int2dx_02_256));
-                _mm256_store_pd(&int2dx[n + (i + (shellp + 1)) * ngqexq], int2dx_01_256);
-
-                __m256d int2dy_0_i1_256 = _mm256_load_pd(&int2dy[n + i1 * ngqexq]);
-                int2dy_02_256 = _mm256_load_pd(&int2dy[n + i * ngqexq]);
-                __m256d d00y_256 = _mm256_load_pd(&d00y[n]);
-                int2dy_01_256 = _mm256_add_pd(_mm256_mul_pd(b0_256, int2dy_0_i1_256),
-                                              _mm256_mul_pd(d00y_256, int2dy_02_256));
-                _mm256_store_pd(&int2dy[n + (i + (shellp + 1)) * ngqexq], int2dy_01_256);
-
-                __m256d int2dz_0_i1_256 = _mm256_load_pd(&int2dz[n + i1 * ngqexq]);
-                int2dz_02_256 = _mm256_load_pd(&int2dz[n + i * ngqexq]);
-                __m256d d00z_256 = _mm256_load_pd(&d00z[n]);
-                int2dz_01_256 = _mm256_add_pd(_mm256_mul_pd(b0_256, int2dz_0_i1_256),
-                                              _mm256_mul_pd(d00z_256, int2dz_02_256));
-                _mm256_store_pd(&int2dz[n + (i + (shellp + 1)) * ngqexq], int2dz_01_256);
-
-#else
                 #pragma vector aligned
                 #pragma simd
                 for(n1 = 0; n1 < SIMDW; n1++)
@@ -744,45 +433,10 @@ int erd__2d_pq_integrals (int shellp, int shellq,
                     int2dy[n + n1 + (i + (shellp + 1)) * ngqexq] = int2dy_01[n1];
                     int2dz[n + n1 + (i + (shellp + 1)) * ngqexq] = int2dz_01[n1];
                 }
-#endif
 
                 for (k = 2; k <= shellq; ++k)
                 {
                     int k1 = k - 1;
-#ifdef __AVX1__
-                    double k1_double = k1;
-                    __m256d k1_256 = _mm256_broadcast_sd(&k1_double);
-                    __m256d b01_256 = _mm256_load_pd(&b01[n]);
-                    __m256d b1_256 = _mm256_mul_pd(k1_256, b01_256);
-
-                    int2dx_11_256 = _mm256_load_pd(&int2dx[n + (i1 + k1 * (shellp + 1)) * ngqexq]);
-                    int2dx_00_256 = _mm256_add_pd(_mm256_add_pd(
-                                                  _mm256_mul_pd(b0_256, int2dx_11_256),
-                                                  _mm256_mul_pd(b1_256, int2dx_02_256)),
-                                                  _mm256_mul_pd(d00x_256, int2dx_01_256));
-                    int2dx_02_256 = int2dx_01_256;
-                    int2dx_01_256 = int2dx_00_256;
-                    _mm256_store_pd(&int2dx[n + (i + k * (shellp + 1)) * ngqexq], int2dx_00_256);
-
-                    int2dy_11_256 = _mm256_load_pd(&int2dy[n + (i1 + k1 * (shellp + 1)) * ngqexq]);
-                    int2dy_00_256 = _mm256_add_pd(_mm256_add_pd(
-                                                  _mm256_mul_pd(b0_256, int2dy_11_256),
-                                                  _mm256_mul_pd(b1_256, int2dy_02_256)),
-                                                  _mm256_mul_pd(d00y_256, int2dy_01_256));
-                    int2dy_02_256 = int2dy_01_256;
-                    int2dy_01_256 = int2dy_00_256;
-                    _mm256_store_pd(&int2dy[n + (i + k * (shellp + 1)) * ngqexq], int2dy_00_256);
-
-                    int2dz_11_256 = _mm256_load_pd(&int2dz[n + (i1 + k1 * (shellp + 1)) * ngqexq]);
-                    int2dz_00_256 = _mm256_add_pd(_mm256_add_pd(
-                                                  _mm256_mul_pd(b0_256, int2dz_11_256),
-                                                  _mm256_mul_pd(b1_256, int2dz_02_256)),
-                                                  _mm256_mul_pd(d00z_256, int2dz_01_256));
-                    int2dz_02_256 = int2dz_01_256;
-                    int2dz_01_256 = int2dz_00_256;
-                    _mm256_store_pd(&int2dz[n + (i + k * (shellp + 1)) * ngqexq], int2dz_00_256);
-
-#else
                     #pragma vector aligned
                     #pragma simd
                     for(n1 = 0; n1 < SIMDW; n1++)
@@ -813,7 +467,6 @@ int erd__2d_pq_integrals (int shellp, int shellq,
                         int2dy[n + n1 + (i + k * (shellp + 1)) * ngqexq] = int2dy_00[n1];
                         int2dz[n + n1 + (i + k * (shellp + 1)) * ngqexq] = int2dz_00[n1];
                     }
-#endif
                 }
             }
         }
