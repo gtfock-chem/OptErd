@@ -183,6 +183,7 @@ int erd__e0f0_pcgto_block (int nij, int nkl,
                            double *alphac, double *alphad,
                            double *cca, double *ccb,
                            double *ccc, double *ccd,
+                           int **vrrtab, int ldvrrtab,
                            int *prima, int *primb,
                            int *primc, int *primd,
                            double *norma, double *normb,
@@ -380,10 +381,11 @@ int erd__e0f0_pcgto_block (int nij, int nkl,
 #ifdef __ERD_PROFILE__
     start_clock = __rdtsc();
 #endif
-    erd__rys_roots_weights_ (&nijkl, &ngqp, &nmom, tval, b00,
-                             &gqscr[g000], &gqscr[g010],
-                             &gqscr[g020], &gqscr[g030], &gqscr[g040],
-                             &gqscr[g050], &gqscr[g060], rts, int2dx);
+    erd__rys_roots_weights (nijkl, ngqp, nmom,
+                            tval, b00,
+                            gqscr, &gqscr[g010],
+                            &gqscr[g020], &gqscr[g030], &gqscr[g040],
+                            &gqscr[g050], &gqscr[g060], rts, int2dx);
 #ifdef __ERD_PROFILE__
     end_clock = __rdtsc();
     erd_ticks[tid][erd__rys_roots_weights_ticks] += (end_clock - start_clock);
@@ -463,8 +465,8 @@ int erd__e0f0_pcgto_block (int nij, int nkl,
     }
     */
     erd__int2d_to_e0f0 (shella, shellp, shellc, shellq,
-                        mgqijkl_aligned, nxyzet, nxyzft, nxyzp, nxyzq,
-                        int2dx, int2dy, int2dz, batch);
+                        mgqijkl_aligned, nxyzet, nxyzft,
+                        int2dx, int2dy, int2dz, vrrtab, ldvrrtab, batch);
 #ifdef __ERD_PROFILE__
     end_clock = __rdtsc();
     erd_ticks[tid][erd__int2d_to_e0f0_ticks] += (end_clock - start_clock);

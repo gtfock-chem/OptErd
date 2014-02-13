@@ -3,8 +3,6 @@ all: libs
 libs:
 	make -C external
 	make -C libcint
-
-test:
 	make -C testprog
 
 clean:

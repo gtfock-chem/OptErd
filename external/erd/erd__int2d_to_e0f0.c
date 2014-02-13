@@ -119,112 +119,56 @@
 /*                                   to all current exponent quadruplets */
 /* ------------------------------------------------------------------------ */
 int erd__int2d_to_e0f0 (int shella, int shellp, int shellc, int shellq,
-                        int ngqexq,
-                        int nxyzet, int nxyzft, int nxyzp, int nxyzq,
+                        int ngqexq, int nxyzet, int nxyzft,
                         double *int2dx, double *int2dy, double *int2dz,
-                        double *batch)
+                        int **vrrtab, int ldvrrtab, double *batch)
 {
-    int i, j, k, m, se, sf, xe, ye, ze, xf, yf, zf, xep, xfp;
-    int xye, xyf, xyep, xyfp, seend, sfend, yeend, yfend, xemax,
-        xfmax, nxyze, nxyzf;
-  
-    int indices[nxyzet * nxyzft][4];
-    xfp = nxyzft + 2;
-    int indx, indy, indz, indb;
-    k = 0;
-    for (xf = 0; xf <= shellq; ++xf)
+    int i, j, m, xe, ye, ze, xf, yf, zf;   
+    int m1;
+    int *tabe;
+    int *tabf;
+    int ke;
+    int kf;
+    int indx;
+    int indy;
+    int indz;
+    int indb;
+    double sum = 0;
+                
+    tabe = vrrtab[shella * ldvrrtab + shellp];
+    tabf = vrrtab[shellc * ldvrrtab + shellq];
+    for(ke = 0; ke < nxyzet; ke++)
     {
-        xfp = xfp + xf - 2;
-        xfmax = xf * shellq;
-        yfend = shellq - xf;
-        xep = nxyzet + 2;
-        for (xe = 0; xe <= shellp; ++xe)
+        for (kf = 0; kf < nxyzft; kf++)
         {
-            xep = xep + xe - 2;
-            xemax = xe * shellp;
-            yeend = shellp - xe;
+            xe = tabe[ke * 4 + 0];
+            xf = tabf[kf * 4 + 0];
+            ye = tabe[ke * 4 + 1];
+            yf = tabf[kf * 4 + 1];
+            ze = tabe[ke * 4 + 2];
+            zf = tabf[kf * 4 + 2];
+            i =  tabe[ke * 4 + 3];
+            j =  tabf[kf * 4 + 3];
             indx = (xe + xf * (shellp + 1)) * ngqexq;
-
-/*             ...middle loops over y,y-pairs. Skip multiplication */
-/*                of y,y-contributions, if we have a 0,0-pair, as */
-/*                then the 2DY integral is equal to 1. */
-            xyfp = xfp - xfmax;
-            for (yf = 0; yf <= yfend; ++yf)
+            indy = (ye + yf * (shellp + 1)) * ngqexq;
+            indz = (ze + zf * (shellp + 1)) * ngqexq;
+            indb = i + j * nxyzet;
+        
+            sum = 0.0;
+            for(m = 0; m < ngqexq; m+=SIMDW)
             {
-                xyf = xf + yf;
-                --xyfp;
-                sfend = MAX (shellc, xyf);
-                xyep = xep - xemax;
-                for (ye = 0; ye <= yeend; ++ye)
+                #pragma vector aligned
+                for(m1 = 0; m1 < SIMDW; m1++)
                 {
-                    xye = xe + ye;
-                    --xyep;
-                    seend = MAX (shella, xye);
-                    indy = (ye + yf * (shellp + 1)) * ngqexq;
-
-                    j = xyfp;
-                    nxyzf = nxyzq;
-                    for (sf = shellq; sf >= sfend; --sf)
-                    {
-                        zf = sf - xyf;
-                        i = xyep;
-                        nxyze = nxyzp;
-                        for (se = shellp; se >= seend; --se)
-                        {
-                            ze = se - xye;
-                            indz = (ze + zf * (shellp + 1)) * ngqexq;
-
-                            indices[k][0] = indx;
-                            indices[k][1] = indy;
-                            indices[k][2] = indz;
-                            indices[k][3] = i + j * nxyzet;
-                            k++;
-                             
-                            i = i - nxyze + xe;
-                            nxyze = nxyze - se - 1;
-                        }
-                        j = j - nxyzf + xf;
-                        nxyzf = nxyzf - sf - 1;
-                    }
+                    sum += int2dx[m + m1 + indx]
+                        * int2dy[m + m1 + indy]
+                        * int2dz[m + m1 + indz];
                 }
             }
+            batch[indb] = sum;
         }
     }
 
-    int k1, m1;
-    for(k1 = 0; k1 < k; k1++)
-    {
-        indx = indices[k1][0];
-        indy = indices[k1][1];
-        indz = indices[k1][2];
-        indb = indices[k1][3];
-        #if 0
-        xe = (indx/ngqexq)%(shellp + 1);
-        xf = (indx/ngqexq)/(shellp + 1);
-        ye = (indy/ngqexq)%(shellp + 1);
-        yf = (indy/ngqexq)/(shellp + 1);
-        ze = (indz/ngqexq)%(shellp + 1);
-        zf = (indz/ngqexq)/(shellp + 1);
-        j = indb/nxyzet;
-        i = indb%nxyzet;
-        printf ("%d %d\n", shella, shellc);
-        printf ("%d %d, %d %d, %d %d: %d %d\n",
-            xf, xe, yf, ye, zf, ze, j, i);
-        #endif
-        double sum = 0;
-        for(m = 0; m < ngqexq; m+=SIMDW)
-        {
-            #pragma vector aligned
-            for(m1 = 0; m1 < SIMDW; m1++)
-            {
-                sum += int2dx[m + m1 + indx]
-                    * int2dy[m + m1 + indy]
-                    * int2dz[m + m1 + indz];//scale[m + m1];
-            }
-        }
-        batch[indb] = sum;         
-    }
-    
     return 0;
 }
 

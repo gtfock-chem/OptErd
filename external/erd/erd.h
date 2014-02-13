@@ -283,6 +283,7 @@ int erd__e0f0_pcgto_block (int nij, int nkl,
                            double *alphac, double *alphad,
                            double *cca, double *ccb,
                            double *ccc, double *ccd,
+                           int **vrrtab, int ldvrrtab, 
                            int *prima, int *primb,
                            int *primc, int *primd,
                            double *norma, double *normb,
@@ -324,10 +325,9 @@ int erd__2d_pq_integrals (int shellp, int shellq,
                           double *int2dz);
 
 int erd__int2d_to_e0f0 (int shella, int shellp, int shellc, int shellq,
-                        int ngqexq,
-                        int nxyzet, int nxyzft, int nxyzp, int nxyzq,
+                        int ngqexq, int nxyzet, int nxyzft,
                         double *int2dx, double *int2dy, double *int2dz,
-                        double *batch);
+                        int **vrrtab, int ldvrrtab, double *batch);
 
 int erd__int2d_to_e000 (int shella, int shellp, int ngqp, int nexq, int ngqexq,
                         int nxyzet, int nxyzp,
@@ -354,35 +354,34 @@ int erd__e0f0_def_blocks (int zmax, int npgtoa, int npgtob,
                           int *zd00x, int *zd00y, int *zd00z,
                           int *zint2dx, int *zint2dy, int *zint2dz);
                           
-int erd__rys_roots_weights_ (int * nt, int * ngqp, int * nmom, double * tval,
-                             double * ryszero,
-                             double * a, double * b, double * mom,
-                             double * dia, double * off,
-                             double * row1, double * row2,
-                             double * rts, double * wts);
+int erd__rys_roots_weights (int nt, int ngqp, int nmom,
+                            double *tval, double *ryszero,
+                            double *a, double *b, double *mom,
+                            double *dia, double *off,
+                            double *row1, double *row2,
+                            double *rts, double *wts);
 
+int erd__rys_1_roots_weights (int nt, double *tval,
+                              double *rts, double *wts);
 
-int erd__rys_1_roots_weights_ (int * nt, double * tval,
-                               double * rts, double * wts);
+int erd__rys_2_roots_weights (int nt, double *tval, double *rts,
+                               double *wts);
 
-int erd__rys_2_roots_weights_ (int * nt, double * tval, double * rts,
-                               double * wts);
+int erd__rys_3_roots_weights (int nt, double *tval, double *rts,
+                              double *wts);
 
-int erd__rys_3_roots_weights_ (int * nt, double * tval, double * rts,
-                               double * wts);
+int erd__rys_4_roots_weights (int nt, double *tval, double *rts,
+                              double *wts);
 
-int erd__rys_4_roots_weights_ (int * nt, double * tval, double * rts,
-                               double * wts);
+int erd__rys_5_roots_weights (int nt, double *tval, double *rts,
+                              double *wts);
 
-int erd__rys_5_roots_weights_ (int * nt, double * tval, double * rts,
-                               double * wts);
-
-int erd__rys_x_roots_weights_ (int * nt, int * ngqp, int * nmom, double * tval,
-                               double * ryszero, double * a,
-                               double * b, double * mom,
-                               double * dia, double * off,
-                               double * row1, double * row2,
-                               double * rts, double * wts);
+int erd__rys_x_roots_weights (int nt, int ngqp, int nmom, double *tval,
+                              double *ryszero, double *a,
+                              double *b, double *mom,
+                              double *dia, double *off,
+                              double *row1, double *row2,
+                              double *rts, double *wts);
 
 #ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(pop)
