@@ -33,7 +33,7 @@ void schwartz_screening (BasisSet_t basis, int **shellptr,
     int *_shellrid;
     double *vpairs;
     
-    CInt_createERD (basis, &erd, 1);
+    CInt_createERD (basis, &erd);
     nshells = CInt_getNumShells (basis);
     
     vpairs = (double *)malloc (sizeof(double) * nshells * nshells);
@@ -46,7 +46,7 @@ void schwartz_screening (BasisSet_t basis, int **shellptr,
         for (N = 0; N < nshells; N++)
         {
             dimN = CInt_getShellDim (basis, N);
-            CInt_computeShellQuartet (basis, erd, 0, M, N, M, N, &integrals, &nints);            
+            CInt_computeShellQuartet (basis, erd, M, N, M, N, &integrals, &nints);            
             mvalue = 0.0;
             if (nints != 0)
             {

@@ -14,7 +14,7 @@
 int main (int argc, char **argv)
 {
     BasisSet_t basis;
-    ERD_t erd;
+    ERD_t *erd;
     int ns;
     int nnz;
     int i;
@@ -57,8 +57,8 @@ int main (int argc, char **argv)
     printf ("  #OccOrb\t= %d\n", CInt_getNumOccOrb (basis));
     printf ("  nthreads\t= %d\n", nthreads);
 
-    CInt_createERD (basis, &erd, nthreads);
-
+    erd = (ERD_t *) malloc (sizeof (ERD_t) * nthreads);
+    assert (erd != NULL);
     totalcalls = (double *) malloc (sizeof (double) * nthreads * 64);
     assert (totalcalls != NULL);
     totalnintls = (double *) malloc (sizeof (double) * nthreads * 64);
@@ -67,6 +67,7 @@ int main (int argc, char **argv)
     #pragma omp parallel for
     for (i = 0; i < nthreads; i++)
     {
+        CInt_createERD (basis, &(erd[i]));
         totalcalls[i * 64] = 0.0;
         totalnintls[i * 64] = 0.0;
     }
@@ -148,8 +149,7 @@ int main (int argc, char **argv)
                         continue;
                     totalcalls[tid * 64] = totalcalls[tid * 64] + 1;
 
-                    CInt_computeShellQuartet (basis, erd, tid,
-                                              M, N, P, Q, &integrals,
+                    CInt_computeShellQuartet (basis, erd[tid], M, N, P, Q, &integrals,
                                               &nints);
 
                     totalnintls[tid * 64] = totalnintls[tid * 64] + nints;
@@ -180,7 +180,11 @@ int main (int argc, char **argv)
     // use 1 if thread timing is not required
     erd_print_profile (1);
 
-    CInt_destroyERD (erd);
+    for (i = 0; i < nthreads; i++)
+    {
+        CInt_destroyERD (erd[i]);
+    }
+    free (erd);
     free (totalcalls);
     free (totalnintls);
     free (shellptr);

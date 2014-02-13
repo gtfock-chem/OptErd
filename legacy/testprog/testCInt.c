@@ -34,10 +34,10 @@ int main (int argc, char **argv)
         printf ("Usage: %s <basisset> <xyz>\n", argv[0]);
         return 0;
     }
-    FILE *ref_data_file = fopen ("ivalues.ref", "r");
+    FILE *ref_data_file = fopen ("ivalues.ref", "w+");
     if (ref_data_file == NULL)
     {
-        fprintf (stderr, "ivalues.ref does not exist\n");
+        fprintf (stderr, "failed to open ivalues.ref\n");
         exit (0);
     }
     int errcount; 
@@ -54,7 +54,9 @@ int main (int argc, char **argv)
     printf ("  #OccOrb\t= %d\n", CInt_getNumOccOrb (basis));
 
     // compute intergrals
-    CInt_createERD (basis, &erd, 1);
+    CInt_createERD (basis, &erd);
+    //printf ("max memory footprint per thread = %lf KB\n",
+    //    CInt_getMaxMemory (erd)/1024.0);   
 
     printf ("Computing integrals ...\n");
     ns = CInt_getNumShells (basis);
@@ -67,12 +69,7 @@ int main (int argc, char **argv)
     int end2;
     double value1;
     double value2;
-    int dimMax = CInt_getMaxShellDim (basis);
-    int nints0;
-    int k;
-    double * integrals0 = (double *)malloc (sizeof(double) * dimMax * dimMax * dimMax * dimMax);
-    assert (integrals0 != NULL);
-    
+
     for (M = 0; M < ns; M++)
     {
         start1 = shellptr[M];
@@ -95,7 +92,7 @@ int main (int argc, char **argv)
                         continue;                        
                     totalcalls = totalcalls + 1;
                     gettimeofday (&tv1, NULL);
-                    CInt_computeShellQuartet (basis, erd, 0, M, N, P, Q,
+                    CInt_computeShellQuartet (basis, erd, M, N, P, Q,
                                               &integrals, &nints);
 
                     gettimeofday (&tv2, NULL);
@@ -103,73 +100,10 @@ int main (int argc, char **argv)
                         (tv2.tv_usec - tv1.tv_usec) / 1000.0 / 1000.0;
                     totalintls = totalintls + nints;
                     
-                    fread (&nints0, sizeof(int), 1, ref_data_file);
-                    if (nints0 != 0)
+                    fwrite (&nints, sizeof(int), 1, ref_data_file);
+                    if (nints != 0)
                     {
-                        fread (integrals0, sizeof(double), nints0, ref_data_file);
-                    }
-                    // compare results
-                    if (nints == 0 && nints0 == 0)
-                    {
-                        continue;
-                    }
-                    else if (nints != 0 && nints0 == 0)
-                    {
-                        for (k = 0; k < nints; k++)
-                        {
-                            if (integrals[k] > 1e-10)
-                            {
-                                printf ("ERROR: %d %d %d %d: %le %le\n",
-                                    M, N, P, Q, 0.0, integrals[k]);
-                                errcount++;
-                            }
-                        }
-                    }
-                    else if (nints == 0 && nints0 != 0)
-                    {
-                        for (k = 0; k < nints0; k++)
-                        {
-                            if (integrals0[k] > 1e-10)
-                            {
-                                printf ("ERROR: %d %d %d %d: %le %le\n",
-                                    M, N, P, Q, integrals0[k], 0.0);
-                                errcount++;
-                            }
-                        }
-                    
-                    }
-                    else if (nints == nints0 && nints != 0)
-                    {
-                     
-                        for (k = 0; k < nints0; k++)
-                        {
-                            if (fabs(integrals0[k]) < 1e-6 ||
-                                fabs(integrals[k]) < 1e-6)
-                            {
-                                if (fabs(integrals0[k] - integrals[k]) > 1e-10)
-                                {
-                                    printf ("1 ERROR: %d %d %d %d: %le %le\n",
-                                        M, N, P, Q, integrals0[k], integrals[k]);
-                                    errcount++;
-                                }
-                            }
-                            else
-                            {
-                                if (fabs(integrals0[k] - integrals[k])/fabs(integrals0[k]) >
-                                    1e-6 && errcount < 10)
-                                {
-                                    printf ("2 ERROR: %d %d %d %d: %le %le: %le\n",
-                                        M, N, P, Q, integrals0[k], integrals[k],
-                                        fabs(integrals0[k] - integrals[k])/fabs(integrals0[k]));
-                                    errcount++;
-                                }
-
-                            }
-                        }   
-                    }
-                    else
-                    {
-                        printf ("ERROR: nints0 %d nints %d\n", nints0, nints);
+                        fwrite (integrals, sizeof(double), nints, ref_data_file);
                     }
 
                     if (errcount > 10)
@@ -190,7 +124,6 @@ int main (int argc, char **argv)
             1000.0 * 1000.0 * timepass / totalcalls);
 
 end:
-    free (integrals0);
     CInt_destroyERD (erd);
     CInt_destroyBasisSet (basis);
     free (shellptr);

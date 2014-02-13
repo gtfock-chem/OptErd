@@ -121,13 +121,13 @@ int erd__int2d_to_e0f0 (int shella, int shellp, int shellc, int shellq,
                         int ngqexq,
                         int nxyzet, int nxyzft, int nxyzp, int nxyzq,
                         double *int2dx, double *int2dy, double *int2dz,
-                        double *scale, double *batch)
+                        double *batch)
 {
     int i, j, k, m, se, sf, xe, ye, ze, xf, yf, zf, xep, xfp;
     int xye, xyf, xyep, xyfp, seend, sfend, yeend, yfend, xemax,
         xfmax, nxyze, nxyzf;
   
-    int indices[ngqexq * nxyzet * nxyzft][4];
+    int indices[nxyzet * nxyzft][4];
     xfp = nxyzft + 2;
     int indx, indy, indz, indb;
     k = 0;
@@ -197,23 +197,33 @@ int erd__int2d_to_e0f0 (int shella, int shellp, int shellc, int shellq,
         indy = indices[k1][1];
         indz = indices[k1][2];
         indb = indices[k1][3];
-
+        #if 0
+        xe = (indx/ngqexq)%(shellp + 1);
+        xf = (indx/ngqexq)/(shellp + 1);
+        ye = (indy/ngqexq)%(shellp + 1);
+        yf = (indy/ngqexq)/(shellp + 1);
+        ze = (indz/ngqexq)%(shellp + 1);
+        zf = (indz/ngqexq)/(shellp + 1);
+        j = indb/nxyzet;
+        i = indb%nxyzet;
+        printf ("%d %d\n", shella, shellc);
+        printf ("%d %d, %d %d, %d %d: %d %d\n",
+            xf, xe, yf, ye, zf, ze, j, i);
+        #endif
         double sum = 0;
         for(m = 0; m < ngqexq; m+=SIMDW)
         {
             #pragma vector aligned
             for(m1 = 0; m1 < SIMDW; m1++)
             {
-                sum += scale[m + m1]
-                    * int2dx[m + m1 + indx]
+                sum += int2dx[m + m1 + indx]
                     * int2dy[m + m1 + indy]
-                    * int2dz[m + m1 + indz];
+                    * int2dz[m + m1 + indz];//scale[m + m1];
             }
         }
-        batch[indb] = sum;
-         
+        batch[indb] = sum;         
     }
-
+    
     return 0;
 }
 

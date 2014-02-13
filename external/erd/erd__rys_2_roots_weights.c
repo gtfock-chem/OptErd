@@ -73,8 +73,8 @@ int erd__rys_2_roots_weights_ (int * nt, double * tval, double * rts,
 /*             ...T-range: T essentially 0 */
             r1 = .130693606237085 - t * .0290430236082028;
             r2 = 2.86930639376291 - t * .637623643058102;
-            wts[m] = .652145154862545 - t * .122713621927067;
-            wts[m + 1] = .347854845137453 - t * .210619711404725;
+            wts[m] *= .652145154862545 - t * .122713621927067;
+            wts[m + 1] *= .347854845137453 - t * .210619711404725;
             rts[m] = r1 / (r1 + 1.);
             rts[m + 1] = r2 / (r2 + 1.);
             m += 2;
@@ -123,8 +123,8 @@ int erd__rys_2_roots_weights_ (int * nt, double * tval, double * rts,
                .0532735082098139) * t - .637623643056745) * t +
             2.86930639376289;
         w2 = ((f1 - w1) * r1 + f1) * (r2 + 1.) / (r2 - r1);
-        wts[m] = w1 - w2;
-        wts[m + 1] = w2;
+        wts[m] *= w1 - w2;
+        wts[m + 1] *= w2;
         rts[m] = r1 / (r1 + 1.);
         rts[m + 1] = r2 / (r2 + 1.);
         m += 2;
@@ -154,8 +154,8 @@ int erd__rys_2_roots_weights_ (int * nt, double * tval, double * rts,
                .0485928174507904) * x - .430761584997596) * x +
             1.8040097453795;
         w2 = ((f1 - w1) * r1 + f1) * (r2 + 1.) / (r2 - r1);
-        wts[m] = w1 - w2;
-        wts[m + 1] = w2;
+        wts[m] *= w1 - w2;
+        wts[m + 1] *= w2;
         rts[m] = r1 / (r1 + 1.);
         rts[m + 1] = r2 / (r2 + 1.);
         m += 2;
@@ -184,8 +184,8 @@ int erd__rys_2_roots_weights_ (int * nt, double * tval, double * rts,
                .0356550690684281) * x - .260417417692375) * x +
             1.12155283108289;
         w2 = ((f1 - w1) * r1 + f1) * (r2 + 1.) / (r2 - r1);
-        wts[m] = w1 - w2;
-        wts[m + 1] = w2;
+        wts[m] *= w1 - w2;
+        wts[m + 1] *= w2;
         rts[m] = r1 / (r1 + 1.);
         rts[m + 1] = r2 / (r2 + 1.);
         m += 2;
@@ -218,8 +218,8 @@ int erd__rys_2_roots_weights_ (int * nt, double * tval, double * rts,
                 .00144614664924989) * y + .0135094294917224) * y -
               .0953478510453887) * y + .54476524568679;
         w2 = ((f1 - w1) * r1 + f1) * (r2 + 1.) / (r2 - r1);
-        wts[m] = w1 - w2;
-        wts[m + 1] = w2;
+        wts[m] *= w1 - w2;
+        wts[m + 1] *= w2;
         rts[m] = r1 / (r1 + 1.);
         rts[m + 1] = r2 / (r2 + 1.);
         m += 2;
@@ -251,8 +251,8 @@ int erd__rys_2_roots_weights_ (int * nt, double * tval, double * rts,
               8.00839033297501) * e + 2.72474487139158 / (t -
                                                           2.72474487139158);
         w2 = ((f1 - w1) * r1 + f1) * (r2 + 1.) / (r2 - r1);
-        wts[m] = w1 - w2;
-        wts[m + 1] = w2;
+        wts[m] *= w1 - w2;
+        wts[m + 1] *= w2;
         rts[m] = r1 / (r1 + 1.);
         rts[m + 1] = r2 / (r2 + 1.);
         m += 2;
@@ -279,8 +279,8 @@ int erd__rys_2_roots_weights_ (int * nt, double * tval, double * rts,
               2.98011277766958) * e + 2.72474487139158 / (t -
                                                           2.72474487139158);
         w2 = ((f1 - w1) * r1 + f1) * (r2 + 1.) / (r2 - r1);
-        wts[m] = w1 - w2;
-        wts[m + 1] = w2;
+        wts[m] *= w1 - w2;
+        wts[m + 1] *= w2;
         rts[m] = r1 / (r1 + 1.);
         rts[m + 1] = r2 / (r2 + 1.);
         m += 2;
@@ -297,8 +297,8 @@ int erd__rys_2_roots_weights_ (int * nt, double * tval, double * rts,
             / (t - .275255128608411);
         r2 = (t * -9.28903924275977 + 81.0642367843811) * e +
             2.72474487139158 / (t - 2.72474487139158);
-        wts[m] = w1 - w2;
-        wts[m + 1] = w2;
+        wts[m] *= w1 - w2;
+        wts[m + 1] *= w2;
         rts[m] = r1 / (r1 + 1.);
         rts[m + 1] = r2 / (r2 + 1.);
         m += 2;
@@ -313,8 +313,8 @@ int erd__rys_2_roots_weights_ (int * nt, double * tval, double * rts,
 /*         R2 = R22 / (T - R22) */
 /*         RTS (M)   = R1 / (ONE + R1) */
 /*         RTS (M+1) = R2 / (ONE + R2) */
-        wts[m] = w1 - w2;
-        wts[m + 1] = w2;
+        wts[m] *= w1 - w2;
+        wts[m + 1] *= w2;
         rts[m] = .275255128608411 / t;
         rts[m + 1] = 2.72474487139158 / t;
         m += 2;

@@ -4,7 +4,7 @@
 #include <stdint.h>
 
 
-#define MAXTHREADS     240
+#define MAXTHREADS     244
 
 
 typedef enum

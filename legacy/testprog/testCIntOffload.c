@@ -163,10 +163,10 @@ int main (int argc, char **argv)
     {
         #pragma offload target(mic:i) nocopy(basis_mic, erd_mic)
         {
-            CInt_createERD (basis_mic, &erd_mic, 1);
+            CInt_createERD (basis_mic, &erd_mic);
         }
     }
-    CInt_createERD (basis, &erd, 1);
+    CInt_createERD (basis, &erd);
     
     for (M = 0; M < ns; M++)
     {
@@ -196,7 +196,7 @@ int main (int argc, char **argv)
                             out(integrals_mic, nints_mic)
                     {
                         double *ints;
-                        CInt_computeShellQuartet (basis_mic, erd_mic, 0, M, N, P, Q,
+                        CInt_computeShellQuartet (basis_mic, erd_mic, M, N, P, Q,
                                 &ints, &nints_mic);
                         memcpy(integrals_mic, ints, nints_mic * sizeof(double));
                     }
@@ -205,7 +205,7 @@ int main (int argc, char **argv)
                         (tv2.tv_usec - tv1.tv_usec) / 1000.0 / 1000.0;
                     totalintls = totalintls + nints_mic;
                     // CPU call
-                    CInt_computeShellQuartet (basis, erd, 0, M, N, P, Q, &integrals, &nints);
+                    CInt_computeShellQuartet (basis, erd, M, N, P, Q, &integrals, &nints);
                     
                     // compare results
                     if (nints_mic == 0 && nints == 0)

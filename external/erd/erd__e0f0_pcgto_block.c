@@ -195,10 +195,8 @@ int erd__e0f0_pcgto_block (int nij, int nkl,
                            double *qx, double *qy, double *qz,
                            double *qcx, double *qcy, double *qcz,
                            double *qinvhf, double *scaleq,
-                           double *rts, double *wts,
-                           double *gqscr, double *tval,
-                           double *pqpinv, double *scalepq,
-                           double *b00, double *b01, double *b10,
+                           double *rts, double *gqscr, double *tval,
+                           double *pqpinv, double *b00, double *b01, double *b10,
                            double *c00x, double *c00y, double *c00z,
                            double *d00x, double *d00y, double *d00z,
                            double *int2dx, double *int2dy,
@@ -335,7 +333,7 @@ int erd__e0f0_pcgto_block (int nij, int nkl,
             pqz = pzval - qz[kl];
             tval[m] = (pqx * pqx + pqy * pqy + pqz * pqz) * pqmult * invers;
             pqpinv[m] = invers;
-            scalepq[m] = pscale * scaleq[kl] / (pqmult * sqrt (pqplus));
+            int2dx[m] = pscale * scaleq[kl] / (pqmult * sqrt (pqplus));
             m++;
         }
     }
@@ -349,11 +347,13 @@ int erd__e0f0_pcgto_block (int nij, int nkl,
         {
             for (i = 1; i <= ngqp; ++i)
             {
-                scalepq[n - i] = scalepq[m - 1];
+                int2dx[n - i] = int2dx[m - 1];
             }
             n -= ngqp;
         }
     }
+    int mgqijkl_aligned = ((mgqijkl + SIMDW - 1)/SIMDW) * SIMDW;
+    memset (&(int2dx[mgqijkl]), 0, sizeof(double) * (mgqijkl_aligned - mgqijkl));
 
 /*             ...determine memory allocation offsets for the scratch */
 /*                arrays used to calculate the quadrature roots + */
@@ -383,7 +383,7 @@ int erd__e0f0_pcgto_block (int nij, int nkl,
     erd__rys_roots_weights_ (&nijkl, &ngqp, &nmom, tval, b00,
                              &gqscr[g000], &gqscr[g010],
                              &gqscr[g020], &gqscr[g030], &gqscr[g040],
-                             &gqscr[g050], &gqscr[g060], rts, wts);
+                             &gqscr[g050], &gqscr[g060], rts, int2dx);
 #ifdef __ERD_PROFILE__
     end_clock = __rdtsc();
     erd_ticks[tid][erd__rys_roots_weights_ticks] += (end_clock - start_clock);
@@ -418,9 +418,6 @@ int erd__e0f0_pcgto_block (int nij, int nkl,
     erd_ticks[tid][erd__2d_coefficients_ticks] += (end_clock - start_clock);
 #endif
 
-    int mgqijkl_aligned = ((mgqijkl + SIMDW - 1)/SIMDW) * SIMDW;
-    memset (&(scalepq[mgqijkl]), 0, sizeof(double) * (mgqijkl_aligned - mgqijkl));
-
 #ifdef __ERD_PROFILE__
     start_clock = __rdtsc();
 #endif
@@ -430,7 +427,7 @@ int erd__e0f0_pcgto_block (int nij, int nkl,
                           &d00y[1], &d00z[1], case2d,
                           &int2dx[1], &int2dy[1], &int2dz[1]);
     */
-    erd__2d_pq_integrals (shellp, shellq, mgqijkl_aligned, wts,
+    erd__2d_pq_integrals (shellp, shellq, mgqijkl_aligned,
                           b00, b01, b10, c00x, c00y, c00z, d00x,
                           d00y, d00z, case2d,
                           int2dx, int2dy, int2dz);
@@ -467,8 +464,7 @@ int erd__e0f0_pcgto_block (int nij, int nkl,
     */
     erd__int2d_to_e0f0 (shella, shellp, shellc, shellq,
                         mgqijkl_aligned, nxyzet, nxyzft, nxyzp, nxyzq,
-                        int2dx, int2dy, int2dz,
-                        scalepq, batch);
+                        int2dx, int2dy, int2dz, batch);
 #ifdef __ERD_PROFILE__
     end_clock = __rdtsc();
     erd_ticks[tid][erd__int2d_to_e0f0_ticks] += (end_clock - start_clock);

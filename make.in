@@ -1,5 +1,5 @@
 alignlen = 64
-offload = 0
+#offload = 0
 #arch = mic
 
 CC  = /opt/intel/bin/icc

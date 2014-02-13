@@ -179,7 +179,7 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
     int zc00x, ngqp, move, nmom, nrya, nryb, nryc, nryd,
         temp, zc00y, zc00z, zpax, zpay, zpaz, zqcx, zqcy, zqcz, zd00x,
         zd00y, zd00z;
-    int zrts, zwts;
+    int zrts;
     int zbase;    
     int ihscr, iused, ixoff[4];
     int nrota, nrotb, nrotc, nrotd, ihrow, nrowa, zused, nrowb,
@@ -198,7 +198,6 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
         shellt, znorm, zcnorm, zrhoab, zrhocd,
         zgqscr, zsrota, zsrotb, zsrotc, zsrotd;
     double rnabsq, rncdsq, spnorm;
-    int zscpqk4;
     int zint2dx, zint2dy, zint2dz;
     int zcbatch, nabcoor, ncdcoor, npgtoab,
         npgtocd;
@@ -462,8 +461,8 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
                           &zpay, &zpaz, &zpinvhf, &zscpk2,
                           &zq, &zqx, &zqy, &zqz, &zqcx, &zqcy,
                           &zqcz, &zqinvhf, &zscqk2,
-                          &zrts, &zwts, &zgqscr, &ztval,
-                          &zpqpinv, &zscpqk4, &zb00, &zb01, &zb10,
+                          &zrts, &zgqscr, &ztval,
+                          &zpqpinv, &zb00, &zb01, &zb10,
                           &zc00x, &zc00y, &zc00z,
                           &zd00x, &zd00y, &zd00z,
                           &zint2dx, &zint2dy, &zint2dz);
@@ -536,10 +535,8 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
                            &zcore[zq], &zcore[zqx], &zcore[zqy], &zcore[zqz],
                            &zcore[zqcx], &zcore[zqcy], &zcore[zqcz],
                            &zcore[zqinvhf], &zcore[zscqk2],
-                           &zcore[zrts], &zcore[zwts],
-                           &zcore[zgqscr], &zcore[ztval],
-                           &zcore[zpqpinv], &zcore[zscpqk4],
-                           &zcore[zb00], &zcore[zb01], &zcore[zb10],
+                           &zcore[zrts], &zcore[zgqscr], &zcore[ztval],
+                           &zcore[zpqpinv], &zcore[zb00], &zcore[zb01], &zcore[zb10],
                            &zcore[zc00x], &zcore[zc00y], &zcore[zc00z],
                            &zcore[zd00x], &zcore[zd00y], &zcore[zd00z],
                            &zcore[zint2dx], &zcore[zint2dy], &zcore[zint2dz],

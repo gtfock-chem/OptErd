@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <assert.h>
 #include <immintrin.h>
 
 #include "erd.h"
@@ -68,7 +70,7 @@
 /*                                   cartesian component (x = X,Y,Z) */
 /* ------------------------------------------------------------------------ */
 int erd__2d_pq_integrals (int shellp, int shellq,
-                          int ngqexq, double *wts, double *b00,
+                          int ngqexq, double *b00,
                           double *b01, double *b10, double *c00x,
                           double *c00y, double *c00z,
                           double *d00x, double *d00y,
@@ -112,11 +114,8 @@ int erd__2d_pq_integrals (int shellp, int shellq,
             goto L4;
     }
 
-
 /*             ...the case P = s-shell and Q = s-shell. */
-
   L1:
-
     for (n = 0; n < ngqexq; n+=SIMDW)
     {
 #ifdef __AVX__
@@ -129,7 +128,6 @@ int erd__2d_pq_integrals (int shellp, int shellq,
         #pragma simd
         for (n1 = 0; n1 < SIMDW; n1++)
         {
-            int2dx[n + n1] = wts[n + n1];
             int2dy[n + n1] = 1.0;
             int2dz[n + n1] = 1.0;
         }
@@ -138,15 +136,11 @@ int erd__2d_pq_integrals (int shellp, int shellq,
 
     return 0;
 
-
 /*             ...the cases P = s-shell and Q >= p-shell. */
 /*                Evaluate I=0 and K=0,1. */
-
-
   L2:
     for (n = 0; n < ngqexq; n+=SIMDW)
     {
-
 #ifdef __AVX__
         __m256d int2dx_0_256, int2dx_1_256, int2dx_2_256;
         __m256d int2dy_0_256, int2dy_1_256, int2dy_2_256;
@@ -157,19 +151,19 @@ int erd__2d_pq_integrals (int shellp, int shellq,
         _mm256_store_pd(&int2dx[n], int2dx_2_256);
         d00x_256 = _mm256_load_pd(&d00x[n]);
         int2dx_1_256 = _mm256_mul_pd(d00x_256, int2dx_2_256);
-        _mm256_store_pd(&int2dx[n + (shellp + 1) * ngqexq], int2dx_1_256);
+        _mm256_store_pd(&int2dx[n + ngqexq], int2dx_1_256);
 
         int2dy_2_256 = one_256;
         _mm256_store_pd(&int2dy[n], int2dy_2_256);
         d00y_256 = _mm256_load_pd(&d00y[n]);
         int2dy_1_256 = d00y_256;
-        _mm256_store_pd(&int2dy[n + (shellp + 1) * ngqexq], int2dy_1_256);
+        _mm256_store_pd(&int2dy[n + ngqexq], int2dy_1_256);
 
         int2dz_2_256 = one_256;
         _mm256_store_pd(&int2dz[n], int2dz_2_256);
         d00z_256 = _mm256_load_pd(&d00z[n]);
         int2dz_1_256 = d00z_256;
-        _mm256_store_pd(&int2dz[n + (shellp + 1) * ngqexq], int2dz_1_256);
+        _mm256_store_pd(&int2dz[n + ngqexq], int2dz_1_256);
 
 #else
         double int2dx_0[SIMDW], int2dx_1[SIMDW], int2dx_2[SIMDW];
@@ -179,19 +173,12 @@ int erd__2d_pq_integrals (int shellp, int shellq,
         #pragma simd
         for(n1 = 0; n1 < SIMDW; n1++)
         {
-            weight = wts[n + n1];
-            int2dx[n + n1] = int2dx_2[n1] = weight;
+            int2dx_2[n1] = int2dx[n + n1];          
             int2dy[n + n1] = int2dy_2[n1] = 1.;
             int2dz[n + n1] = int2dz_2[n1] = 1.;
-        }
-        #pragma vector aligned
-        #pragma simd
-        for(n1 = 0; n1 < SIMDW; n1++)
-        {
-            weight = wts[n + n1];
-            int2dx[n + n1 + (shellp + 1) * ngqexq] = int2dx_1[n1] = d00x[n + n1] * weight;
-            int2dy[n + n1 + (shellp + 1) * ngqexq] = int2dy_1[n1] = d00y[n + n1];
-            int2dz[n + n1 + (shellp + 1) * ngqexq] = int2dz_1[n1] = d00z[n + n1];
+            int2dx[n + n1 + ngqexq] = int2dx_1[n1] = d00x[n + n1] * int2dx[n + n1];
+            int2dy[n + n1 + ngqexq] = int2dy_1[n1] = d00y[n + n1];
+            int2dz[n + n1 + ngqexq] = int2dz_1[n1] = d00z[n + n1];
         }
 #endif
 
@@ -209,19 +196,19 @@ int erd__2d_pq_integrals (int shellp, int shellq,
                                          _mm256_mul_pd(d00x_256, int2dx_1_256));
             int2dx_2_256 = int2dx_1_256;
             int2dx_1_256 = int2dx_0_256;
-            _mm256_store_pd(&int2dx[n + k * (shellp + 1) * ngqexq], int2dx_0_256);
+            _mm256_store_pd(&int2dx[n + k * ngqexq], int2dx_0_256);
 
             int2dy_0_256 = _mm256_add_pd(_mm256_mul_pd(b1_256, int2dy_2_256),
                                          _mm256_mul_pd(d00y_256, int2dy_1_256));
             int2dy_2_256 = int2dy_1_256;
             int2dy_1_256 = int2dy_0_256;
-            _mm256_store_pd(&int2dy[n + k * (shellp + 1) * ngqexq], int2dy_0_256);
+            _mm256_store_pd(&int2dy[n + k * ngqexq], int2dy_0_256);
 
             int2dz_0_256 = _mm256_add_pd(_mm256_mul_pd(b1_256, int2dz_2_256),
                                          _mm256_mul_pd(d00z_256, int2dz_1_256));
             int2dz_2_256 = int2dz_1_256;
             int2dz_1_256 = int2dz_0_256;
-            _mm256_store_pd(&int2dz[n + k * (shellp + 1) * ngqexq], int2dz_0_256);
+            _mm256_store_pd(&int2dz[n + k * ngqexq], int2dz_0_256);
 
 #else
             #pragma vector aligned
@@ -232,17 +219,17 @@ int erd__2d_pq_integrals (int shellp, int shellq,
                 int2dx_0[n1] = b1 * int2dx_2[n1] + d00x[n + n1] * int2dx_1[n1];
                 int2dx_2[n1] = int2dx_1[n1];
                 int2dx_1[n1] = int2dx_0[n1];
-                int2dx[n + n1 + k * (shellp + 1) * ngqexq] = int2dx_0[n1];
+                int2dx[n + n1 + k * ngqexq] = int2dx_0[n1];
 
                 int2dy_0[n1] = b1 * int2dy_2[n1] + d00y[n + n1] * int2dy_1[n1];
                 int2dy_2[n1] = int2dy_1[n1];
                 int2dy_1[n1] = int2dy_0[n1];
-                int2dy[n + n1 + k * (shellp + 1) * ngqexq] = int2dy_0[n1];
+                int2dy[n + n1 + k * ngqexq] = int2dy_0[n1];
 
                 int2dz_0[n1] = b1 * int2dz_2[n1] + d00z[n + n1] * int2dz_1[n1];
                 int2dz_2[n1] = int2dz_1[n1];
                 int2dz_1[n1] = int2dz_0[n1];
-                int2dz[n + n1 + k * (shellp + 1) * ngqexq] = int2dz_0[n1];
+                int2dz[n + n1 + k * ngqexq] = int2dz_0[n1];
             }
 #endif
         }
@@ -252,8 +239,6 @@ int erd__2d_pq_integrals (int shellp, int shellq,
 
 /*             ...the cases P >= p-shell and Q = s-shell. */
 /*                Evaluate I=0,1 and K=0. */
-
-
   L3:
     for (n = 0; n < ngqexq; n+=SIMDW)
     {
@@ -290,17 +275,10 @@ int erd__2d_pq_integrals (int shellp, int shellq,
         #pragma simd
         for(n1 = 0; n1 < SIMDW; n1++)
         {
-            weight = wts[n + n1];
-            int2dx[n + n1] = int2dx_2[n1] = weight;
+            int2dx_2[n1] = int2dx[n + n1];
             int2dy[n + n1] = int2dy_2[n1] = 1.;
             int2dz[n + n1] = int2dz_2[n1] = 1.;
-        }
-        #pragma vector aligned
-        #pragma simd
-        for(n1 = 0; n1 < SIMDW; n1++)
-        {
-            weight = wts[n + n1];
-            int2dx[n + n1 + ngqexq] = int2dx_1[n1] = c00x[n + n1] * weight;
+            int2dx[n + n1 + ngqexq] = int2dx_1[n1] = c00x[n + n1] * int2dx[n + n1];
             int2dy[n + n1 + ngqexq] = int2dy_1[n1] = c00y[n + n1];
             int2dz[n + n1 + ngqexq] = int2dz_1[n1] = c00z[n + n1];
         }
@@ -365,8 +343,6 @@ int erd__2d_pq_integrals (int shellp, int shellq,
 /*             ...the cases P >= p-shell and Q >= p-shell. */
 /*                Evaluate I=0,SHELLP       I=0 */
 /*                         K=0        and   K=0,SHELLQ */
-
-
   L4:
     for (n = 0; n < ngqexq; n+=SIMDW)
     {
@@ -403,17 +379,10 @@ int erd__2d_pq_integrals (int shellp, int shellq,
         #pragma simd
         for(n1 = 0; n1 < SIMDW; n1++)
         {
-            weight = wts[n + n1];
-            int2dx[n + n1] = int2dx_2[n1] = weight;
+            int2dx_2[n1] = int2dx[n + n1];
             int2dy[n + n1] = int2dy_2[n1] = 1.;
             int2dz[n + n1] = int2dz_2[n1] = 1.;
-        }
-        #pragma vector aligned
-        #pragma simd
-        for(n1 = 0; n1 < SIMDW; n1++)
-        {
-            weight = wts[n + n1];
-            int2dx[n + n1 + ngqexq] = int2dx_i1[n1] = c00x[n + n1] * weight;
+            int2dx[n + n1 + ngqexq] = int2dx_i1[n1] = c00x[n + n1] * int2dx[n + n1];
             int2dy[n + n1 + ngqexq] = int2dy_i1[n1] = c00y[n + n1];
             int2dz[n + n1 + ngqexq] = int2dz_i1[n1] = c00z[n + n1];
         }
@@ -493,7 +462,7 @@ int erd__2d_pq_integrals (int shellp, int shellq,
         #pragma simd
         for(n1 = 0; n1 < SIMDW; n1++)
         {
-            weight = wts[n + n1];
+            weight = int2dx[n + n1];
             int2dx_2[n1] = weight;
             int2dy_2[n1] = 1.;
             int2dz_2[n1] = 1.;

@@ -154,8 +154,8 @@ int erd__e0f0_def_blocks (int zmax, int npgtoa, int npgtob,
                           int *zq, int *zqx, int *zqy,
                           int *zqz, int *zqcx, int *zqcy,
                           int *zqcz, int *zqinvhf, int *zscqk2,
-                          int *zrts, int *zwts, int *zgqscr,
-                          int *ztval, int *zpqpinv, int *zscpqk4,
+                          int *zrts, int *zgqscr,
+                          int *ztval, int *zpqpinv,
                           int *zb00, int *zb01, int *zb10,
                           int *zc00x, int *zc00y, int *zc00z,
                           int *zd00x, int *zd00y, int *zd00z,
@@ -200,7 +200,7 @@ int erd__e0f0_def_blocks (int zmax, int npgtoa, int npgtob,
     if (memory)
     {        
         zone4 = pad_ngqscr + pad_mijkl * 2 +
-            (pad_nij + pad_nkl) * 9 + mgqijkl * 12 +
+            (pad_nij + pad_nkl) * 9 + pad_mgqijkl * 10 +
             (pad_mgqijkl * (shellp + 1) * (shellq + 1)) * 3;
         *nint2d = zone12 + zone3 + zone4;
     }
@@ -209,7 +209,7 @@ int erd__e0f0_def_blocks (int zmax, int npgtoa, int npgtob,
         *nint2d = pad_mgqijkl * (shellp + 1) * (shellq + 1);
         zone4 = pad_ngqscr + pad_mijkl * 2 +
                 (pad_nij + pad_nkl) * 9 +
-                pad_mgqijkl * 12 +
+                pad_mgqijkl * 10 +
                 *nint2d * 3;
         assert (zone12 + zone3 + zone4 <= zmax);
         
@@ -236,14 +236,11 @@ int erd__e0f0_def_blocks (int zmax, int npgtoa, int npgtob,
         *zqcz = *zqcy + pad_nkl;
         *zqinvhf = *zqcz + pad_nkl;
         *zscqk2 = *zqinvhf + pad_nkl;
-        *zrts = *zscqk2 + pad_nkl;
-        
-        *zwts = *zrts + pad_mgqijkl;
-        *zgqscr = *zwts + pad_mgqijkl;
+        *zrts = *zscqk2 + pad_nkl;        
+        *zgqscr = *zrts + pad_mgqijkl;
         *ztval = *zgqscr + pad_ngqscr;
         *zpqpinv = *ztval + pad_mijkl;
-        *zscpqk4 = *zpqpinv + pad_mijkl;
-        *zb00 = *zscpqk4 + pad_mgqijkl;
+        *zb00 = *zpqpinv + pad_mijkl;
         *zb01 = *zb00 + pad_mgqijkl;
         *zb10 = *zb01 + pad_mgqijkl;
         *zc00x = *zb10 + pad_mgqijkl;

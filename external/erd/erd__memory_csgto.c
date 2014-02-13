@@ -143,7 +143,7 @@ int erd__memory_csgto (int npgto1, int npgto2,
                           NULL, NULL, NULL, NULL, NULL,
                           NULL, NULL, NULL, NULL, NULL,
                           NULL, NULL, NULL, NULL, NULL,
-                          NULL, NULL, NULL, NULL, NULL,
+                          NULL, NULL, NULL,
                           NULL, NULL, NULL, NULL, NULL,
                           NULL, NULL, NULL, NULL, NULL,
                           NULL, NULL, NULL, NULL, NULL);
