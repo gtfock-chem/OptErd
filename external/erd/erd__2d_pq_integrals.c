@@ -119,8 +119,6 @@ int erd__2d_pq_integrals (int shellp, int shellq,
     for (n = 0; n < ngqexq; n+=SIMDW)
     {
 #ifdef __AVX__
-        __m256d wts_256 = _mm256_load_pd(&wts[n]);
-        _mm256_store_pd(&int2dx[n], wts_256);
         _mm256_store_pd(&int2dy[n], one_256);
         _mm256_store_pd(&int2dz[n], one_256);
 #else
@@ -147,8 +145,7 @@ int erd__2d_pq_integrals (int shellp, int shellq,
         __m256d int2dz_0_256, int2dz_1_256, int2dz_2_256;
         __m256d d00x_256, d00y_256, d00z_256;
 
-        int2dx_2_256 = _mm256_load_pd(&wts[n]);
-        _mm256_store_pd(&int2dx[n], int2dx_2_256);
+        int2dx_2_256 = _mm256_load_pd(&int2dx[n]);
         d00x_256 = _mm256_load_pd(&d00x[n]);
         int2dx_1_256 = _mm256_mul_pd(d00x_256, int2dx_2_256);
         _mm256_store_pd(&int2dx[n + ngqexq], int2dx_1_256);
@@ -248,8 +245,7 @@ int erd__2d_pq_integrals (int shellp, int shellq,
         __m256d int2dz_0_256, int2dz_1_256, int2dz_2_256;
         __m256d c00x_256, c00y_256, c00z_256;
 
-        int2dx_2_256 = _mm256_load_pd(&wts[n]);
-        _mm256_store_pd(&int2dx[n], int2dx_2_256);
+        int2dx_2_256 = _mm256_load_pd(&int2dx[n]);
         c00x_256 = _mm256_load_pd(&c00x[n]);
         int2dx_1_256 = _mm256_mul_pd(c00x_256, int2dx_2_256);
         _mm256_store_pd(&int2dx[n + ngqexq], int2dx_1_256);
@@ -352,8 +348,7 @@ int erd__2d_pq_integrals (int shellp, int shellq,
         __m256d int2dz_0_256, int2dz_i1_256, int2dz_k1_256, int2dz_2_256;
         __m256d c00x_256, c00y_256, c00z_256;
 
-        int2dx_2_256 = _mm256_load_pd(&wts[n]);
-        _mm256_store_pd(&int2dx[n], int2dx_2_256);
+        int2dx_2_256 = _mm256_load_pd(&int2dx[n]);
         c00x_256 = _mm256_load_pd(&c00x[n]);
         int2dx_i1_256 = _mm256_mul_pd(c00x_256, int2dx_2_256);
         _mm256_store_pd(&int2dx[n + ngqexq], int2dx_i1_256);
@@ -441,7 +436,7 @@ int erd__2d_pq_integrals (int shellp, int shellq,
 
 #ifdef __AVX__
 
-        int2dx_2_256 = _mm256_load_pd(&wts[n]);
+        int2dx_2_256 = _mm256_load_pd(&int2dx[n]);
         int2dy_2_256 = one_256;
         int2dz_2_256 = one_256;
 
