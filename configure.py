@@ -44,7 +44,7 @@ erd_opt_sources = [
 	"erd__hrr_step.c", "erd__hrr_transform.c", "erd__int2d_to_e000.c", "erd__int2d_to_e0f0.c",
 	"erd__memory_1111_csgto.c", "erd__memory_csgto.c", "erd__move_ry.c", "erd__normalize_cartesian.c",
 	"erd__pppp_pcgto_block.c", "erd__rys_1_roots_weights.c", "erd__rys_2_roots_weights.c", "erd__rys_3_roots_weights.c",
-	"erd__rys_4_roots_weights.c", "erd__rys_5_roots_weights.c", "erd__rys_roots_weights.c", "erd__rys_x_roots_weights.f",
+	"erd__rys_4_roots_weights.c", "erd__rys_5_roots_weights.c", "erd__rys_roots_weights.c", "erd__rys_x_roots_weights.c",
 	"erd__set_abcd.c", "erd__set_ij_kl_pairs.c", "erd__spherical_transform.c", "erd__sppp_pcgto_block.c",
 	"erd__sspp_pcgto_block.c", "erd__sssp_pcgto_block.c", "erd__ssss_pcgto_block.c", "erd__xyz_to_ry_abcd.c",
 	"erd__xyz_to_ry_matrix.c",
@@ -112,6 +112,7 @@ with open('build.ninja', 'w') as makefile:
 	print('CFLAGS = -O3 -g -std=gnu99 -no-intel-extensions -D__ALIGNLEN__=$alignlen -Iexternal/Yeppp/include -Wall -w2 -Wunknown-pragmas -Wunused-variable -Wunknown-pragmas -Wno-unused-variable -openmp', file = makefile)
 	print('LDFLAGS = -static-intel -no-intel-extensions -lifcore -openmp', file = makefile)
 	print('AR = xiar', file = makefile)
+	print('AR_OFFLOAD = xiar -qoffload-build', file = makefile)
 
 	suffix = {
 		'nhm': 'NHM',
@@ -207,6 +208,8 @@ with open('build.ninja', 'w') as makefile:
 				print(tab + 'ARCH = %s' % arch.upper(), file = makefile)
 
 			print('build lib/' + arch + '/liboed-' + version +'.a : CREATE_STATIC_LIBRARY ' + ' '.join(oed_objects), file = makefile)
+			if arch.endswith('+mic'):
+				print(tab + 'AR = $AR_OFFLOAD', file = makefile);
 			print(tab + 'ARCH = %s' % arch.upper(), file = makefile)
 
 			cint_build_directory = os.path.join(cint_source_directory, arch)
@@ -224,6 +227,8 @@ with open('build.ninja', 'w') as makefile:
 				print(tab + 'ARCH = %s' % arch.upper(), file = makefile)
 
 			print('build lib/' + arch + '/libcint-' + version + '.a : CREATE_STATIC_LIBRARY ' + ' '.join(cint_objects), file = makefile)
+			if arch.endswith('+mic'):
+				print(tab + 'AR = $AR_OFFLOAD', file = makefile);
 			print(tab + 'ARCH = %s' % arch.upper(), file = makefile)
 
 			screening_object_file = 'testprog/%s/screening.c.o' % arch
