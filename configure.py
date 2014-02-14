@@ -44,7 +44,7 @@ erd_opt_sources = [
 	"erd__hrr_step.c", "erd__hrr_transform.c", "erd__int2d_to_e000.c", "erd__int2d_to_e0f0.c",
 	"erd__memory_1111_csgto.c", "erd__memory_csgto.c", "erd__move_ry.c", "erd__normalize_cartesian.c",
 	"erd__pppp_pcgto_block.c", "erd__rys_1_roots_weights.c", "erd__rys_2_roots_weights.c", "erd__rys_3_roots_weights.c",
-	"erd__rys_4_roots_weights.c", "erd__rys_5_roots_weights.c", "erd__rys_roots_weights.c", "erd__rys_x_roots_weights.c",
+	"erd__rys_4_roots_weights.c", "erd__rys_5_roots_weights.c", "erd__rys_roots_weights.c", "erd__rys_x_roots_weights.f",
 	"erd__set_abcd.c", "erd__set_ij_kl_pairs.c", "erd__spherical_transform.c", "erd__sppp_pcgto_block.c",
 	"erd__sspp_pcgto_block.c", "erd__sssp_pcgto_block.c", "erd__ssss_pcgto_block.c", "erd__xyz_to_ry_abcd.c",
 	"erd__xyz_to_ry_matrix.c",
