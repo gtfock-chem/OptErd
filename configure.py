@@ -231,22 +231,25 @@ with open('build.ninja', 'w') as makefile:
 				print(tab + 'AR = $AR_OFFLOAD', file = makefile);
 			print(tab + 'ARCH = %s' % arch.upper(), file = makefile)
 
-			screening_object_file = 'testprog/%s/screening.c.o' % arch
+			test_directory = 'testprog'
 			if version == 'ref':
-				print('build %s : COMPILE_C testprog/screening.c include/CInt.h' % screening_object_file, file = makefile)
-				print(tab + 'DEP_FILE = testprog/%s/screening.c.d' % arch, file = makefile)
-				print(tab + 'SOURCE = testprog/screening.c', file = makefile)
-				print(tab + 'CC = $CC_%s' % suffix[arch], file = makefile)
-				print(tab + 'CFLAGS = $CFLAGS -Iinclude -openmp', file = makefile)
-				print(tab + 'ARCH = %s' % arch.upper(), file = makefile)
+				test_directory = os.path.join('legacy', test_directory)
 
-			object_file = 'testprog/%s/testCInt.c.%s.o' % (arch, version)
-			print('build %s : COMPILE_C testprog/testCInt.c include/CInt.h' % object_file, file = makefile)
-			print(tab + 'DEP_FILE = %s.d' % object_file, file = makefile)
-			print(tab + 'SOURCE = testprog/testCInt.c', file = makefile)
+			screening_object_file = '%s/%s/screening.c.o' % (test_directory, arch)
+			print('build %s : COMPILE_C %s/screening.c include/CInt.h' % (screening_object_file, test_directory), file = makefile)
+			print(tab + 'DEP_FILE = %s/%s/screening.c.d' % (test_directory, arch), file = makefile)
+			print(tab + 'SOURCE = %s/screening.c' % test_directory, file = makefile)
 			print(tab + 'CC = $CC_%s' % suffix[arch], file = makefile)
-			print(tab + 'CFLAGS = $CFLAGS -Iexternal/erd -Iinclude -Itestprog' +
-				' -D' + {'opt': 'OPTERD_TEST_OPTIMIZED', 'ref': 'OPTERD_TEST_REFERENCE'}[version] +
+			print(tab + 'CFLAGS = $CFLAGS -openmp' +
+				' -I' + {'opt': 'include', 'ref': os.path.join('legacy', 'include')}[version], file = makefile)
+			print(tab + 'ARCH = %s' % arch.upper(), file = makefile)
+
+			object_file = '%s/%s/testCInt.c.%s.o' % (test_directory, arch, version)
+			print('build %s : COMPILE_C %s/testCInt.c include/CInt.h' % (object_file, test_directory), file = makefile)
+			print(tab + 'DEP_FILE = %s.d' % object_file, file = makefile)
+			print(tab + 'SOURCE = %s/testCInt.c' % test_directory, file = makefile)
+			print(tab + 'CC = $CC_%s' % suffix[arch], file = makefile)
+			print(tab + 'CFLAGS = $CFLAGS -Iexternal/erd -I%s' % test_directory +
 				' -I' + {'opt': 'include', 'ref': os.path.join('legacy', 'include')}[version], file = makefile)
 			print(tab + 'ARCH = %s' % arch.upper(), file = makefile)
 
@@ -256,13 +259,12 @@ with open('build.ninja', 'w') as makefile:
 			print(tab + 'CC = $CC_%s' % suffix[arch], file = makefile)
 			print(tab + 'ARCH = %s' % arch.upper(), file = makefile)
 
-			object_file = 'testprog/%s/testCInt2.c.%s.o' % (arch, version)
-			print('build %s : COMPILE_C testprog/testCInt2.c include/CInt.h' % object_file, file = makefile)
+			object_file = '%s/%s/testCInt2.c.%s.o' % (test_directory, arch, version)
+			print('build %s : COMPILE_C %s/testCInt2.c include/CInt.h' % (object_file, test_directory), file = makefile)
 			print(tab + 'DEP_FILE = %s.d' % object_file, file = makefile)
-			print(tab + 'SOURCE = testprog/testCInt2.c', file = makefile)
+			print(tab + 'SOURCE = %s/testCInt2.c' % test_directory, file = makefile)
 			print(tab + 'CC = $CC_%s' % suffix[arch], file = makefile)
-			print(tab + 'CFLAGS = $CFLAGS -Iexternal/erd -Iinclude -Itestprog' +
-				' -D' + {'opt': 'OPTERD_TEST_OPTIMIZED', 'ref': 'OPTERD_TEST_REFERENCE'}[version] +
+			print(tab + 'CFLAGS = $CFLAGS -Iexternal/erd -I%s' % test_directory +
 				' -I' + {'opt': 'include', 'ref': os.path.join('legacy', 'include')}[version], file = makefile)
 			print(tab + 'ARCH = %s' % arch.upper(), file = makefile)
 
