@@ -129,8 +129,9 @@ static YEP_NOINLINE void set_pairs(
     if (npgtob < 8) {
         const __m512i zmm_j = zmm_init_j;
         __m512i zmm_i = _mm512_setzero_epi32();
-        for (uint32_t i = 0; i < npgtoa; i += 1) {
-            __m512d zmm_a = _mm512_extload_pd(&alphaa[i], _MM_UPCONV_PD_NONE, _MM_BROADCAST_1X8, _MM_HINT_NONE);
+        uint32_t i = npgtoa;
+        do {
+            const __m512d zmm_a = _mm512_extload_pd(alphaa++, _MM_UPCONV_PD_NONE, _MM_BROADCAST_1X8, _MM_HINT_NONE);
 
             const __mmask8 k_loop_mask = _mm512_int2mask((1u << npgtob) - 1u);
             const __m512d zmm_b = _mm512_mask_load_pd(_mm512_undefined_pd(), k_loop_mask, alphab);
@@ -172,13 +173,13 @@ static YEP_NOINLINE void set_pairs(
             nij += _mm_countbits_32(_mm512_mask2int(k_cmp_mask));
 
             zmm_i = _mm512_add_epi32(zmm_i, zmm_increment_i);
-        }
+        } while (--i);
     } else {
-        uint32_t i = 0, j = 0;
+        uint32_t i = npgtoa, j = 0;
         __m512i zmm_j = zmm_init_j;
         __m512i zmm_i = _mm512_setzero_epi32();
         do {
-            __m512d zmm_a = _mm512_extload_pd(&alphaa[i], _MM_UPCONV_PD_NONE, _MM_BROADCAST_1X8, _MM_HINT_NONE);
+            __m512d zmm_a = _mm512_extload_pd(alphaa++, _MM_UPCONV_PD_NONE, _MM_BROADCAST_1X8, _MM_HINT_NONE);
             /* Process in blocks of 8 elements */
             for (const uint32_t j_end = j + ((npgtob - j) & -8); j != j_end; j += 8) {
                 const __m512d zmm_b = _mm512_loadunpackhi_pd(_mm512_loadunpacklo_pd(_mm512_undefined_pd(), &alphab[j]), &alphab[j+8]);
@@ -220,22 +221,21 @@ static YEP_NOINLINE void set_pairs(
                 nij += _mm_countbits_32(_mm512_mask2int(k_cmp_mask));
                 zmm_j = _mm512_add_epi32(zmm_j, zmm_increment_j);
             }
-            i += 1;
             zmm_i = _mm512_add_epi32(zmm_i, zmm_increment_i);
             /* Process the remainder of this j loop + start of the next j loop */
-            if YEP_LIKELY(j != npgtob) {
-                __mmask8 k_merge_mask = _mm512_int2mask((1u << (npgtob - j)) - 1u);
+            const uint32_t j_leftover = npgtob - j;
+            if YEP_LIKELY(j_leftover != 0) {
+                __mmask8 k_merge_mask = _mm512_int2mask((-1) << j_leftover);
 
-                zmm_a = _mm512_mask_blend_pd(k_merge_mask, _mm512_extload_pd(&alphaa[i], _MM_UPCONV_PD_NONE, _MM_BROADCAST_1X8, _MM_HINT_NONE), zmm_a);
+                zmm_a = _mm512_mask_blend_pd(k_merge_mask, zmm_a, _mm512_extload_pd(alphaa, _MM_UPCONV_PD_NONE, _MM_BROADCAST_1X8, _MM_HINT_NONE));
                 const __mmask16 zmm_wrap_mask = _mm512_cmpge_epu32_mask(zmm_j, zmm_npgtob);
                 const __m512i zmm_wrap_j = _mm512_mask_sub_epi32(zmm_j, zmm_wrap_mask, zmm_j, zmm_npgtob);
                 const __m512i zmm_wrap_i = _mm512_mask_add_epi32(zmm_i, zmm_wrap_mask, zmm_i, zmm_increment_i);
 
                 __m512d zmm_b = _mm512_loadunpackhi_pd(_mm512_loadunpacklo_pd(_mm512_undefined_pd(), &alphab[j]), &alphab[j+8]);
-                if YEP_LIKELY(i != npgtoa) {
-                    __mmask8 k_not_merge_mask = _mm512_knot(k_merge_mask);
-                    const __m512d zmm_wrap_b = _mm512_mask_loadunpackhi_pd(_mm512_mask_loadunpacklo_pd(_mm512_undefined_pd(), k_not_merge_mask, &alphab[(size_t)j - (size_t)npgtob]), k_not_merge_mask, &alphab[(size_t)j - (size_t)npgtob + (size_t)8]);
-                    zmm_b = _mm512_mask_blend_pd(k_not_merge_mask, zmm_b, zmm_wrap_b);
+                if YEP_LIKELY(i != 1) {
+                    const __m512d zmm_wrap_b = _mm512_mask_loadunpackhi_pd(_mm512_mask_loadunpacklo_pd(_mm512_undefined_pd(), k_merge_mask, &alphab[(size_t)j - (size_t)npgtob]), k_merge_mask, &alphab[(size_t)j - (size_t)npgtob + (size_t)8]);
+                    zmm_b = _mm512_mask_blend_pd(k_merge_mask, zmm_b, zmm_wrap_b);
                 }
                 const __m512d zmm_p = _mm512_add_pd(zmm_a, zmm_b);
                 const __m512d zmm_ab = _mm512_mul_pd(zmm_a, zmm_b);
@@ -264,9 +264,9 @@ static YEP_NOINLINE void set_pairs(
                 const __m512d zmm_x_pqp = _mm512_mul_pd(zmm_x, zmm_pqp);
                 const __m512d zmm_x_pqp_p2 = _mm512_mul_pd(zmm_x_pqp, zmm_p2);
                 const __m512d zmm_x2_pqp2_p4 = _mm512_mul_pd(zmm_x_pqp_p2, zmm_x_pqp_p2);
-                __mmask8 k_cmp_mask = YEP_UNLIKELY(i == npgtoa) ? 
-                    _mm512_mask_cmp_pd_mask(k_merge_mask, zmm_ab3_f2_rhoab4_smaxcd4, zmm_x2_pqp2_p4, _CMP_NLT_US):
-                    _mm512_cmp_pd_mask(zmm_ab3_f2_rhoab4_smaxcd4, zmm_x2_pqp2_p4, _CMP_NLT_US);
+                __mmask8 k_cmp_mask = _mm512_cmp_pd_mask(zmm_ab3_f2_rhoab4_smaxcd4, zmm_x2_pqp2_p4, _CMP_NLT_US);
+                if YEP_UNLIKELY(i == 1)
+                    k_cmp_mask = _mm512_kandnr(k_cmp_mask, k_merge_mask);
 
                 _mm512_mask_packstorelo_pd(&rho[nij], k_cmp_mask, zmm_rhoab);
                 _mm512_mask_packstorehi_pd(&rho[nij + 8], k_cmp_mask, zmm_rhoab);
@@ -281,7 +281,7 @@ static YEP_NOINLINE void set_pairs(
             }
             j -= npgtob;
             zmm_j = _mm512_sub_epi32(zmm_j, zmm_npgtob);
-        } while (i != npgtoa);
+        } while (--i);
     }
 #elif defined(__AVX__)
     if (npgtob < 4) {
