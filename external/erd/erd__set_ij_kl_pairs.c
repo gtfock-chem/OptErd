@@ -82,7 +82,21 @@ static const double x0 = 0x1.628C5E7D820BFp-5;
         { -0.0, -0.0, +0.0, +0.0 },
         { -0.0, +0.0, +0.0, +0.0 }
     };
-    
+#endif
+
+#ifdef __MIC__
+    static const __m512d zmm_c0 = {  0x1.0B1A240FD5AF4p-8,   0x1.0B1A240FD5AF4p-8,   0x1.0B1A240FD5AF4p-8,   0x1.0B1A240FD5AF4p-8,   0x1.0B1A240FD5AF4p-8,   0x1.0B1A240FD5AF4p-8,   0x1.0B1A240FD5AF4p-8,   0x1.0B1A240FD5AF4p-8  };
+    static const __m512d zmm_c1 = {  0x1.352866F31ED93p+0,   0x1.352866F31ED93p+0,   0x1.352866F31ED93p+0,   0x1.352866F31ED93p+0,   0x1.352866F31ED93p+0,   0x1.352866F31ED93p+0,   0x1.352866F31ED93p+0,   0x1.352866F31ED93p+0  };
+    static const __m512d zmm_c2 = { -0x1.567450B98A180p-1,  -0x1.567450B98A180p-1,  -0x1.567450B98A180p-1,  -0x1.567450B98A180p-1,  -0x1.567450B98A180p-1,  -0x1.567450B98A180p-1,  -0x1.567450B98A180p-1,  -0x1.567450B98A180p-1  };
+    static const __m512d zmm_c3 = {  0x1.9721DD0ADF393p-3,   0x1.9721DD0ADF393p-3,   0x1.9721DD0ADF393p-3,   0x1.9721DD0ADF393p-3,   0x1.9721DD0ADF393p-3,   0x1.9721DD0ADF393p-3,   0x1.9721DD0ADF393p-3,   0x1.9721DD0ADF393p-3  };
+    static const __m512d zmm_c4 = { -0x1.EF4155EFB6D81p-6,  -0x1.EF4155EFB6D81p-6,  -0x1.EF4155EFB6D81p-6,  -0x1.EF4155EFB6D81p-6,  -0x1.EF4155EFB6D81p-6,  -0x1.EF4155EFB6D81p-6,  -0x1.EF4155EFB6D81p-6,  -0x1.EF4155EFB6D81p-6  };
+    static const __m512d zmm_c5 = {  0x1.DFF4D0D064A26p-10,  0x1.DFF4D0D064A26p-10,  0x1.DFF4D0D064A26p-10,  0x1.DFF4D0D064A26p-10,  0x1.DFF4D0D064A26p-10,  0x1.DFF4D0D064A26p-10,  0x1.DFF4D0D064A26p-10,  0x1.DFF4D0D064A26p-10 };
+    static const __m512d zmm_x0 = {  0x1.628C5E7D820BFp-5,   0x1.628C5E7D820BFp-5,   0x1.628C5E7D820BFp-5,   0x1.628C5E7D820BFp-5,   0x1.628C5E7D820BFp-5,   0x1.628C5E7D820BFp-5,   0x1.628C5E7D820BFp-5,   0x1.628C5E7D820BFp-5  };
+    static const __m512d zmm_one = { 0x1.0000000000000p+0,   0x1.0000000000000p+0,   0x1.0000000000000p+0,   0x1.0000000000000p+0,   0x1.0000000000000p+0,   0x1.0000000000000p+0,   0x1.0000000000000p+0,   0x1.0000000000000p+0  };
+
+    static const __m512i zmm_increment_j = { 8u, 8u, 8u, 8u, 8u, 8u, 8u, 8u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u };
+    static const __m512i zmm_increment_i = { 1u, 1u, 1u, 1u, 1u, 1u, 1u, 1u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u };
+    static const __m512i zmm_init_j = { 0, 1, 2, 3, 4, 5, 6, 7, 0, 0, 0, 0, 0, 0, 0, 0 };
 #endif
 
 static YEP_NOINLINE void set_pairs(
@@ -106,7 +120,170 @@ static YEP_NOINLINE void set_pairs(
         npgtoa = npgtob;
         npgtob = npgtoa_copy;
     }
-#if defined(__AVX__)
+#if defined(__MIC__)
+    const __m512d zmm_minus_rnabsq = _mm512_set1_pd(-rnabsq);
+    const __m512d zmm_csmaxcd = _mm512_set1_pd(csmaxcd);
+    const __m512d zmm_qmin = _mm512_set1_pd(qmin);
+    const __m512d zmm_rminsq_qmin = _mm512_mul_pd(zmm_qmin, _mm512_set1_pd(rminsq));
+    const __m512i zmm_npgtob = _mm512_set1_epi32(npgtob);
+    if (npgtob < 8) {
+        const __m512i zmm_j = zmm_init_j;
+        __m512i zmm_i = _mm512_setzero_epi32();
+        for (uint32_t i = 0; i < npgtoa; i += 1) {
+            __m512d zmm_a = _mm512_extload_pd(&alphaa[i], _MM_UPCONV_PD_NONE, _MM_BROADCAST_1X8, _MM_HINT_NONE);
+
+            const __mmask8 k_loop_mask = _mm512_int2mask((1u << npgtob) - 1u);
+            const __m512d zmm_b = _mm512_mask_load_pd(_mm512_undefined_pd(), k_loop_mask, alphab);
+            const __m512d zmm_p = _mm512_add_pd(zmm_a, zmm_b);
+            const __m512d zmm_ab = _mm512_mul_pd(zmm_a, zmm_b);
+            const __m512d zmm_pqp = _mm512_add_pd(zmm_p, zmm_qmin);
+            const __m512d zmm_pinv0 = _mm512_cvtpslo_pd(_mm512_rcp23_ps(_mm512_cvtpd_pslo(zmm_p)));
+            const __m512d zmm_pqpinv0 = _mm512_cvtpslo_pd(_mm512_rcp23_ps(_mm512_cvtpd_pslo(zmm_pqp)));
+            const __m512d zmm_pinv1 = _mm512_fmadd_pd(zmm_pinv0, _mm512_fnmadd_pd(zmm_pinv0, zmm_p, zmm_one), zmm_pinv0);
+            const __m512d zmm_pqpinv1 = _mm512_fmadd_pd(zmm_pqpinv0, _mm512_fnmadd_pd(zmm_pqpinv0, zmm_pqp, zmm_one), zmm_pqpinv0);
+            const __m512d zmm_pinv2 = _mm512_fmadd_pd(zmm_pinv1, _mm512_fnmadd_pd(zmm_pinv1, zmm_p, zmm_one), zmm_pinv1);
+            const __m512d zmm_pqpinv2 = _mm512_fmadd_pd(zmm_pqpinv1, _mm512_fnmadd_pd(zmm_pqpinv1, zmm_pqp, zmm_one), zmm_pqpinv1);
+            const __m512d zmm_t = _mm512_mul_pd(_mm512_mul_pd(zmm_rminsq_qmin, zmm_p), zmm_pqpinv2);
+            const __m512d zmm_rhoab = _mm512_exp_pd(_mm512_mul_pd(_mm512_mul_pd(zmm_ab, zmm_minus_rnabsq), zmm_pinv2));
+
+            /* pi/4 * f0(x) == x */
+            const __m512d zmm_x = _mm512_mask_blend_pd(_mm512_cmpeq_pd_mask(zmm_t, _mm512_setzero_pd()), zmm_t, zmm_x0);
+            /* approximates square(erf(sqrt(x))) on [0, 5] */
+            const __m512d zmm_f0 = _mm512_fmadd_pd(zmm_x, _mm512_fmadd_pd(zmm_x, _mm512_fmadd_pd(zmm_x, _mm512_fmadd_pd(zmm_x, _mm512_fmadd_pd(zmm_x, zmm_c5, zmm_c4), zmm_c3), zmm_c2), zmm_c1), zmm_c0);
+            const __m512d zmm_f = _mm512_min_pd(zmm_f0, zmm_one);
+            const __m512d zmm_rhoab_csmaxcd = _mm512_mul_pd(zmm_rhoab, zmm_csmaxcd);
+            const __m512d zmm_rhoab2_smaxcd2 = _mm512_mul_pd(zmm_rhoab_csmaxcd, zmm_rhoab_csmaxcd);
+            const __m512d zmm_ab_f = _mm512_mul_pd(zmm_ab, zmm_f);
+            const __m512d zmm_ab_f_rhoab2_smaxcd2 = _mm512_mul_pd(zmm_ab_f, zmm_rhoab2_smaxcd2);
+            const __m512d zmm_ab2_f2_rhoab4_smaxcd4 = _mm512_mul_pd(zmm_ab_f_rhoab2_smaxcd2, zmm_ab_f_rhoab2_smaxcd2);
+            const __m512d zmm_ab3_f2_rhoab4_smaxcd4 = _mm512_mul_pd(zmm_ab, zmm_ab2_f2_rhoab4_smaxcd4);
+            const __m512d zmm_p2 = _mm512_mul_pd(zmm_p, zmm_p);
+            const __m512d zmm_x_pqp = _mm512_mul_pd(zmm_x, zmm_pqp);
+            const __m512d zmm_x_pqp_p2 = _mm512_mul_pd(zmm_x_pqp, zmm_p2);
+            const __m512d zmm_x2_pqp2_p4 = _mm512_mul_pd(zmm_x_pqp_p2, zmm_x_pqp_p2);
+            const __mmask8 k_cmp_mask = _mm512_mask_cmp_pd_mask(k_loop_mask, zmm_ab3_f2_rhoab4_smaxcd4, zmm_x2_pqp2_p4, _CMP_NLT_US);
+
+            _mm512_mask_packstorelo_pd(&rho[nij], k_cmp_mask, zmm_rhoab);
+            _mm512_mask_packstorehi_pd(&rho[nij + 8], k_cmp_mask, zmm_rhoab);
+            _mm512_mask_packstorelo_epi32(&prima[nij], k_cmp_mask, zmm_i);
+            _mm512_mask_packstorehi_epi32(&prima[nij + 16], k_cmp_mask, zmm_i);
+            _mm512_mask_packstorelo_epi32(&primb[nij], k_cmp_mask, zmm_j);
+            _mm512_mask_packstorehi_epi32(&primb[nij + 16], k_cmp_mask, zmm_j);
+            nij += _mm_countbits_32(_mm512_mask2int(k_cmp_mask));
+
+            zmm_i = _mm512_add_epi32(zmm_i, zmm_increment_i);
+        }
+    } else {
+        uint32_t i = 0, j = 0;
+        __m512i zmm_j = zmm_init_j;
+        __m512i zmm_i = _mm512_setzero_epi32();
+        do {
+            __m512d zmm_a = _mm512_extload_pd(&alphaa[i], _MM_UPCONV_PD_NONE, _MM_BROADCAST_1X8, _MM_HINT_NONE);
+            /* Process in blocks of 8 elements */
+            for (const uint32_t j_end = j + ((npgtob - j) & -8); j != j_end; j += 8) {
+                const __m512d zmm_b = _mm512_loadunpackhi_pd(_mm512_loadunpacklo_pd(_mm512_undefined_pd(), &alphab[j]), &alphab[j+8]);
+                const __m512d zmm_p = _mm512_add_pd(zmm_a, zmm_b);
+                const __m512d zmm_ab = _mm512_mul_pd(zmm_a, zmm_b);
+                const __m512d zmm_pqp = _mm512_add_pd(zmm_p, zmm_qmin);
+                const __m512d zmm_pinv0 = _mm512_cvtpslo_pd(_mm512_rcp23_ps(_mm512_cvtpd_pslo(zmm_p)));
+                const __m512d zmm_pqpinv0 = _mm512_cvtpslo_pd(_mm512_rcp23_ps(_mm512_cvtpd_pslo(zmm_pqp)));
+                const __m512d zmm_pinv1 = _mm512_fmadd_pd(zmm_pinv0, _mm512_fnmadd_pd(zmm_pinv0, zmm_p, zmm_one), zmm_pinv0);
+                const __m512d zmm_pqpinv1 = _mm512_fmadd_pd(zmm_pqpinv0, _mm512_fnmadd_pd(zmm_pqpinv0, zmm_pqp, zmm_one), zmm_pqpinv0);
+                const __m512d zmm_pinv2 = _mm512_fmadd_pd(zmm_pinv1, _mm512_fnmadd_pd(zmm_pinv1, zmm_p, zmm_one), zmm_pinv1);
+                const __m512d zmm_pqpinv2 = _mm512_fmadd_pd(zmm_pqpinv1, _mm512_fnmadd_pd(zmm_pqpinv1, zmm_pqp, zmm_one), zmm_pqpinv1);
+                const __m512d zmm_t = _mm512_mul_pd(_mm512_mul_pd(zmm_rminsq_qmin, zmm_p), zmm_pqpinv2);
+                const __m512d zmm_rhoab = _mm512_exp_pd(_mm512_mul_pd(_mm512_mul_pd(zmm_ab, zmm_minus_rnabsq), zmm_pinv2));
+
+                /* pi/4 * f0(x) == x */
+                const __m512d zmm_x = _mm512_mask_blend_pd(_mm512_cmpeq_pd_mask(zmm_t, _mm512_setzero_pd()), zmm_t, zmm_x0);
+                /* approximates square(erf(sqrt(x))) on [0, 5] */
+                const __m512d zmm_f0 = _mm512_fmadd_pd(zmm_x, _mm512_fmadd_pd(zmm_x, _mm512_fmadd_pd(zmm_x, _mm512_fmadd_pd(zmm_x, _mm512_fmadd_pd(zmm_x, zmm_c5, zmm_c4), zmm_c3), zmm_c2), zmm_c1), zmm_c0);
+                const __m512d zmm_f = _mm512_min_pd(zmm_f0, zmm_one);
+                const __m512d zmm_rhoab_csmaxcd = _mm512_mul_pd(zmm_rhoab, zmm_csmaxcd);
+                const __m512d zmm_rhoab2_smaxcd2 = _mm512_mul_pd(zmm_rhoab_csmaxcd, zmm_rhoab_csmaxcd);
+                const __m512d zmm_ab_f = _mm512_mul_pd(zmm_ab, zmm_f);
+                const __m512d zmm_ab_f_rhoab2_smaxcd2 = _mm512_mul_pd(zmm_ab_f, zmm_rhoab2_smaxcd2);
+                const __m512d zmm_ab2_f2_rhoab4_smaxcd4 = _mm512_mul_pd(zmm_ab_f_rhoab2_smaxcd2, zmm_ab_f_rhoab2_smaxcd2);
+                const __m512d zmm_ab3_f2_rhoab4_smaxcd4 = _mm512_mul_pd(zmm_ab, zmm_ab2_f2_rhoab4_smaxcd4);
+                const __m512d zmm_p2 = _mm512_mul_pd(zmm_p, zmm_p);
+                const __m512d zmm_x_pqp = _mm512_mul_pd(zmm_x, zmm_pqp);
+                const __m512d zmm_x_pqp_p2 = _mm512_mul_pd(zmm_x_pqp, zmm_p2);
+                const __m512d zmm_x2_pqp2_p4 = _mm512_mul_pd(zmm_x_pqp_p2, zmm_x_pqp_p2);
+                const __mmask8 k_cmp_mask = _mm512_cmp_pd_mask(zmm_ab3_f2_rhoab4_smaxcd4, zmm_x2_pqp2_p4, _CMP_NLT_US);
+
+                _mm512_mask_packstorelo_pd(&rho[nij], k_cmp_mask, zmm_rhoab);
+                _mm512_mask_packstorehi_pd(&rho[nij + 8], k_cmp_mask, zmm_rhoab);
+                _mm512_mask_packstorelo_epi32(&prima[nij], k_cmp_mask, zmm_i);
+                _mm512_mask_packstorehi_epi32(&prima[nij + 16], k_cmp_mask, zmm_i);
+                _mm512_mask_packstorelo_epi32(&primb[nij], k_cmp_mask, zmm_j);
+                _mm512_mask_packstorehi_epi32(&primb[nij + 16], k_cmp_mask, zmm_j);
+                nij += _mm_countbits_32(_mm512_mask2int(k_cmp_mask));
+                zmm_j = _mm512_add_epi32(zmm_j, zmm_increment_j);
+            }
+            i += 1;
+            zmm_i = _mm512_add_epi32(zmm_i, zmm_increment_i);
+            /* Process the remainder of this j loop + start of the next j loop */
+            if YEP_LIKELY(j != npgtob) {
+                __mmask8 k_merge_mask = _mm512_int2mask((1u << (npgtob - j)) - 1u);
+
+                zmm_a = _mm512_mask_blend_pd(k_merge_mask, _mm512_extload_pd(&alphaa[i], _MM_UPCONV_PD_NONE, _MM_BROADCAST_1X8, _MM_HINT_NONE), zmm_a);
+                const __mmask16 zmm_wrap_mask = _mm512_cmpge_epu32_mask(zmm_j, zmm_npgtob);
+                const __m512i zmm_wrap_j = _mm512_mask_sub_epi32(zmm_j, zmm_wrap_mask, zmm_j, zmm_npgtob);
+                const __m512i zmm_wrap_i = _mm512_mask_add_epi32(zmm_i, zmm_wrap_mask, zmm_i, zmm_increment_i);
+
+                __m512d zmm_b = _mm512_loadunpackhi_pd(_mm512_loadunpacklo_pd(_mm512_undefined_pd(), &alphab[j]), &alphab[j+8]);
+                if YEP_LIKELY(i != npgtoa) {
+                    __mmask8 k_not_merge_mask = _mm512_knot(k_merge_mask);
+                    const __m512d zmm_wrap_b = _mm512_mask_loadunpackhi_pd(_mm512_mask_loadunpacklo_pd(_mm512_undefined_pd(), k_not_merge_mask, &alphab[(size_t)j - (size_t)npgtob]), k_not_merge_mask, &alphab[(size_t)j - (size_t)npgtob + (size_t)8]);
+                    zmm_b = _mm512_mask_blend_pd(k_not_merge_mask, zmm_b, zmm_wrap_b);
+                }
+                const __m512d zmm_p = _mm512_add_pd(zmm_a, zmm_b);
+                const __m512d zmm_ab = _mm512_mul_pd(zmm_a, zmm_b);
+                const __m512d zmm_pqp = _mm512_add_pd(zmm_p, zmm_qmin);
+                const __m512d zmm_pinv0 = _mm512_cvtpslo_pd(_mm512_rcp23_ps(_mm512_cvtpd_pslo(zmm_p)));
+                const __m512d zmm_pqpinv0 = _mm512_cvtpslo_pd(_mm512_rcp23_ps(_mm512_cvtpd_pslo(zmm_pqp)));
+                const __m512d zmm_pinv1 = _mm512_fmadd_pd(zmm_pinv0, _mm512_fnmadd_pd(zmm_pinv0, zmm_p, zmm_one), zmm_pinv0);
+                const __m512d zmm_pqpinv1 = _mm512_fmadd_pd(zmm_pqpinv0, _mm512_fnmadd_pd(zmm_pqpinv0, zmm_pqp, zmm_one), zmm_pqpinv0);
+                const __m512d zmm_pinv2 = _mm512_fmadd_pd(zmm_pinv1, _mm512_fnmadd_pd(zmm_pinv1, zmm_p, zmm_one), zmm_pinv1);
+                const __m512d zmm_pqpinv2 = _mm512_fmadd_pd(zmm_pqpinv1, _mm512_fnmadd_pd(zmm_pqpinv1, zmm_pqp, zmm_one), zmm_pqpinv1);
+                const __m512d zmm_t = _mm512_mul_pd(_mm512_mul_pd(zmm_rminsq_qmin, zmm_p), zmm_pqpinv2);
+                const __m512d zmm_rhoab = _mm512_exp_pd(_mm512_mul_pd(_mm512_mul_pd(zmm_ab, zmm_minus_rnabsq), zmm_pinv2));
+
+                /* pi/4 * f0(x) == x */
+                const __m512d zmm_x = _mm512_mask_blend_pd(_mm512_cmpeq_pd_mask(zmm_t, _mm512_setzero_pd()), zmm_t, zmm_x0);
+                /* approximates square(erf(sqrt(x))) on [0, 5] */
+                const __m512d zmm_f0 = _mm512_fmadd_pd(zmm_x, _mm512_fmadd_pd(zmm_x, _mm512_fmadd_pd(zmm_x, _mm512_fmadd_pd(zmm_x, _mm512_fmadd_pd(zmm_x, zmm_c5, zmm_c4), zmm_c3), zmm_c2), zmm_c1), zmm_c0);
+                const __m512d zmm_f = _mm512_min_pd(zmm_f0, zmm_one);
+                const __m512d zmm_rhoab_csmaxcd = _mm512_mul_pd(zmm_rhoab, zmm_csmaxcd);
+                const __m512d zmm_rhoab2_smaxcd2 = _mm512_mul_pd(zmm_rhoab_csmaxcd, zmm_rhoab_csmaxcd);
+                const __m512d zmm_ab_f = _mm512_mul_pd(zmm_ab, zmm_f);
+                const __m512d zmm_ab_f_rhoab2_smaxcd2 = _mm512_mul_pd(zmm_ab_f, zmm_rhoab2_smaxcd2);
+                const __m512d zmm_ab2_f2_rhoab4_smaxcd4 = _mm512_mul_pd(zmm_ab_f_rhoab2_smaxcd2, zmm_ab_f_rhoab2_smaxcd2);
+                const __m512d zmm_ab3_f2_rhoab4_smaxcd4 = _mm512_mul_pd(zmm_ab, zmm_ab2_f2_rhoab4_smaxcd4);
+                const __m512d zmm_p2 = _mm512_mul_pd(zmm_p, zmm_p);
+                const __m512d zmm_x_pqp = _mm512_mul_pd(zmm_x, zmm_pqp);
+                const __m512d zmm_x_pqp_p2 = _mm512_mul_pd(zmm_x_pqp, zmm_p2);
+                const __m512d zmm_x2_pqp2_p4 = _mm512_mul_pd(zmm_x_pqp_p2, zmm_x_pqp_p2);
+                __mmask8 k_cmp_mask = YEP_UNLIKELY(i == npgtoa) ? 
+                    _mm512_mask_cmp_pd_mask(k_merge_mask, zmm_ab3_f2_rhoab4_smaxcd4, zmm_x2_pqp2_p4, _CMP_NLT_US):
+                    _mm512_cmp_pd_mask(zmm_ab3_f2_rhoab4_smaxcd4, zmm_x2_pqp2_p4, _CMP_NLT_US);
+
+                _mm512_mask_packstorelo_pd(&rho[nij], k_cmp_mask, zmm_rhoab);
+                _mm512_mask_packstorehi_pd(&rho[nij + 8], k_cmp_mask, zmm_rhoab);
+                _mm512_mask_packstorelo_epi32(&prima[nij], k_cmp_mask, zmm_i);
+                _mm512_mask_packstorehi_epi32(&prima[nij + 16], k_cmp_mask, zmm_i);
+                _mm512_mask_packstorelo_epi32(&primb[nij], k_cmp_mask, zmm_j);
+                _mm512_mask_packstorehi_epi32(&primb[nij + 16], k_cmp_mask, zmm_j);
+                nij += _mm_countbits_32(_mm512_mask2int(k_cmp_mask));
+
+                j += 8;
+                zmm_j = _mm512_add_epi32(zmm_j, zmm_increment_j);
+            }
+            j -= npgtob;
+            zmm_j = _mm512_sub_epi32(zmm_j, zmm_npgtob);
+        } while (i != npgtoa);
+    }
+#elif defined(__AVX__)
     if (npgtob < 4) {
         const double minus_rnabsq = -rnabsq;
         const double rminsq_qmin = rminsq * qmin;
@@ -634,28 +811,29 @@ int erd__set_ij_kl_pairs(
     
     // if not screening
     if (!(screen)) {
-        for (int i = 0; i < npgtoa; i += 1) {
+        for (uint32_t i = 0; i < npgtoa; i += 1) {
             const double a = alphaa[i];
-            for (int j = 0; j < npgtob; j += 1) {
+            for (uint32_t j = 0; j < npgtob; j += 1) {
                 const double b = alphab[j];
-                rho[nij] = __builtin_exp(-a * b * rnabsq / (a + b));
-                prima[nij] = i;
-                primb[nij] = j;
-                nij += 1;
+                *rho++ = __builtin_exp(-a * b * rnabsq / (a + b));
+                *prima++ = i;
+                *primb++ = j;
             }
         }
-        padnij = PAD_LEN (nij);
-        
-        for (int k = 0; k < npgtoc; k += 1) {
+        padnij = PAD_LEN(npgtoa * npgtob);
+        rho += padnij - npgtoa * npgtob;
+
+        for (uint32_t k = 0; k < npgtoc; k += 1) {
             const double c = alphac[k];
-            for (int l = 0; l < npgtod; l += 1) {
+            for (uint32_t l = 0; l < npgtod; l += 1) {
                 const double d = alphad[l];
-                rho[padnij + nkl] = __builtin_exp(-c * d * rncdsq / (c + d));
-                primc[nkl] = k;
-                primd[nkl] = l;
-                nkl += 1;
+                *rho++ = __builtin_exp(-c * d * rncdsq / (c + d));
+                *primc++ = k;
+                *primd++ = l;
             }
         }
+        *nij_ptr = npgtoa * npgtob;
+        *nkl_ptr = npgtoc * npgtod;
         return 0;
     }
 
