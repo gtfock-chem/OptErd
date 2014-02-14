@@ -172,7 +172,7 @@ int main (int argc, char **argv)
                         printf ("ERROR: nints0 %d nints %d\n", nints0, nints);
                     }
 
-                    if (errcount > 10)
+                    if (errcount > 0)
                     {
                         goto end;
                     }

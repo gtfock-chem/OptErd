@@ -37,47 +37,35 @@
 /*                    RTS          =  all NT quadrature roots */
 /*                    WTS          =  all NT quadrature weights */
 /* ------------------------------------------------------------------------ */
-int erd__rys_1_roots_weights_ (int *nt, double *tval,
-                               double *rts, double *wts)
+int erd__rys_1_roots_weights (int nt, double *tval,
+                              double *rts, double *wts)
 {
-    /* Initialized data */
-
     int jump1[34] =
         { 1, 2, 2, 3, 3, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 6,
         6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 7
     };
-
-    int i__1;
-    double d__1;
 
     double e;
     int n;
     double t, x, f1, r1, w1;
     int tcase;
 
-    --wts;
-    --rts;
-    --tval;
 /* ------------------------------------------------------------------------ */
 /*                 ******************************** */
 /*             ... *  # of roots and weights = 1  * */
 /*                 ******************************** */
-
-
-    i__1 = *nt;
-    for (n = 1; n <= i__1; ++n)
+    for (n = 0; n < nt; ++n)
     {
         t = tval[n];
         if (t <= 3e-7)
         {
 /*             ...T-range: T essentially 0 */
             r1 = .5 - t * .2;
-            wts[n] = 1. - t * .333333333333333;
+            wts[n] *= 1. - t * .333333333333333;
             rts[n] = r1 / (r1 + 1.);
             goto L100;
         }
-        d__1 = t + 1.;
-        tcase = (int) MIN (d__1, 34.);
+        tcase = (int) MIN ((t + 1.0), 34.);
         switch (jump1[tcase - 1])
         {
         case 1:
@@ -96,7 +84,6 @@ int erd__rys_1_roots_weights_ (int *nt, double *tval,
             goto L1700;
         }
 
-
 /*             ...T-range: 0 < T < 1 */
       L1100:
         f1 = ((((((((t * -8.36313918003957e-8 + 1.21222603512827e-6) * t -
@@ -106,7 +93,7 @@ int erd__rys_1_roots_weights_ (int *nt, double *tval,
               .199999999997023) * t + .333333333333318;
         w1 = (t + t) * f1 + exp (-t);
         r1 = f1 / (w1 - f1);
-        wts[n] = w1;
+        wts[n] *= w1;
         rts[n] = r1 / (r1 + 1.);
         goto L100;
 
@@ -122,7 +109,7 @@ int erd__rys_1_roots_weights_ (int *nt, double *tval,
               .0529428148329736) * x + .115702180856167;
         w1 = (t + t) * f1 + exp (-t);
         r1 = f1 / (w1 - f1);
-        wts[n] = w1;
+        wts[n] *= w1;
         rts[n] = r1 / (r1 + 1.);
         goto L100;
 
@@ -138,7 +125,7 @@ int erd__rys_1_roots_weights_ (int *nt, double *tval,
               .0175257821619926) * x + .0528406320615584;
         w1 = (t + t) * f1 + exp (-t);
         r1 = f1 / (w1 - f1);
-        wts[n] = w1;
+        wts[n] *= w1;
         rts[n] = r1 / (r1 + 1.);
         goto L100;
 
@@ -153,7 +140,7 @@ int erd__rys_1_roots_weights_ (int *nt, double *tval,
               3.1501078774085e-6) * e + sqrt (x * .785398163397448);
         f1 = (w1 - e) / (t + t);
         r1 = f1 / (w1 - f1);
-        wts[n] = w1;
+        wts[n] *= w1;
         rts[n] = r1 / (r1 + 1.);
         goto L100;
 
@@ -166,7 +153,7 @@ int erd__rys_1_roots_weights_ (int *nt, double *tval,
               * x - 2.1916512131607e-5) * e + sqrt (x * .785398163397448);
         f1 = (w1 - e) / (t + t);
         r1 = f1 / (w1 - f1);
-        wts[n] = w1;
+        wts[n] *= w1;
         rts[n] = r1 / (r1 + 1.);
         goto L100;
 
@@ -179,16 +166,14 @@ int erd__rys_1_roots_weights_ (int *nt, double *tval,
             * e + sqrt (x * .785398163397448);
         f1 = (w1 - e) / (t + t);
         r1 = f1 / (w1 - f1);
-        wts[n] = w1;
+        wts[n] *= w1;
         rts[n] = r1 / (r1 + 1.);
         goto L100;
 
 
 /*             ...T-range: T >= 33 */
       L1700:
-        wts[n] = sqrt (.785398163397448 / t);
-/*         R1 = HALF / (T - HALF) */
-/*         RTS (N) = R1 / (ONE + R1) */
+        wts[n] *= sqrt (.785398163397448 / t);
         rts[n] = .5 / t;
       L100:
         ;

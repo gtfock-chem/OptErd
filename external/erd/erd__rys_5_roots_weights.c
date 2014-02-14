@@ -39,8 +39,8 @@
 /*                    RTS          =  all NTGQP quadrature roots */
 /*                    WTS          =  all NTGQP quadrature weights */
 /* ------------------------------------------------------------------------ */
-int erd__rys_5_roots_weights_ (int * nt, double * tval, double * rts,
-                               double * wts)
+int erd__rys_5_roots_weights (int nt, double *tval, double *rts,
+                              double *wts)
 {
     int jump5[60] =
         { 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 6, 6,
@@ -49,29 +49,21 @@ int erd__rys_5_roots_weights_ (int * nt, double * tval, double * rts,
         8, 8, 8, 8, 9
     };
 
-    int i__1;
-    double d__1;
     double e;
     int m, n;
     double t, x, r1, r2, r3, r4, r5, w1, w2, w3, w4, w5;
     int tcase;
-    --tval;
-    --wts;
-    --rts;
 
 /* ------------------------------------------------------------------------ */
 /*                 ******************************** */
 /*             ... *  # of roots and weights = 5  * */
 /*                 ******************************** */
-    m = 1;
-    i__1 = *nt;
-    for (n = 1; n <= i__1; ++n)
+    m = 0;
+    for (n = 0; n < nt; ++n)
     {
         t = tval[n];
         if (t <= 3e-7)
         {
-
-
 /*             ...T-range: T essentially 0 */
             r1 = .0226659266316985 - t * .00215865967920897;
             r2 = .231271692140903 - t * .0220258754389745;
@@ -91,9 +83,8 @@ int erd__rys_5_roots_weights_ (int * nt, double * tval, double * rts,
             m += 5;
             goto L500;
         }
-/* Computing MIN */
-        d__1 = t + 1.;
-        tcase = (int) MIN (d__1, 60.);
+
+        tcase = (int) MIN ((t + 1.0), 60.);
         switch (jump5[tcase - 1])
         {
         case 1:
