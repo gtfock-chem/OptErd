@@ -130,7 +130,7 @@ int erd__rys_roots_weights (int nt, int ngqp, int nmom,
     }
     int ntgqp;
     ntgqp = nt * ngqp;
-    erd__rys_x_roots_weights_ (&nt, &ntgqp, &ngqp, &nmom, tval, ryszero,
+    erd__rys_x_roots_weights (&nt, &ntgqp, &ngqp, &nmom, tval, ryszero,
                                a, b, mom, dia, off,
                                row1, row2, rts, wts);
 

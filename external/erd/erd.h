@@ -376,7 +376,8 @@ int erd__rys_4_roots_weights (int nt, double *tval, double *rts,
 int erd__rys_5_roots_weights (int nt, double *tval, double *rts,
                               double *wts);
 
-int erd__rys_x_roots_weights (int nt, int ngqp, int nmom, double *tval,
+int erd__rys_x_roots_weights (int *nt, int *ntgqp, int *ngqp,
+                              int *nmom, double *tval,
                               double *ryszero, double *a,
                               double *b, double *mom,
                               double *dia, double *off,
