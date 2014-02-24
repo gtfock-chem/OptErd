@@ -98,7 +98,8 @@ static double d_sign(double *a, double *b)
 /*                    RTS          =  the roots array */
 /*                    WTS          =  the weights array */
 /* ------------------------------------------------------------------------ */
-int erd__rys_x_roots_weights (int * nt, int * ngqp, int * nmom, double * tval,
+
+int erd__rys_x_roots_weights (int * nt, int *ntgqp, int * ngqp, int * nmom, double * tval,
                                double * ryszero, double * a,
                                double * b, double * mom,
                                double * dia, double * off,
