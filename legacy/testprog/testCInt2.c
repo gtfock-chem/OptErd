@@ -4,7 +4,9 @@
 #include <stdint.h>
 #include <string.h>
 #include <unistd.h>
+#ifdef _OPENMP
 #include <omp.h>
+#endif
 #include <math.h>
 #include <sys/time.h>
 
@@ -43,7 +45,9 @@ int main (int argc, char **argv)
     fraction = atof (argv[3]);
     assert (fraction > 0.0 && fraction <= 1.0);
     nthreads = atoi (argv[4]);
+    #ifdef _OPENMP
     omp_set_num_threads (nthreads);
+    #endif
     
     // load basis set
     CInt_createBasisSet (&basis);
@@ -126,7 +130,11 @@ int main (int argc, char **argv)
         int start2;
         int end2;
 
+        #ifdef _OPENMP
         tid = omp_get_thread_num ();
+        #else
+        tid = 0;
+        #endif
 
         #pragma omp for schedule(dynamic)
         for (k = 0; k < reallen; k++)

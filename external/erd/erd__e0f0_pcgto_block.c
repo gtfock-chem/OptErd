@@ -3,6 +3,9 @@
 #include <assert.h>
 #include <math.h>
 #include <string.h>
+#ifdef _OPENMP
+#include <omp.h>
+#endif
 
 #include "erd.h"
 
@@ -220,7 +223,11 @@ int erd__e0f0_pcgto_block (int nij, int nkl,
     int mgqijkl;
 #ifdef __ERD_PROFILE__   
     uint64_t start_clock, end_clock; 
-    int tid = omp_get_thread_num();
+    #ifdef _OPENMP
+    const int tid = omp_get_thread_num();
+    #else
+    const int tid = 0;
+    #endif
 #endif
     
 /*            ...predetermine 2D integral case. This is done in */

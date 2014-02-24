@@ -2,7 +2,9 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <math.h>
-
+#ifdef _OPENMP
+#include <omp.h>
+#endif
 #include "erd.h"
 
 #ifdef __INTEL_OFFLOAD
@@ -229,7 +231,11 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
 #ifdef __ERD_PROFILE__
     uint64_t start_clock, end_clock;
     uint64_t start_clock0, end_clock0;
-    int tid = omp_get_thread_num();
+    #ifdef _OPENMP
+    const int tid = omp_get_thread_num();
+    #else
+    const int tid = 0;
+    #endif
 #endif    
     --icore;
     --zcore;

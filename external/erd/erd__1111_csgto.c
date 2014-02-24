@@ -128,7 +128,11 @@ int erd__1111_csgto (int zmax, int npgto1, int npgto2,
 #ifdef __ERD_PROFILE__    
     uint64_t start_clock, end_clock;
     uint64_t start_clock0, end_clock0;
-    int tid = omp_get_thread_num();
+    #ifdef _OPENMP
+    const int tid = omp_get_thread_num();
+    #else
+    const int tid = 0;
+    #endif
 #endif
 
 #ifdef __ERD_PROFILE__
