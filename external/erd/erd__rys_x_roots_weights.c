@@ -12,14 +12,6 @@
 #pragma offload_attribute(push, target(mic))
 #endif
 
-static double d_sign(double *a, double *b)
-{
-    double x;
-    x = (*a >= 0 ? *a : - *a);
-    return( *b >= 0 ? x : -x);
-}
-
-
 /* ------------------------------------------------------------------------ */
 /*  OPERATION   : ERD__RYS_X_ROOTS_WEIGHTS */
 /*  MODULE      : ELECTRON REPULSION INTEGRALS DIRECT */
@@ -664,7 +656,7 @@ L3300:
                 ++iter;
                 g = (dia[j + 1] - p) / (off[j] * 2.);
                 r__ = sqrt (g * g + 1.);
-                g = dia[m] - p + off[j] / (g + d_sign (&r__, &g));
+                g = dia[m] - p + off[j] / (g + copysign(r__, g));
                 s = 1.;
                 c__ = 1.;
                 p = 0.;
