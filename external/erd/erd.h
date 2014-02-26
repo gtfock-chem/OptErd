@@ -354,7 +354,7 @@ int erd__e0f0_def_blocks (int zmax, int npgtoa, int npgtob,
                           int *zd00x, int *zd00y, int *zd00z,
                           int *zint2dx, int *zint2dy, int *zint2dz);
                           
-int erd__rys_roots_weights (int nt, int ngqp, int nmom,
+void erd__rys_roots_weights(int nt, int ngqp, int nmom,
                             double *tval, double *ryszero,
                             double *a, double *b, double *mom,
                             double *dia, double *off,
@@ -376,8 +376,8 @@ int erd__rys_4_roots_weights (int nt, double *tval, double *rts,
 int erd__rys_5_roots_weights (int nt, double *tval, double *rts,
                               double *wts);
 
-int erd__rys_x_roots_weights (int *nt, int *ntgqp, int *ngqp,
-                              int *nmom, double *tval,
+void erd__rys_x_roots_weights (int nt, int ntgqp, int ngqp,
+                              int nmom, double *tval,
                               double *ryszero, double *a,
                               double *b, double *mom,
                               double *dia, double *off,

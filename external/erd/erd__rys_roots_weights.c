@@ -69,52 +69,43 @@
 /*                    RTS          =  the roots array */
 /*                    WTS          =  the weights array */
 /* ------------------------------------------------------------------------ */
-int erd__rys_roots_weights (int nt, int ngqp, int nmom,
+void erd__rys_roots_weights(int nt, int ngqp, int nmom,
                             double *tval, double *ryszero,
                             double *a, double *b, double *mom,
                             double *dia, double *off,
                             double *row1, double *row2,
                             double *rts, double *wts)
 {
-    int n;
-    double t;
-    double delta;
-    int tgrid;
-
-#if 1 
+#if 1
     switch (ngqp)
     {
         case 1:
             erd__rys_1_roots_weights (nt, tval, rts, wts);
-            return 0;
+            return;
         case 2:
             erd__rys_2_roots_weights (nt, tval, rts, wts);
-            return 0;
+            return;
         case 3:
             erd__rys_3_roots_weights (nt, tval, rts, wts);
-            return 0;
+            return;
         case 4:
             erd__rys_4_roots_weights (nt, tval, rts, wts);
-            return 0;
+            return;
         case 5:
             erd__rys_5_roots_weights (nt, tval, rts, wts);
-            return 0;
+            return;
     }
 #endif
 
 /*             ...# of roots and weights >= 6. Accumulate all zeroth */
 /*                Rys moments and call the general routine. */
-    for (n = 0; n < nt; n++)
-    {
-        t = tval[n];
-        if (t == 0.0)
-        {
+    for (int n = 0; n < nt; n++) {
+        const double t = tval[n];
+        if (t == 0.0) {
             ryszero[n] = 1.0;
-        }
-        else if (t <= tmax)
-        {
-            tgrid = (int) (t * tvstep + .5);
-            delta = tgrid * tstep - t;
+        } else if (t <= tmax) {
+            const int tgrid = lround(t * tvstep);
+            const double delta = tgrid * tstep - t;
             ryszero[n] = (((((boys_table[tgrid][6] * delta * 0.166666666666667 +
                               boys_table[tgrid][5]) * delta * 0.2 +
                               boys_table[tgrid][4]) * delta * 0.25 +
@@ -122,19 +113,12 @@ int erd__rys_roots_weights (int nt, int ngqp, int nmom,
                               boys_table[tgrid][2]) * delta * 0.5 +
                               boys_table[tgrid][1]) * delta +
                               boys_table[tgrid][0];
-        }
-        else
-        {
+        } else {
             ryszero[n] = sqrt (3.141592653589793 / t) * .5;
         }
     }
-    int ntgqp;
-    ntgqp = nt * ngqp;
-    erd__rys_x_roots_weights (&nt, &ntgqp, &ngqp, &nmom, tval, ryszero,
-                               a, b, mom, dia, off,
-                               row1, row2, rts, wts);
-
-    return 0;
+    int ntgqp = nt * ngqp;
+    erd__rys_x_roots_weights(nt, ntgqp, ngqp, nmom, tval, ryszero, a, b, mom, dia, off, row1, row2, rts, wts);
 }
 
 #ifdef __INTEL_OFFLOAD
