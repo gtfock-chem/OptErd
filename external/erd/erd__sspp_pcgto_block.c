@@ -4,7 +4,6 @@
 #include <math.h>
 #include <yepPredefines.h>
 #include "boys.h"
-//#define ERD_TABLE_FREE_BOYS_FUNCTIONS
 
 #ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(push, target(mic))
@@ -190,54 +189,9 @@ void erd__sspp_pcgto_block (int nij, int nkl,
                 const double pqz = pzval - qzval;
                 const double t = (pqx * pqx + pqy * pqy + pqz * pqz) * pqmult * pqpinv;
                 const double scale = pscale * scaleq[kl] / (pqmult * __builtin_sqrt(pqplus));
-#ifdef ERD_TABLE_FREE_BOYS_FUNCTIONS
-                const double f0 = scale * boys0(t);
-                const double f1 = scale * boys1(t);
-                const double f2 = scale * boys2(t);
-#else
-                double f0, f1, f2;
-                if (t <= tmax) {
-                    const int tgrid = __builtin_lround(t * tvstep);
-                    const double delta1 = tgrid * tstep - t;
-                    const double delta2 = delta1 * .5;
-                    const double delta3 = delta1 * .333333333333333;
-                    const double delta4 = delta2 * .5;
-                    const double delta5 = delta1 * .2;
-                    const double delta6 = delta3 * .5;
-                    f0 = (((((boys_table[tgrid][6] * delta6 +
-                        boys_table[tgrid][5]) * delta5 +
-                            boys_table[tgrid][4]) * delta4 +
-                                boys_table[tgrid][3]) * delta3 +
-                                    boys_table[tgrid][2]) * delta2 +
-                                        boys_table[tgrid][1]) * delta1 +
-                                            boys_table[tgrid][0];
-                    f1 = (((((boys_table[tgrid][7] * delta6 +
-                        boys_table[tgrid][6]) * delta5 +
-                            boys_table[tgrid][5]) * delta4 +
-                                boys_table[tgrid][4]) * delta3 +
-                                    boys_table[tgrid][3]) * delta2 +
-                                        boys_table[tgrid][2]) * delta1 +
-                                            boys_table[tgrid][1];
-                    f2 = (((((boys_table[tgrid][8] * delta6 +
-                        boys_table[tgrid][7]) * delta5 +
-                            boys_table[tgrid][6]) * delta4 +
-                                boys_table[tgrid][5]) * delta3 +
-                                    boys_table[tgrid][4]) * delta2 +
-                                        boys_table[tgrid][3]) * delta1 +
-                                            boys_table[tgrid][2];
-                    f0 = scale * f0;
-                    f1 = scale * f1;
-                    f2 = scale * f2;
-                } else {
-                    const double tinv = 1. / t;
-                    const double t2inv = tinv * .5;
-                    f0 = scale * .5 * __builtin_sqrt(tinv * 3.141592653589793);
-                    f1 = t2inv * f0;
-                    f2 = t2inv * 3. * f1;
-                }
-#endif
+                const struct Boys012 boys = boys012(t, scale);
                 const double u0 = pval * pqpinv;
-                const double u1 = (f0 - u0 * f1) / (qval + qval);
+                const double u1 = (boys.f0 - u0 * boys.f1) / (qval + qval);
                 const double xps1 = qxval - x3;
                 const double yps1 = qyval - y3;
                 const double zps1 = qzval - z3;
@@ -247,12 +201,12 @@ void erd__sspp_pcgto_block (int nij, int nkl,
                 const double xsp2 = pqx * u0;
                 const double ysp2 = pqy * u0;
                 const double zsp2 = pqz * u0;
-                const double a = xps1 * f0 + xsp2 * f1;
-                const double b = xps1 * f1 + xsp2 * f2;
-                const double c = yps1 * f0 + ysp2 * f1;
-                const double d = yps1 * f1 + ysp2 * f2;
-                const double e = zps1 * f0 + zsp2 * f1;
-                const double f = zps1 * f1 + zsp2 * f2;
+                const double a = xps1 * boys.f0 + xsp2 * boys.f1;
+                const double b = xps1 * boys.f1 + xsp2 * boys.f2;
+                const double c = yps1 * boys.f0 + ysp2 * boys.f1;
+                const double d = yps1 * boys.f1 + ysp2 * boys.f2;
+                const double e = zps1 * boys.f0 + zsp2 * boys.f1;
+                const double f = zps1 * boys.f1 + zsp2 * boys.f2;
                 cbatch[0] += xsp1 * a + xsp2 * b + u1;
                 cbatch[1] += xsp1 * c + xsp2 * d;
                 cbatch[2] += xsp1 * e + xsp2 * f;
@@ -308,52 +262,7 @@ void erd__sspp_pcgto_block (int nij, int nkl,
                 const double pqz = pzval - qzval;
                 const double t = (pqx * pqx + pqy * pqy + pqz * pqz) * pqmult * pqpinv;
                 const double scale = pscale * scaleq[kl] / (pqmult * __builtin_sqrt(pqplus));
-#ifdef ERD_TABLE_FREE_BOYS_FUNCTIONS
-                const double f0 = scale * boys0 (t);
-                const double f1 = scale * boys1 (t);
-                const double f2 = scale * boys2 (t);
-#else
-                double f0, f1, f2;
-                if (t <= tmax) {
-                    const int tgrid = __builtin_lround(t * tvstep);
-                    const double delta1 = tgrid * tstep - t;
-                    const double delta2 = delta1 * .5;
-                    const double delta3 = delta1 * .333333333333333;
-                    const double delta4 = delta2 * .5;
-                    const double delta5 = delta1 * .2;
-                    const double delta6 = delta3 * .5;
-                    f0 = (((((boys_table[tgrid][6] * delta6 +
-                        boys_table[tgrid][5]) * delta5 +
-                            boys_table[tgrid][4]) * delta4 +
-                                boys_table[tgrid][3]) * delta3 +
-                                    boys_table[tgrid][2]) * delta2 +
-                                        boys_table[tgrid][1]) * delta1 +
-                                            boys_table[tgrid][0];
-                    f1 = (((((boys_table[tgrid][7] * delta6 +
-                        boys_table[tgrid][6]) * delta5 +
-                            boys_table[tgrid][5]) * delta4 +
-                                boys_table[tgrid][4]) * delta3 +
-                                    boys_table[tgrid][3]) * delta2 +
-                                        boys_table[tgrid][2]) * delta1 +
-                                            boys_table[tgrid][1];
-                    f2 = (((((boys_table[tgrid][8] * delta6 +
-                        boys_table[tgrid][7]) * delta5 +
-                            boys_table[tgrid][6]) * delta4 +
-                                boys_table[tgrid][5]) * delta3 +
-                                    boys_table[tgrid][4]) * delta2 +
-                                        boys_table[tgrid][3]) * delta1 +
-                                            boys_table[tgrid][2];
-                    f0 = scale * f0;
-                    f1 = scale * f1;
-                    f2 = scale * f2;
-                } else {
-                    const double tinv = 1. / t;
-                    const double t2inv = tinv * .5;
-                    f0 = scale * .5 * __builtin_sqrt(tinv * 3.141592653589793);
-                    f1 = t2inv * f0;
-                    f2 = t2inv * 3. * f1;
-                }
-#endif
+                const struct Boys012 boys = boys012(t, scale);
                 const double u0 = pval * pqpinv;
                 const double u1 = -qval * pqpinv;
                 const double xsp1 = qxval - qxsub;
@@ -365,13 +274,13 @@ void erd__sspp_pcgto_block (int nij, int nkl,
                 const double xps2 = pqx * u1;
                 const double yps2 = pqy * u1;
                 const double zps2 = pqz * u1;
-                const double a = xps1 * f0 + xps2 * f1;
-                const double b = xps1 * f1 + xps2 * f2;
-                const double c = yps1 * f0 + yps2 * f1;
-                const double d = yps1 * f1 + yps2 * f2;
-                const double e = zps1 * f0 + zps2 * f1;
-                const double f = zps1 * f1 + zps2 * f2;
-                const double g = f1 * .5 * pqpinv;
+                const double a = xps1 * boys.f0 + xps2 * boys.f1;
+                const double b = xps1 * boys.f1 + xps2 * boys.f2;
+                const double c = yps1 * boys.f0 + yps2 * boys.f1;
+                const double d = yps1 * boys.f1 + yps2 * boys.f2;
+                const double e = zps1 * boys.f0 + zps2 * boys.f1;
+                const double f = zps1 * boys.f1 + zps2 * boys.f2;
+                const double g = boys.f1 * .5 * pqpinv;
                 cbatch[0] += xsp1 * a + xsp2 * b + g;
                 cbatch[1] += xsp1 * c + xsp2 * d;
                 cbatch[2] += xsp1 * e + xsp2 * f;
@@ -411,63 +320,18 @@ void erd__sspp_pcgto_block (int nij, int nkl,
                 const double pqz = pzval - qzval;
                 const double t = (pqx * pqx + pqy * pqy + pqz * pqz) * pqmult * pqpinv;
                 const double scale = pscale * scaleq[kl] / (pqmult * __builtin_sqrt(pqplus));
-#ifdef ERD_TABLE_FREE_BOYS_FUNCTIONS
-                const double f0 = scale * boys0 (t);
-                const double f1 = scale * boys1 (t);
-                const double f2 = scale * boys2 (t);
-#else
-                double f0, f1, f2;
-                if (t <= tmax) {
-                    const int tgrid = __builtin_lround(t * tvstep);
-                    const double delta1 = tgrid * tstep - t;
-                    const double delta2 = delta1 * .5;
-                    const double delta3 = delta1 * .333333333333333;
-                    const double delta4 = delta2 * .5;
-                    const double delta5 = delta1 * .2;
-                    const double delta6 = delta3 * .5;
-                    f0 = (((((boys_table[tgrid][6] * delta6 +
-                        boys_table[tgrid][5]) * delta5 +
-                            boys_table[tgrid][4]) * delta4 +
-                                boys_table[tgrid][3]) * delta3 +
-                                    boys_table[tgrid][2]) * delta2 +
-                                        boys_table[tgrid][1]) * delta1 +
-                                            boys_table[tgrid][0];
-                    f1 = (((((boys_table[tgrid][7] * delta6 +
-                        boys_table[tgrid][6]) * delta5 +
-                            boys_table[tgrid][5]) * delta4 +
-                                boys_table[tgrid][4]) * delta3 +
-                                    boys_table[tgrid][3]) * delta2 +
-                                        boys_table[tgrid][2]) * delta1 +
-                                            boys_table[tgrid][1];
-                    f2 = (((((boys_table[tgrid][8] * delta6 +
-                        boys_table[tgrid][7]) * delta5 +
-                            boys_table[tgrid][6]) * delta4 +
-                                boys_table[tgrid][5]) * delta3 +
-                                    boys_table[tgrid][4]) * delta2 +
-                                        boys_table[tgrid][3]) * delta1 +
-                                            boys_table[tgrid][2];
-                    f0 = scale * f0;
-                    f1 = scale * f1;
-                    f2 = scale * f2;
-                } else {
-                    const double tinv = 1. / t;
-                    const double t2inv = tinv * .5;
-                    f0 = scale * .5 * __builtin_sqrt(tinv * 3.141592653589793);
-                    f1 = t2inv * f0;
-                    f2 = t2inv * 3. * f1;
-                }
-#endif
+                const struct Boys012 boys = boys012(t, scale);
                 const double u0 = -qval * pqpinv;
                 const double xsp2 = pqx * u0;
                 const double ysp2 = pqy * u0;
                 const double zsp2 = pqz * u0;
-                const double a = xps1 * f0 + xsp2 * f1;
-                const double b = xps1 * f1 + xsp2 * f2;
-                const double c = yps1 * f0 + ysp2 * f1;
-                const double d = yps1 * f1 + ysp2 * f2;
-                const double e = zps1 * f0 + zsp2 * f1;
-                const double f = zps1 * f1 + zsp2 * f2;
-                const double g = u1 * (f0 + u0 * f1);
+                const double a = xps1 * boys.f0 + xsp2 * boys.f1;
+                const double b = xps1 * boys.f1 + xsp2 * boys.f2;
+                const double c = yps1 * boys.f0 + ysp2 * boys.f1;
+                const double d = yps1 * boys.f1 + ysp2 * boys.f2;
+                const double e = zps1 * boys.f0 + zsp2 * boys.f1;
+                const double f = zps1 * boys.f1 + zsp2 * boys.f2;
+                const double g = u1 * (boys.f0 + u0 * boys.f1);
                 cbatch[0] += xsp1 * a + xsp2 * b + g;
                 cbatch[1] += xsp1 * c + xsp2 * d;
                 cbatch[2] += xsp1 * e + xsp2 * f;

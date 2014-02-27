@@ -4,7 +4,6 @@
 #include <math.h>
 #include <yepPredefines.h>
 #include "boys.h"
-//#define ERD_TABLE_FREE_BOYS_FUNCTIONS
 
 #ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(push, target(mic))
@@ -178,25 +177,7 @@ void erd__ssss_pcgto_block (int nij, int nkl,
             const double pqz = pzval - qz[kl];
             const double t = (pqx * pqx + pqy * pqy + pqz * pqz) * pqmult / pqplus;
             const double scale = pscale * scaleq[kl] / (pqmult * __builtin_sqrt(pqplus));
-#ifdef ERD_TABLE_FREE_BOYS_FUNCTIONS
-            const double f0 = boys0(t);
-#else
-            double f0;
-            if (t <= tmax) {
-                const int tgrid = __builtin_lround(t * tvstep);
-                const double delta = tgrid * tstep - t;
-                f0 = (((((boys_table[tgrid][6] * delta * .166666666666667 +
-                    boys_table[tgrid][5]) * delta * .2 +
-                        boys_table[tgrid][4]) * delta * .25 +
-                            boys_table[tgrid][3]) * delta * .333333333333333 +
-                                boys_table[tgrid][2]) * delta * .5 +
-                                    boys_table[tgrid][1]) * delta +
-                                        boys_table[tgrid][0];
-            } else {
-                f0 = __builtin_sqrt(M_PI / t) * .5;
-            }
-#endif
-            cbatch[0] += scale * f0; 
+            cbatch[0] += boys0(t, scale); 
         }
     }
 }

@@ -4,7 +4,6 @@
 #include <math.h>
 #include <yepPredefines.h>
 #include "boys.h"
-//#define ERD_TABLE_FREE_BOYS_FUNCTIONS
 
 #ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(push, target(mic))
@@ -202,62 +201,7 @@ void erd__sppp_pcgto_block (int nij, int nkl,
                 const double pqz = pzval - qzval;
                 const double t = (pqx * pqx + pqy * pqy + pqz * pqz) * pqmult * pqpinv;
                 const double scale = pscale * scaleq[kl] / (pqmult * __builtin_sqrt(pqplus));
-#ifdef ERD_TABLE_FREE_BOYS_FUNCTIONS
-                const double f0 = scale * boys0 (t);
-                const double f1 = scale * boys1 (t);
-                const double f2 = scale * boys2 (t);
-                const double f3 = scale * boys3 (t);
-#else
-                double f0, f1, f2, f3;
-                if (t <= tmax) {
-                    const int tgrid = __builtin_lround(t * tvstep);
-                    const double delta1 = tgrid * tstep - t;
-                    const double delta2 = delta1 * .5;
-                    const double delta3 = delta1 * .333333333333333;
-                    const double delta4 = delta2 * .5;
-                    const double delta5 = delta1 * .2;
-                    const double delta6 = delta3 * .5;
-                    f0 = (((((boys_table[tgrid][6] * delta6 +
-                        boys_table[tgrid][5]) * delta5 +
-                            boys_table[tgrid][4]) * delta4 +
-                                boys_table[tgrid][3]) * delta3 +
-                                    boys_table[tgrid][2]) * delta2 +
-                                        boys_table[tgrid][1]) * delta1 +
-                                            boys_table[tgrid][0];
-                    f1 = (((((boys_table[tgrid][7] * delta6 +
-                        boys_table[tgrid][6]) * delta5 +
-                            boys_table[tgrid][5]) * delta4 +
-                                boys_table[tgrid][4]) * delta3 +
-                                    boys_table[tgrid][3]) * delta2 +
-                                        boys_table[tgrid][2]) * delta1 +
-                                            boys_table[tgrid][1];
-                    f2 = (((((boys_table[tgrid][8] * delta6 +
-                        boys_table[tgrid][7]) * delta5 +
-                            boys_table[tgrid][6]) * delta4 +
-                                boys_table[tgrid][5]) * delta3 +
-                                    boys_table[tgrid][4]) * delta2 +
-                                        boys_table[tgrid][3]) * delta1 +
-                                            boys_table[tgrid][2];
-                    f3 = (((((boys_table[tgrid][9] * delta6 +
-                        boys_table[tgrid][8]) * delta5 +
-                            boys_table[tgrid][7]) * delta4 +
-                                boys_table[tgrid][6]) * delta3 +
-                                    boys_table[tgrid][5]) * delta2 +
-                                        boys_table[tgrid][4]) * delta1 +
-                                            boys_table[tgrid][3];
-                    f0 = scale * f0;
-                    f1 = scale * f1;
-                    f2 = scale * f2;
-                    f3 = scale * f3;
-                } else {
-                    const double tinv = 1. / t;
-                    const double t2inv = tinv * .5;
-                    f0 = scale * .5 * __builtin_sqrt(tinv * 3.141592653589793);
-                    f1 = t2inv * f0;
-                    f2 = t2inv * 3. * f1;
-                    f3 = t2inv * 5. * f2;
-                }
-#endif
+                const struct Boys0123 boys = boys0123(t, scale);
                 const double u0 = pval * pqpinv;
                 const double u1 = -qval * pqpinv;
                 const double u2 = pqpinv * .5;
@@ -326,60 +270,60 @@ void erd__sppp_pcgto_block (int nij, int nkl,
                 const double zppp4 = zpss2 * zspp3;
 
 /*             ...assemble the 4-center (AB|CD) type integrals. */
-                const double gxxx = xppp1 * f0 + xppp2 * f1 + xppp3 * f2 + xppp4 * f3;
-                const double gyyy = yppp1 * f0 + yppp2 * f1 + yppp3 * f2 + yppp4 * f3;
-                const double gzzz = zppp1 * f0 + zppp2 * f1 + zppp3 * f2 + zppp4 * f3;
-                double aa = xpsp3 * f2;
-                double bb = xpsp3 * f3;
-                a = xpps1 * f0 + xpps2 * f1 + aa;
-                b = xpps1 * f1 + xpps2 * f2 + bb;
-                double c = xpsp1 * f0 + xpsp2 * f1 + aa;
-                double d = xpsp1 * f1 + xpsp2 * f2 + bb;
-                double e = xspp1 * f0 + xspp2 * f1 + xspp3 * f2;
-                double f = xspp1 * f1 + xspp2 * f2 + xspp3 * f3;
+                const double gxxx = xppp1 * boys.f0 + xppp2 * boys.f1 + xppp3 * boys.f2 + xppp4 * boys.f3;
+                const double gyyy = yppp1 * boys.f0 + yppp2 * boys.f1 + yppp3 * boys.f2 + yppp4 * boys.f3;
+                const double gzzz = zppp1 * boys.f0 + zppp2 * boys.f1 + zppp3 * boys.f2 + zppp4 * boys.f3;
+                double aa = xpsp3 * boys.f2;
+                double bb = xpsp3 * boys.f3;
+                a = xpps1 * boys.f0 + xpps2 * boys.f1 + aa;
+                b = xpps1 * boys.f1 + xpps2 * boys.f2 + bb;
+                double c = xpsp1 * boys.f0 + xpsp2 * boys.f1 + aa;
+                double d = xpsp1 * boys.f1 + xpsp2 * boys.f2 + bb;
+                double e = xspp1 * boys.f0 + xspp2 * boys.f1 + xspp3 * boys.f2;
+                double f = xspp1 * boys.f1 + xspp2 * boys.f2 + xspp3 * boys.f3;
                 const double gxxy = yssp1 * a + yssp2 * b;
                 const double gxxz = zssp1 * a + zssp2 * b;
                 const double gxyx = ysps1 * c + yssp2 * d;
                 const double gxzx = zsps1 * c + zssp2 * d;
                 const double gyxx = ypss1 * e + ypss2 * f;
                 const double gzxx = zpss1 * e + zpss2 * f;
-                aa = ypsp3 * f2;
-                bb = ypsp3 * f3;
-                a = ypps1 * f0 + ypps2 * f1 + aa;
-                b = ypps1 * f1 + ypps2 * f2 + bb;
-                c = ypsp1 * f0 + ypsp2 * f1 + aa;
-                d = ypsp1 * f1 + ypsp2 * f2 + bb;
-                e = yspp1 * f0 + yspp2 * f1 + yspp3 * f2;
-                f = yspp1 * f1 + yspp2 * f2 + yspp3 * f3;
+                aa = ypsp3 * boys.f2;
+                bb = ypsp3 * boys.f3;
+                a = ypps1 * boys.f0 + ypps2 * boys.f1 + aa;
+                b = ypps1 * boys.f1 + ypps2 * boys.f2 + bb;
+                c = ypsp1 * boys.f0 + ypsp2 * boys.f1 + aa;
+                d = ypsp1 * boys.f1 + ypsp2 * boys.f2 + bb;
+                e = yspp1 * boys.f0 + yspp2 * boys.f1 + yspp3 * boys.f2;
+                f = yspp1 * boys.f1 + yspp2 * boys.f2 + yspp3 * boys.f3;
                 const double gyyx = xssp1 * a + xssp2 * b;
                 const double gyyz = zssp1 * a + zssp2 * b;
                 const double gyxy = xsps1 * c + xssp2 * d;
                 const double gyzy = zsps1 * c + zssp2 * d;
                 const double gxyy = xpss1 * e + xpss2 * f;
                 const double gzyy = zpss1 * e + zpss2 * f;
-                aa = zpsp3 * f2;
-                bb = zpsp3 * f3;
-                a = zpps1 * f0 + zpps2 * f1 + aa;
-                b = zpps1 * f1 + zpps2 * f2 + bb;
-                c = zpsp1 * f0 + zpsp2 * f1 + aa;
-                d = zpsp1 * f1 + zpsp2 * f2 + bb;
-                e = zspp1 * f0 + zspp2 * f1 + zspp3 * f2;
-                f = zspp1 * f1 + zspp2 * f2 + zspp3 * f3;
+                aa = zpsp3 * boys.f2;
+                bb = zpsp3 * boys.f3;
+                a = zpps1 * boys.f0 + zpps2 * boys.f1 + aa;
+                b = zpps1 * boys.f1 + zpps2 * boys.f2 + bb;
+                c = zpsp1 * boys.f0 + zpsp2 * boys.f1 + aa;
+                d = zpsp1 * boys.f1 + zpsp2 * boys.f2 + bb;
+                e = zspp1 * boys.f0 + zspp2 * boys.f1 + zspp3 * boys.f2;
+                f = zspp1 * boys.f1 + zspp2 * boys.f2 + zspp3 * boys.f3;
                 const double gzzx = xssp1 * a + xssp2 * b;
                 const double gzzy = yssp1 * a + yssp2 * b;
                 const double gzxz = xsps1 * c + xssp2 * d;
                 const double gzyz = ysps1 * c + yssp2 * d;
                 const double gxzz = xpss1 * e + xpss2 * f;
                 const double gyzz = ypss1 * e + ypss2 * f;
-                a = xpss1 * f0 + xpss2 * f1;
-                b = xpss1 * f1 + xpss2 * f2;
-                c = xpss1 * f2 + xpss2 * f3;
-                d = ypss1 * f0 + ypss2 * f1;
-                e = ypss1 * f1 + ypss2 * f2;
-                f = ypss1 * f2 + ypss2 * f3;
-                double g = zpss1 * f0 + zpss2 * f1;
-                double h = zpss1 * f1 + zpss2 * f2;
-                double r = zpss1 * f2 + zpss2 * f3;
+                a = xpss1 * boys.f0 + xpss2 * boys.f1;
+                b = xpss1 * boys.f1 + xpss2 * boys.f2;
+                c = xpss1 * boys.f2 + xpss2 * boys.f3;
+                d = ypss1 * boys.f0 + ypss2 * boys.f1;
+                e = ypss1 * boys.f1 + ypss2 * boys.f2;
+                f = ypss1 * boys.f2 + ypss2 * boys.f3;
+                double g = zpss1 * boys.f0 + zpss2 * boys.f1;
+                double h = zpss1 * boys.f1 + zpss2 * boys.f2;
+                double r = zpss1 * boys.f2 + zpss2 * boys.f3;
                 const double gxyz = ysps1 * (zssp1 * a + zssp2 * b) + yssp2 * (zssp1 * b + zssp2 * c);
                 const double gxzy = zsps1 * (yssp1 * a + yssp2 * b) + zssp2 * (yssp1 * b + yssp2 * c);
                 const double gyxz = xsps1 * (zssp1 * d + zssp2 * e) + xssp2 * (zssp1 * e + zssp2 * f);
@@ -454,62 +398,7 @@ void erd__sppp_pcgto_block (int nij, int nkl,
                 const double pqz = pzval - qzval;
                 const double t = (pqx * pqx + pqy * pqy + pqz * pqz) * pqmult * pqpinv;
                 const double scale = pscale * scaleq[kl] / (pqmult * __builtin_sqrt(pqplus));
-#ifdef ERD_TABLE_FREE_BOYS_FUNCTIONS
-                const double f0 = scale * boys0 (t);
-                const double f1 = scale * boys1 (t);
-                const double f2 = scale * boys2 (t);
-                const double f3 = scale * boys3 (t);
-#else
-                double f0, f1, f2, f3;
-                if (t <= tmax) {
-                    const int tgrid = __builtin_lround(t * tvstep);
-                    const double delta1 = tgrid * tstep - t;
-                    const double delta2 = delta1 * .5;
-                    const double delta3 = delta1 * .333333333333333;
-                    const double delta4 = delta2 * .5;
-                    const double delta5 = delta1 * .2;
-                    const double delta6 = delta3 * .5;
-                    f0 = (((((boys_table[tgrid][6] * delta6 +
-                        boys_table[tgrid][5]) * delta5 +
-                            boys_table[tgrid][4]) * delta4 +
-                                boys_table[tgrid][3]) * delta3 +
-                                    boys_table[tgrid][2]) * delta2 +
-                                        boys_table[tgrid][1]) * delta1 +
-                                            boys_table[tgrid][0];
-                    f1 = (((((boys_table[tgrid][7] * delta6 +
-                        boys_table[tgrid][6]) * delta5 +
-                            boys_table[tgrid][5]) * delta4 +
-                                boys_table[tgrid][4]) * delta3 +
-                                    boys_table[tgrid][3]) * delta2 +
-                                        boys_table[tgrid][2]) * delta1 +
-                                            boys_table[tgrid][1];
-                    f2 = (((((boys_table[tgrid][8] * delta6 +
-                        boys_table[tgrid][7]) * delta5 +
-                            boys_table[tgrid][6]) * delta4 +
-                                boys_table[tgrid][5]) * delta3 +
-                                    boys_table[tgrid][4]) * delta2 +
-                                        boys_table[tgrid][3]) * delta1 +
-                                            boys_table[tgrid][2];
-                    f3 = (((((boys_table[tgrid][9] * delta6 +
-                        boys_table[tgrid][8]) * delta5 +
-                            boys_table[tgrid][7]) * delta4 +
-                                boys_table[tgrid][6]) * delta3 +
-                                    boys_table[tgrid][5]) * delta2 +
-                                        boys_table[tgrid][4]) * delta1 +
-                                            boys_table[tgrid][3];
-                    f0 = scale * f0;
-                    f1 = scale * f1;
-                    f2 = scale * f2;
-                    f3 = scale * f3;
-                } else {
-                    const double tinv = 1. / t;
-                    const double t2inv = tinv * .5;
-                    f0 = scale * .5 * __builtin_sqrt(tinv * 3.141592653589793);
-                    f1 = t2inv * f0;
-                    f2 = t2inv * 3. * f1;
-                    f3 = t2inv * 5. * f2;
-                }
-#endif
+                const struct Boys0123 boys = boys0123(t, scale);
                 const double u0 = pval * pqpinv;
                 const double u1 = -qval * pqpinv;
                 const double u2 = pqpinv * .5;
@@ -574,60 +463,60 @@ void erd__sppp_pcgto_block (int nij, int nkl,
                 const double zppp4 = zssp2 * zpps3;
 
 /*             ...assemble the 4-center (AB|CD) type integrals. */
-                const double gxxx = xppp1 * f0 + xppp2 * f1 + xppp3 * f2 + xppp4 * f3;
-                const double gyyy = yppp1 * f0 + yppp2 * f1 + yppp3 * f2 + yppp4 * f3;
-                const double gzzz = zppp1 * f0 + zppp2 * f1 + zppp3 * f2 + zppp4 * f3;
-                double aa = xspp3 * f2;
-                double bb = xspp3 * f3;
-                a = xpps1 * f0 + xpps2 * f1 + xpps3 * f2;
-                b = xpps1 * f1 + xpps2 * f2 + xpps3 * f3;
-                double c = xpsp1 * f0 + xpsp2 * f1 + aa;
-                double d = xpsp1 * f1 + xpsp2 * f2 + bb;
-                double e = xspp1 * f0 + xspp2 * f1 + aa;
-                double f = xspp1 * f1 + xspp2 * f2 + bb;
+                const double gxxx = xppp1 * boys.f0 + xppp2 * boys.f1 + xppp3 * boys.f2 + xppp4 * boys.f3;
+                const double gyyy = yppp1 * boys.f0 + yppp2 * boys.f1 + yppp3 * boys.f2 + yppp4 * boys.f3;
+                const double gzzz = zppp1 * boys.f0 + zppp2 * boys.f1 + zppp3 * boys.f2 + zppp4 * boys.f3;
+                double aa = xspp3 * boys.f2;
+                double bb = xspp3 * boys.f3;
+                a = xpps1 * boys.f0 + xpps2 * boys.f1 + xpps3 * boys.f2;
+                b = xpps1 * boys.f1 + xpps2 * boys.f2 + xpps3 * boys.f3;
+                double c = xpsp1 * boys.f0 + xpsp2 * boys.f1 + aa;
+                double d = xpsp1 * boys.f1 + xpsp2 * boys.f2 + bb;
+                double e = xspp1 * boys.f0 + xspp2 * boys.f1 + aa;
+                double f = xspp1 * boys.f1 + xspp2 * boys.f2 + bb;
                 const double gxxy = yssp1 * a + yssp2 * b;
                 const double gxxz = zssp1 * a + zssp2 * b;
                 const double gxyx = ysps1 * c + ysps2 * d;
                 const double gxzx = zsps1 * c + zsps2 * d;
                 const double gyxx = ypss1 * e + ysps2 * f;
                 const double gzxx = zpss1 * e + zsps2 * f;
-                aa = yspp3 * f2;
-                bb = yspp3 * f3;
-                a = ypps1 * f0 + ypps2 * f1 + ypps3 * f2;
-                b = ypps1 * f1 + ypps2 * f2 + ypps3 * f3;
-                c = ypsp1 * f0 + ypsp2 * f1 + aa;
-                d = ypsp1 * f1 + ypsp2 * f2 + bb;
-                e = yspp1 * f0 + yspp2 * f1 + aa;
-                f = yspp1 * f1 + yspp2 * f2 + bb;
+                aa = yspp3 * boys.f2;
+                bb = yspp3 * boys.f3;
+                a = ypps1 * boys.f0 + ypps2 * boys.f1 + ypps3 * boys.f2;
+                b = ypps1 * boys.f1 + ypps2 * boys.f2 + ypps3 * boys.f3;
+                c = ypsp1 * boys.f0 + ypsp2 * boys.f1 + aa;
+                d = ypsp1 * boys.f1 + ypsp2 * boys.f2 + bb;
+                e = yspp1 * boys.f0 + yspp2 * boys.f1 + aa;
+                f = yspp1 * boys.f1 + yspp2 * boys.f2 + bb;
                 const double gyyx = xssp1 * a + xssp2 * b;
                 const double gyyz = zssp1 * a + zssp2 * b;
                 const double gyxy = xsps1 * c + xsps2 * d;
                 const double gyzy = zsps1 * c + zsps2 * d;
                 const double gxyy = xpss1 * e + xsps2 * f;
                 const double gzyy = zpss1 * e + zsps2 * f;
-                aa = zspp3 * f2;
-                bb = zspp3 * f3;
-                a = zpps1 * f0 + zpps2 * f1 + zpps3 * f2;
-                b = zpps1 * f1 + zpps2 * f2 + zpps3 * f3;
-                c = zpsp1 * f0 + zpsp2 * f1 + aa;
-                d = zpsp1 * f1 + zpsp2 * f2 + bb;
-                e = zspp1 * f0 + zspp2 * f1 + aa;
-                f = zspp1 * f1 + zspp2 * f2 + bb;
+                aa = zspp3 * boys.f2;
+                bb = zspp3 * boys.f3;
+                a = zpps1 * boys.f0 + zpps2 * boys.f1 + zpps3 * boys.f2;
+                b = zpps1 * boys.f1 + zpps2 * boys.f2 + zpps3 * boys.f3;
+                c = zpsp1 * boys.f0 + zpsp2 * boys.f1 + aa;
+                d = zpsp1 * boys.f1 + zpsp2 * boys.f2 + bb;
+                e = zspp1 * boys.f0 + zspp2 * boys.f1 + aa;
+                f = zspp1 * boys.f1 + zspp2 * boys.f2 + bb;
                 const double gzzx = xssp1 * a + xssp2 * b;
                 const double gzzy = yssp1 * a + yssp2 * b;
                 const double gzxz = xsps1 * c + xsps2 * d;
                 const double gzyz = ysps1 * c + ysps2 * d;
                 const double gxzz = xpss1 * e + xsps2 * f;
                 const double gyzz = ypss1 * e + ysps2 * f;
-                a = xpss1 * f0 + xsps2 * f1;
-                b = xpss1 * f1 + xsps2 * f2;
-                c = xpss1 * f2 + xsps2 * f3;
-                d = ypss1 * f0 + ysps2 * f1;
-                e = ypss1 * f1 + ysps2 * f2;
-                f = ypss1 * f2 + ysps2 * f3;
-                double g = zpss1 * f0 + zsps2 * f1;
-                double h = zpss1 * f1 + zsps2 * f2;
-                double r = zpss1 * f2 + zsps2 * f3;
+                a = xpss1 * boys.f0 + xsps2 * boys.f1;
+                b = xpss1 * boys.f1 + xsps2 * boys.f2;
+                c = xpss1 * boys.f2 + xsps2 * boys.f3;
+                d = ypss1 * boys.f0 + ysps2 * boys.f1;
+                e = ypss1 * boys.f1 + ysps2 * boys.f2;
+                f = ypss1 * boys.f2 + ysps2 * boys.f3;
+                double g = zpss1 * boys.f0 + zsps2 * boys.f1;
+                double h = zpss1 * boys.f1 + zsps2 * boys.f2;
+                double r = zpss1 * boys.f2 + zsps2 * boys.f3;
                 const double gxyz = ysps1 * (zssp1 * a + zssp2 * b) + ysps2 * (zssp1 * b + zssp2 * c);
                 const double gxzy = zsps1 * (yssp1 * a + yssp2 * b) + zsps2 * (yssp1 * b + yssp2 * c);
                 const double gyxz = xsps1 * (zssp1 * d + zssp2 * e) + xsps2 * (zssp1 * e + zssp2 * f);
