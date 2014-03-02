@@ -13,6 +13,12 @@
 #include <screening.h>
 #include <erd_profile.h>
 
+struct ShellPair {
+    int MP;
+    int NQ;
+    double absValue;
+};
+
 static uint64_t get_cpu_frequency(void) {
     const uint64_t start_clock = __rdtsc();
     sleep(1);
@@ -34,7 +40,7 @@ int main (int argc, char **argv)
 
     const uint64_t freq = get_cpu_frequency();
 
-    const double fraction = atof (argv[3]);
+    const double fraction = atof(argv[3]);
     assert(fraction > 0.0 && fraction <= 1.0);
     const int nthreads = atoi(argv[4]);
     #ifdef _OPENMP
@@ -59,11 +65,11 @@ int main (int argc, char **argv)
     ERD_t erd;
     CInt_createERD(basis, &erd, nthreads);
 
-    double* totalcalls = (double *) malloc (sizeof (double) * nthreads * 64);
+    double* totalcalls = (double *) malloc(sizeof (double) * nthreads * 64);
     assert(totalcalls != NULL);
-    double* totalnintls = (double *) malloc (sizeof (double) * nthreads * 64);
+    double* totalnintls = (double *) malloc(sizeof (double) * nthreads * 64);
     assert(totalnintls != NULL);
-    
+
     #pragma omp parallel for
     for (int i = 0; i < nthreads; i++) {
         totalcalls[i * 64] = 0.0;
@@ -72,8 +78,8 @@ int main (int argc, char **argv)
     printf("Computing integrals ...\n");
 
     // reset profiler
-    erd_reset_profile ();
-        
+    erd_reset_profile();
+
     //printf ("max memory footprint per thread = %lf KB\n",
     //    CInt_getMaxMemory (erd[0])/1024.0);
 
@@ -84,6 +90,27 @@ int main (int argc, char **argv)
     const int computationThreshold = lround(fraction * RAND_MAX);
 
     const uint64_t start_clock = __rdtsc(); 
+
+    int numShellPairs = 0;
+    for (int i = 0; i < shellptr[ns]; i++) {
+        const int M = shellrid[i];
+        const int N = shellid[i];
+        if (M <= N)
+            numShellPairs += 1;
+    }
+    struct ShellPair* shellPairs = (struct ShellPair*)malloc(sizeof(struct ShellPair) * numShellPairs);
+    uint32_t shellIndex = 0;
+    for (int i = 0; i < shellptr[ns]; i++) {
+        const int M = shellrid[i];
+        const int N = shellid[i];
+        if (M <= N) {
+            shellPairs[shellIndex].MP = M;
+            shellPairs[shellIndex].NQ = N;
+            shellPairs[shellIndex].absValue = fabs(shellvalue[i]);
+            shellIndex++;
+        }
+    }
+
     #pragma omp parallel
     {
         #ifdef _OPENMP
@@ -93,36 +120,28 @@ int main (int argc, char **argv)
         #endif
 
         #pragma omp for schedule(dynamic)
-        for (int i = 0; i < shellptr[ns]; i++) {
-            const int M = shellrid[i];
-            const int N = shellid[i];
-            if (M > N)
-                continue;
+        for (int i = 0; i < numShellPairs; i++) {
+            const int M = shellPairs[i].MP;
+            const int N = shellPairs[i].NQ;
+            const double absValueMN = shellPairs[i].absValue;
+            for (int j = 0; j < numShellPairs; j++) {
+                const int P = shellPairs[j].MP;
+                const int Q = shellPairs[j].NQ;
+                if ((M + N) > (P + Q))
+                    continue;
 
-            const double value1 = shellvalue[i];
-            for (int P = 0; P < ns; P++) {
-                const int start2 = shellptr[P];
-                const int end2 = shellptr[P + 1];
-                for (int j = start2; j < end2; j++) {
-                    const int Q = shellid[j];
-                    if (P > Q)
-                        continue;
-                    if ((M + N) > (P + Q))
-                        continue;
+                const double absValuePQ = shellPairs[j].absValue;
+                if (absValueMN * absValuePQ < TOLSRC * TOLSRC)
+                    continue;
 
-                    const double value2 = shellvalue[j];
-                    if (fabs(value1 * value2) < TOLSRC * TOLSRC)
-                        continue;
+                /* Sample random integer. With probability (fraction) process the shell quartet. */
+                if (rand() <= computationThreshold) {
+                    double *integrals;
+                    int nints;
+                    CInt_computeShellQuartet(basis, erd, tid, M, N, P, Q, &integrals, &nints);
 
-                    /* Sample random integer. With probability (fraction) process the shell quartet. */
-                    if (rand() <= computationThreshold) {
-                        double *integrals;
-                        int nints;
-                        CInt_computeShellQuartet(basis, erd, tid, M, N, P, Q, &integrals, &nints);
-
-                        totalcalls[tid * 64] += 1;
-                        totalnintls[tid * 64] += nints;
-                    }
+                    totalcalls[tid * 64] += 1;
+                    totalnintls[tid * 64] += nints;
                 }
             }
         }
