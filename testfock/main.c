@@ -208,7 +208,7 @@ int main (int argc, char **argv)
     {
         for (i = 1; i < nthreads; i++)
         {
-            F1[j + 0 * sizeD3] += F1[j + i * sizeD3];
+            F3[j + 0 * sizeD3] += F3[j + i * sizeD3];
         }
     }
 
