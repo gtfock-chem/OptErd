@@ -39,6 +39,7 @@ int main (int argc, char **argv)
     int sizetask;
     int nfuncs;
     int i;
+    int j;
     struct timeval tv1, tv2;
     double timepass;
     
@@ -121,7 +122,24 @@ int main (int argc, char **argv)
             F2 != NULL &&
             F3 != NULL);
     printf ("use %.3lf MB\n", totalFDsize/1024.0/1024.0);
-            
+
+    // init D
+    #pragma omp parallel for
+    for (j = 0; j < sizeD1; j++)
+    {
+        D1[j] = 1.0;
+    }
+    #pragma omp parallel for
+    for (j = 0; j < sizeD2; j++)
+    {
+        D2[j] = 1.0;
+    }
+    #pragma omp parallel for 
+    for (j = 0; j < sizeD3; j++)
+    {
+        D3[j] = 1.0;
+    }
+    
     ERD_t erd;
     double tolscr = TOLSRC;
     double tolscr2 = tolscr * tolscr;
@@ -140,6 +158,23 @@ int main (int argc, char **argv)
     
     gettimeofday (&tv1, NULL);   
     /************************************************************/
+    // init F
+    #pragma omp parallel for
+    for (j = 0; j < sizeD1; j++)
+    {
+        F1[j] = 0.0;
+    }
+    #pragma omp parallel for
+    for (j = 0; j < sizeD2; j++)
+    {
+        F2[j] = 0.0;
+    }
+    #pragma omp parallel for 
+    for (j = 0; j < sizeD3; j++)
+    {
+        F3[j] = 0.0;
+    }
+
     // main computation
     compute_task (basis, erd, shellptr,
                   shellvalue, shellid, shellrid,
@@ -150,6 +185,32 @@ int main (int argc, char **argv)
                   D1, D2, D3, F1, F2, F3,
                   rowsize, colsize, colsize, sizeD1, sizeD2, sizeD3,
                   totalcalls, totalnintls);
+
+    // reduction
+    #pragma omp parallel for
+    for (j = 0; j < sizeD1; j++)
+    {
+        for (i = 1; i < nthreads; i++)
+        {
+            F1[j + 0 * sizeD1] += F1[j + i * sizeD1];
+        }
+    }
+    #pragma omp parallel for
+    for (j = 0; j < sizeD2; j++)
+    {
+        for (i = 1; i < nthreads; i++)
+        {
+            F2[j + 0 * sizeD2] += F2[j + i * sizeD2];
+        }
+    }
+    #pragma omp parallel for 
+    for (j = 0; j < sizeD3; j++)
+    {
+        for (i = 1; i < nthreads; i++)
+        {
+            F3[j + 0 * sizeD3] += F3[j + i * sizeD3];
+        }
+    }
 
     /***********************************************************/
     gettimeofday (&tv2, NULL);
