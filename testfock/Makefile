@@ -4,7 +4,7 @@ EXEC = test_fock
 
 CFLAGS = -O3 -Wall -openmp -w2 -std=gnu99
 CFLAGS += -Wunknown-pragmas -Wunused-variable -Wunused-function
-CFLAGS += ${OPTFLAGS}
+CFLAGS += ${OPTFLAGS} -vec-report2
 
 INC = -I./  \
       -I../include/ \
@@ -13,7 +13,13 @@ LDFLAGS = -L./ -L../lib/
 
 SRC = $(wildcard *.c)
 OBJS := $(addsuffix .o, $(basename $(SRC)))
+ifeq "${arch}" "mic"
+LIBS = -lcint_mic -lerd_mic -loed_mic
+#LIBS = ../lib/libcint_mic.a ../lib/liboed_mic.a ../lib/liberd_mic.a
+else
 LIBS = -lcint -lerd -loed
+#LIBS = ../lib/libcint.a ../lib/liboed.a ../lib/liberd.a
+endif
 
 all: ${EXEC}
 

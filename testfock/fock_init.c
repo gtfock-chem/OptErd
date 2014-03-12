@@ -239,3 +239,155 @@ void create_buffers (int nshells, int nnz,
     printf ("FD size (%d %d %d %d)\n",
         *rowfuncs, *colfuncs, *rowsize, *colsize); 
 }
+
+#ifdef __INTEL_OFFLOAD
+
+int MIC_init_devices(int nthreads_mic)
+{
+    // Find the number of MIC cards available
+    int num_devices = 0;
+    num_devices = _Offload_number_of_devices();
+
+    if(num_devices == 0)
+    {
+        printf("No target devices available. Exiting\n");
+        exit(0);
+    }
+    else
+    {
+        int mic_id;
+        for(mic_id = 0; mic_id < num_devices; mic_id++)
+        {
+            printf("On CPU: nthreads_mic = %d\n", nthreads_mic);
+#pragma offload target(mic:mic_id) in(nthreads_mic)
+            {
+                //printf("On MIC: nthreads_mic = %d\n", nthreads_mic);
+                omp_set_num_threads (nthreads_mic);
+#pragma omp parallel num_threads(nthreads_mic)
+                {
+                    int tid = omp_get_thread_num();
+                    //if(tid == 0)
+                    //    printf("Initialized openmp threads\n");
+                }
+            }
+        }
+        printf("Number of Target devices installed: %d\n\n",num_devices);
+    }
+    return num_devices;
+}
+
+void MIC_copy_buffers (int num_devices, int nshells, int nnz,
+                       int *shellptr, int *shellid, int *shellrid, double *shellvalue,
+                       int *f_startind, int startM, int endM, int startP, int endP,
+                       int *rowpos, int *colpos,
+                       int *rowptr, int *colptr,
+                       int rowfuncs, int colfuncs,
+                       int rowsize, int colsize)
+{
+    int mic_id;
+
+    for(mic_id = 0; mic_id < num_devices; mic_id++)
+    {
+#pragma offload_transfer target(mic:mic_id) \
+        in(nshells, nnz) \
+        in(startM, endM, startP, endP) \
+        in(rowfuncs, colfuncs, rowsize, colsize) \
+        in(shellptr: length(nshells + 1) ALLOC) \
+        in(shellid: length(nnz) ALLOC) \
+        in(shellrid: length(nnz) ALLOC) \
+        in(shellvalue: length(nnz) ALLOC) \
+        in(f_startind: length(nshells + 1) ALLOC) \
+        in(rowpos: length(nshells) ALLOC) \
+        in(colpos: length(nshells) ALLOC) \
+        in(rowptr: length(nnz) ALLOC) \
+        in(colptr: length(nnz) ALLOC)
+    }
+}
+
+void MIC_create_matrices(int num_devices,
+                         double *D1, double *D2, double *D3,
+                         double *F1_hetero, double *F2_hetero,
+                         double *F3_hetero,
+                         int sizeD1, int sizeD2, int sizeD3,
+                         int nthreads_mic)
+{
+    int mic_id;
+
+    for(mic_id = 0; mic_id < num_devices; mic_id++)
+    {
+#pragma offload target(mic: mic_id) \
+        in(sizeD1, sizeD2, sizeD3, nthreads_mic) \
+        nocopy(D1: length(sizeD1) ALLOC) \
+        nocopy(D2: length(sizeD2) ALLOC) \
+        nocopy(D3: length(sizeD3) ALLOC) \
+        nocopy(F1_hetero: length(sizeD1) ALLOC) \
+        nocopy(F2_hetero: length(sizeD2) ALLOC) \
+        nocopy(F3_hetero: length(sizeD3) ALLOC) \
+        nocopy(F1_mic: length(0) alloc_if(0) free_if(0)) \
+        nocopy(F2_mic: length(0) alloc_if(0) free_if(0)) \
+        nocopy(F3_mic: length(0) alloc_if(0) free_if(0))
+        {
+            F1_mic = (double *)_mm_malloc(sizeD1 * nthreads_mic * sizeof(double), 64);
+            F2_mic = (double *)_mm_malloc(sizeD2 * nthreads_mic * sizeof(double), 64);
+            F3_mic = (double *)_mm_malloc(sizeD3 * nthreads_mic * sizeof(double), 64);
+        }
+    }
+
+}
+
+void MIC_copy_D_matrices(int num_devices,
+                         double *D1, double *D2, double *D3,
+                         int sizeD1, int sizeD2, int sizeD3)
+{
+    int mic_id;
+
+    for(mic_id = 0; mic_id < num_devices; mic_id++)
+    {
+#pragma offload_transfer target(mic:mic_id) \
+        in(D1: length(sizeD1) REUSE) \
+        in(D2: length(sizeD2) REUSE) \
+        in(D3: length(sizeD3) REUSE)
+
+        printf("Sent D1, D2, D3 to mic:%d\n", mic_id);
+    }
+
+}
+
+
+void MIC_reset_F_matrices(int num_devices,
+                          int sizeD1, int sizeD2, int sizeD3,
+                          int nthreads_mic)
+{
+    int mic_id;
+
+    for(mic_id = 0; mic_id < num_devices; mic_id++)
+    {
+#pragma offload target(mic: mic_id) \
+        in(sizeD1, sizeD2, sizeD3, nthreads_mic) \
+        nocopy(F1_mic: length(0) REUSE) \
+        nocopy(F2_mic: length(0) REUSE) \
+        nocopy(F3_mic: length(0) REUSE)
+        {
+            int j;
+#pragma omp parallel
+            {
+                int tid = omp_get_thread_num();
+                for (j = tid * sizeD1; j < (tid + 1) * sizeD1; j++)
+                {
+                    F1_mic[j] = 0.0;
+                }
+                for (j = tid * sizeD2; j < (tid + 1) * sizeD2; j++)
+                {
+                    F2_mic[j] = 0.0;
+                }
+                for (j = tid * sizeD3; j < (tid + 1) * sizeD3; j++)
+                {
+                    F3_mic[j] = 0.0;
+                }
+            }
+        }
+        printf("Reset F matrices on mic:%d\n", mic_id);
+    }
+
+}
+#endif
