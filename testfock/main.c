@@ -129,9 +129,9 @@ int main (int argc, char **argv)
     double *D2 = (double *)malloc (sizeof(double) * sizeD2_aligned); 
     double *D3 = (double *)malloc (sizeof(double) * sizeD3_aligned);
     totalFDsize += 1.0 * sizeof(double) * (sizeD1_aligned + sizeD2_aligned + sizeD3_aligned);
-    double *F1 = (double *)malloc (sizeof(double) * sizeD1_aligned * nthreads);
-    double *F2 = (double *)malloc (sizeof(double) * sizeD2_aligned * nthreads); 
-    double *F3 = (double *)malloc (sizeof(double) * sizeD3_aligned * nthreads);
+    F1 = (double *)malloc (sizeof(double) * sizeD1_aligned * nthreads);
+    F2 = (double *)malloc (sizeof(double) * sizeD2_aligned * nthreads); 
+    F3 = (double *)malloc (sizeof(double) * sizeD3_aligned * nthreads);
     totalFDsize += 1.0 * sizeof(double) * (sizeD1_aligned + sizeD2_aligned + sizeD3_aligned) * nthreads;
     assert (D1 != NULL &&
             D2 != NULL &&
@@ -141,25 +141,27 @@ int main (int argc, char **argv)
             F3 != NULL);
     printf ("use %.3lf MB\n", totalFDsize/1024.0/1024.0);
 
-    double *F1_hetero = NULL;
-    double *F2_hetero = NULL;
-    double *F3_hetero = NULL;
+
 #ifdef __INTEL_OFFLOAD
+    double *F1_mic = NULL;
+    double *F2_mic = NULL;
+    double *F3_mic = NULL;
     if(toOffload)
     {
-        F1_hetero = (double *)_mm_malloc (sizeof(double) * sizeD1_aligned * (num_devices + 1), 64);
-        F2_hetero = (double *)_mm_malloc (sizeof(double) * sizeD2_aligned * (num_devices + 1), 64);
-        F3_hetero = (double *)_mm_malloc (sizeof(double) * sizeD3_aligned * (num_devices + 1), 64);
-
-        memset(F1_hetero, 0, sizeof(double) * sizeD1_aligned * (num_devices + 1));
-        memset(F2_hetero, 0, sizeof(double) * sizeD2_aligned * (num_devices + 1));
-        memset(F3_hetero, 0, sizeof(double) * sizeD3_aligned * (num_devices + 1));
-        MIC_copy_buffers(2, nshells, nnz, shellptr, shellid, shellrid, shellvalue,
-                f_startind, startM, endM, startP, endP,
-                rowpos, colpos, rowptr, colptr,
-                rowfuncs, colfuncs, rowsize, colsize);
+        F1_mic = (double *)_mm_malloc (sizeof(double) * sizeD1_aligned * num_devices, 64);
+        F2_mic = (double *)_mm_malloc (sizeof(double) * sizeD2_aligned * num_devices, 64);
+        F3_mic = (double *)_mm_malloc (sizeof(double) * sizeD3_aligned * num_devices, 64);
+        assert(F1_mic != NULL);
+        assert(F2_mic != NULL);
+        assert(F3_mic != NULL);
+        memset(F1_mic, 0, sizeof(double) * sizeD1_aligned * num_devices);
+        memset(F2_mic, 0, sizeof(double) * sizeD2_aligned * num_devices);
+        memset(F3_mic, 0, sizeof(double) * sizeD3_aligned * num_devices);
+        MIC_copy_buffers(num_devices, nshells, nnz, shellptr, shellid, shellrid, shellvalue,
+                f_startind,
+                rowpos, colpos, rowptr, colptr);
         printf("Copied buffers to MIC\n");
-        MIC_create_matrices(num_devices, D1, D2, D3, F1_hetero, F2_hetero, F3_hetero, sizeD1_aligned, sizeD2_aligned, sizeD3_aligned, nthreads_mic);
+        MIC_create_matrices(num_devices, D1, D2, D3, F1_mic, F2_mic, F3_mic, sizeD1_aligned, sizeD2_aligned, sizeD3_aligned, nthreads_mic);
     }
 #endif
 
@@ -186,10 +188,9 @@ int main (int argc, char **argv)
         MIC_copy_D_matrices(num_devices, D1, D2, D3, sizeD1_aligned, sizeD2_aligned, sizeD3_aligned);
     }
 #endif
-    ERD_t erd;
     double tolscr = TOLSRC;
     double tolscr2 = tolscr * tolscr;
-    CInt_createERD (basis, &erd, nthreads);
+    CInt_createERD (basis, &erd_, nthreads);
 
 #ifdef __INTEL_OFFLOAD
     if(toOffload)
@@ -197,9 +198,9 @@ int main (int argc, char **argv)
         int mic_id;
         for (mic_id = 0; mic_id < num_devices; mic_id++)
         {
-#pragma offload target(mic:mic_id) nocopy(basis_mic, erd_mic) in(nthreads_mic)
+#pragma offload target(mic:mic_id) nocopy(basis_mic, erd_) in(nthreads_mic)
             {
-                CInt_createERD (basis_mic, &erd_mic, nthreads_mic);
+                CInt_createERD (basis_mic, &erd_, nthreads_mic);
             }
         }
     }
@@ -218,54 +219,45 @@ int main (int argc, char **argv)
     gettimeofday (&tv1, NULL);   
     /************************************************************/
     // init F
-    #pragma omp parallel for
-    for (j = 0; j < sizeD1_aligned * nthreads; j++)
-    {
-        F1[j] = 0.0;
-    }
-    #pragma omp parallel for
-    for (j = 0; j < sizeD2_aligned * nthreads; j++)
-    {
-        F2[j] = 0.0;
-    }
-    #pragma omp parallel for 
-    for (j = 0; j < sizeD3_aligned * nthreads; j++)
-    {
-        F3[j] = 0.0;
-    }
-
-#ifdef __INTEL_OFFLOAD
-    if(toOffload)
-    {
-        MIC_reset_F_matrices(num_devices, sizeD1_aligned, sizeD2_aligned, sizeD3_aligned, nthreads_mic);
-    }
-#endif
+    reset_F_matrices(num_devices,
+                     sizeD1_aligned, sizeD2_aligned, sizeD3_aligned,
+                     nthreads, nthreads_mic, toOffload);
 
     long start, end;
     start = __rdtsc();
     // main computation
-    compute_task_hetero (num_devices, basis, erd, shellptr,
+    compute_task (num_devices, basis, shellptr,
                   shellvalue, shellid, shellrid,
                   f_startind, rowpos, colpos, rowptr, colptr,
                   tolscr2, startM, startP,
                   startM, startM + sizetask - 1,
                   startP, startP + sizetask - 1,
-                  D1, D2, D3, F1, F2, F3, F1_hetero, F2_hetero, F3_hetero,
+                  D1, D2, D3,
                   rowsize, colsize, colsize, sizeD1, sizeD2, sizeD3, mic_fraction,
                   totalcalls, totalnintls);
     end = __rdtsc();
     printf("Compute cycles = %lld\n", end - start);
 
     start = __rdtsc();
-    reduce_F(num_devices, F1, F2, F3, F1_hetero, F2_hetero, F3_hetero, sizeD1, sizeD2, sizeD3,
+    reduce_F_on_individual_devices(num_devices, sizeD1, sizeD2, sizeD3,
              nthreads, nthreads_mic);
     end = __rdtsc();
     printf("Reduce cycles = %lld\n", end - start);
 
+#ifdef __INTEL_OFFLOAD
     start = __rdtsc();
-    reduce_F_CPU_MIC(num_devices, F1, F2, F3, F1_hetero, F2_hetero, F3_hetero, sizeD1, sizeD2, sizeD3);
+    int finish_tag = 0;
+    copy_F_MIC_to_CPU(num_devices,
+                      F1_mic, F2_mic, F3_mic,
+                      sizeD1, sizeD2, sizeD3,
+                      &finish_tag);
+    wait_for_MIC_to_CPU_copy(num_devices, &finish_tag);
+    reduce_F_across_devices(num_devices,
+                            F1_mic, F2_mic, F3_mic,
+                            sizeD1, sizeD2, sizeD3);
     end = __rdtsc();
     printf("CPU-MIC Reduce cycles = %lld\n", end - start);
+#endif
     /***********************************************************/
     gettimeofday (&tv2, NULL);
     timepass = (tv2.tv_sec - tv1.tv_sec) +
@@ -295,7 +287,7 @@ int main (int argc, char **argv)
     // use 1 if thread timing is not required
     // erd_print_profile (1);
 
-    CInt_destroyERD (erd);
+    CInt_destroyERD (erd_);
     free (rowpos);
     free (colpos);
     free (rowptr);

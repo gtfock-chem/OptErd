@@ -278,20 +278,15 @@ int MIC_init_devices(int nthreads_mic)
 
 void MIC_copy_buffers (int num_devices, int nshells, int nnz,
                        int *shellptr, int *shellid, int *shellrid, double *shellvalue,
-                       int *f_startind, int startM, int endM, int startP, int endP,
+                       int *f_startind,
                        int *rowpos, int *colpos,
-                       int *rowptr, int *colptr,
-                       int rowfuncs, int colfuncs,
-                       int rowsize, int colsize)
+                       int *rowptr, int *colptr)
 {
     int mic_id;
 
     for(mic_id = 0; mic_id < num_devices; mic_id++)
     {
 #pragma offload_transfer target(mic:mic_id) \
-        in(nshells, nnz) \
-        in(startM, endM, startP, endP) \
-        in(rowfuncs, colfuncs, rowsize, colsize) \
         in(shellptr: length(nshells + 1) ALLOC) \
         in(shellid: length(nnz) ALLOC) \
         in(shellrid: length(nnz) ALLOC) \
@@ -313,6 +308,7 @@ void MIC_create_matrices(int num_devices,
 {
     int mic_id;
 
+    printf("num_f copies = %d\n", NUM_F_COPIES_MIC(nthreads_mic));
     for(mic_id = 0; mic_id < num_devices; mic_id++)
     {
 #pragma offload target(mic: mic_id) \
@@ -323,13 +319,13 @@ void MIC_create_matrices(int num_devices,
         nocopy(F1_hetero: length(sizeD1) ALLOC) \
         nocopy(F2_hetero: length(sizeD2) ALLOC) \
         nocopy(F3_hetero: length(sizeD3) ALLOC) \
-        nocopy(F1_mic: length(0) alloc_if(0) free_if(0)) \
-        nocopy(F2_mic: length(0) alloc_if(0) free_if(0)) \
-        nocopy(F3_mic: length(0) alloc_if(0) free_if(0))
+        nocopy(F1: length(0) alloc_if(0) free_if(0)) \
+        nocopy(F2: length(0) alloc_if(0) free_if(0)) \
+        nocopy(F3: length(0) alloc_if(0) free_if(0))
         {
-            F1_mic = (double *)_mm_malloc(sizeD1 * nthreads_mic * sizeof(double), 64);
-            F2_mic = (double *)_mm_malloc(sizeD2 * nthreads_mic * sizeof(double), 64);
-            F3_mic = (double *)_mm_malloc(sizeD3 * nthreads_mic * sizeof(double), 64);
+            F1 = (double *)_mm_malloc(sizeD1 * NUM_F_COPIES_MIC(nthreads_mic) * sizeof(double), 64);
+            F2 = (double *)_mm_malloc(sizeD2 * NUM_F_COPIES_MIC(nthreads_mic) * sizeof(double), 64);
+            F3 = (double *)_mm_malloc(sizeD3 * NUM_F_COPIES_MIC(nthreads_mic) * sizeof(double), 64);
         }
     }
 
@@ -354,40 +350,4 @@ void MIC_copy_D_matrices(int num_devices,
 }
 
 
-void MIC_reset_F_matrices(int num_devices,
-                          int sizeD1, int sizeD2, int sizeD3,
-                          int nthreads_mic)
-{
-    int mic_id;
-
-    for(mic_id = 0; mic_id < num_devices; mic_id++)
-    {
-#pragma offload target(mic: mic_id) \
-        in(sizeD1, sizeD2, sizeD3, nthreads_mic) \
-        nocopy(F1_mic: length(0) REUSE) \
-        nocopy(F2_mic: length(0) REUSE) \
-        nocopy(F3_mic: length(0) REUSE)
-        {
-            int j;
-#pragma omp parallel
-            {
-                int tid = omp_get_thread_num();
-                for (j = tid * sizeD1; j < (tid + 1) * sizeD1; j++)
-                {
-                    F1_mic[j] = 0.0;
-                }
-                for (j = tid * sizeD2; j < (tid + 1) * sizeD2; j++)
-                {
-                    F2_mic[j] = 0.0;
-                }
-                for (j = tid * sizeD3; j < (tid + 1) * sizeD3; j++)
-                {
-                    F3_mic[j] = 0.0;
-                }
-            }
-        }
-        printf("Reset F matrices on mic:%d\n", mic_id);
-    }
-
-}
 #endif
