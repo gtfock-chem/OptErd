@@ -104,6 +104,11 @@ int main (int argc, char **argv)
     {
         printf("Before MIC_init_devices\n");
         num_devices = MIC_init_devices(nthreads_mic);
+        if(mic_fraction * num_devices >= 1)
+        {
+            printf("Invalid mic_fraction value. It should be < %.3lf\n", ((double)1)/num_devices);
+            exit(0);
+        }
     }
     printf("num_devices = %d\n", num_devices);
 #endif
@@ -271,7 +276,7 @@ int main (int argc, char **argv)
     }
     printf ("%.4le usq, %.4le uints\n", totalcalls[0], totalnintls[0]);
   
-#if 1
+#if 0
     // Print the output for comparison
     printf("F1:\n");
     for(j = 0; j < sizeD1; j++)

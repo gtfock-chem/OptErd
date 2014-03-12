@@ -12,6 +12,7 @@
 
 #include <offload.h>
 #define CHUNK_SIZE 8
+#define MIC_MIN_WORK_SIZE 20
 #define PFD0 1
 #define PFD1 12
 
@@ -456,6 +457,7 @@ void compute_task (int num_devices,
             int signalled[num_devices];
             int mic_id;
             int startChunk = 0;
+            int endChunk;
             int dummy_tag = 0;
             int *finish_tag = &dummy_tag;
             long start, end;
@@ -487,23 +489,71 @@ void compute_task (int num_devices,
                         sizeX1, sizeX2, sizeX3,
                         totalcalls, totalnintls);
                 end = __rdtsc();
-                signalled[mic_id] = 0;
-                printf("Processed %d tasks on mic:%d in %lld cycles\n", initialChunksMIC, mic_id, end - start);
+                signalled[mic_id] = 1;
+                printf("Launched %d tasks on mic:%d in %lld cycles\n", initialChunksMIC, mic_id, end - start);
                 startChunk += initialChunksMIC;
             }
 #if 1
-            int num_devices_done = 0;
+            int num_devices_active = num_devices;
 
-            while(num_devices_done < num_devices)
+            while(num_devices_active > 0)
             {
                 for(mic_id = 0; mic_id < num_devices; mic_id++)
                 {
-                    int sig = _Offload_signaled (mic_id, finish_tag);
-                    //printf("%d) signaled = %d\n", mic_id, sig);
-                    if (sig != 0 && signalled[mic_id] == 0)
+                    if(signalled[mic_id] == 1)
                     {
-                        signalled[mic_id] = 1;
-                        num_devices_done++;
+                        int sig = _Offload_signaled (mic_id, finish_tag);
+                        int chunksMIC = 0;
+                        //printf("%d) signaled = %d\n", mic_id, sig);
+                        if (sig != 0)
+                        {
+                            signalled[mic_id] = 0;
+#pragma omp critical
+                            {
+                                int remTasks = totalChunks - head;
+                                chunksMIC = remTasks * mic_fraction;
+                                if(chunksMIC < MIC_MIN_WORK_SIZE)
+                                    chunksMIC = 0;
+                                my_chunk = head;
+                                head += chunksMIC;
+                            }
+
+                            if(chunksMIC > 0)
+                            {
+                                startChunk = my_chunk;
+                                endChunk = startChunk + chunksMIC;
+#pragma offload target(mic:mic_id) \
+                                nocopy(basis_mic, erd_) \
+                                in(shellptr, shellvalue, shellid, shellrid: length(0) REUSE) \
+                                in(f_startind, rowpos, colpos, rowptr, colptr: length(0) REUSE) \
+                                in(tolscr2, startrow, startcol) \
+                                in(startMN, endMN, startPQ, endPQ) \
+                                in(startChunk, endChunk, chunksMN) \
+                                in(D1, D2, D3: length(0) REUSE) \
+                                nocopy(F1, F2, F3) \
+                                in(ldX1, ldX2, ldX3, sizeX1, sizeX2, sizeX3) \
+                                nocopy(totalcalls, totalnintls) \
+                                signal(finish_tag)
+                                compute_block_of_chunks (basis_mic,
+                                        shellptr, shellvalue,
+                                        shellid, shellrid, f_startind,
+                                        rowpos, colpos, rowptr, colptr,
+                                        tolscr2, startrow, startcol,
+                                        startMN, endMN, startPQ, endPQ,
+                                        startChunk, endChunk, chunksMN, 
+                                        D1, D2, D3,
+                                        ldX1, ldX2, ldX3,
+                                        sizeX1, sizeX2, sizeX3,
+                                        totalcalls, totalnintls);
+                                signalled[mic_id] = 1;
+                                printf("Launched %d tasks on mic:%d\n", chunksMIC, mic_id);
+                            }
+                            else
+                            {
+                                num_devices_active--;
+                            }
+
+                        }
                     }
                 }
             }
