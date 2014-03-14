@@ -240,12 +240,12 @@ void create_buffers (int nshells, int nnz,
         *rowfuncs, *colfuncs, *rowsize, *colsize); 
 }
 
-#ifdef __INTEL_OFFLOAD
 
 int MIC_init_devices(int nthreads_mic)
 {
     // Find the number of MIC cards available
     int num_devices = 0;
+#ifdef __INTEL_OFFLOAD
     num_devices = _Offload_number_of_devices();
 
     if(num_devices == 0)
@@ -273,6 +273,7 @@ int MIC_init_devices(int nthreads_mic)
         }
         printf("Number of Target devices installed: %d\n\n",num_devices);
     }
+#endif
     return num_devices;
 }
 
@@ -282,6 +283,7 @@ void MIC_copy_buffers (int num_devices, int nshells, int nnz,
                        int *rowpos, int *colpos,
                        int *rowptr, int *colptr)
 {
+#ifdef __INTEL_OFFLOAD
     int mic_id;
 
     for(mic_id = 0; mic_id < num_devices; mic_id++)
@@ -297,6 +299,7 @@ void MIC_copy_buffers (int num_devices, int nshells, int nnz,
         in(rowptr: length(nnz) ALLOC) \
         in(colptr: length(nnz) ALLOC)
     }
+#endif
 }
 
 void MIC_create_matrices(int num_devices,
@@ -306,6 +309,7 @@ void MIC_create_matrices(int num_devices,
                          int sizeD1, int sizeD2, int sizeD3,
                          int nthreads_mic)
 {
+#ifdef __INTEL_OFFLOAD
     int mic_id;
 
     printf("num_f copies = %d\n", NUM_F_COPIES_MIC(nthreads_mic));
@@ -328,26 +332,33 @@ void MIC_create_matrices(int num_devices,
             F3 = (double *)_mm_malloc(sizeD3 * NUM_F_COPIES_MIC(nthreads_mic) * sizeof(double), 64);
         }
     }
+#endif
+}
 
+
+void copy_double_array_CPU_to_MIC(int num_devices,
+                                  double *A, int size)
+{
+#ifdef __INTEL_OFFLOAD
+    int mic_id;
+
+    for(mic_id = 0; mic_id < num_devices; mic_id++)
+    {
+#pragma offload_transfer target(mic:mic_id) \
+        in(A: length(size) REUSE)
+    }
+#endif
 }
 
 void MIC_copy_D_matrices(int num_devices,
                          double *D1, double *D2, double *D3,
                          int sizeD1, int sizeD2, int sizeD3)
 {
-    int mic_id;
+    copy_double_array_CPU_to_MIC(num_devices, D1, sizeD1);
+    copy_double_array_CPU_to_MIC(num_devices, D2, sizeD2);
+    copy_double_array_CPU_to_MIC(num_devices, D3, sizeD3);
 
-    for(mic_id = 0; mic_id < num_devices; mic_id++)
-    {
-#pragma offload_transfer target(mic:mic_id) \
-        in(D1: length(sizeD1) REUSE) \
-        in(D2: length(sizeD2) REUSE) \
-        in(D3: length(sizeD3) REUSE)
-
-        printf("Sent D1, D2, D3 to mic:%d\n", mic_id);
-    }
+    printf("Sent D1, D2, D3 to MIC cards\n");
 
 }
 
-
-#endif

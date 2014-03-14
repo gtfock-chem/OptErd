@@ -323,19 +323,18 @@ void compute_block_of_chunks (BasisSet_t basis,
 #pragma offload_attribute(pop)
 #endif
 
-void MIC_reset_F_matrices(int num_devices,
-                          int sizeD1, int sizeD2, int sizeD3,
-                          int nthreads_mic)
+void MIC_reset_F1_matrix(int num_devices,
+                         int sizeD1,
+                         int nthreads_mic)
 {
+#ifdef __INTEL_OFFLOAD
     int mic_id;
 
     for(mic_id = 0; mic_id < num_devices; mic_id++)
     {
 #pragma offload target(mic: mic_id) \
-        in(sizeD1, sizeD2, sizeD3, nthreads_mic) \
-        nocopy(F1: length(0) REUSE) \
-        nocopy(F2: length(0) REUSE) \
-        nocopy(F3: length(0) REUSE)
+        in(sizeD1, nthreads_mic) \
+        nocopy(F1: length(0) REUSE)
         {
             int j;
             int num_F_copies = NUM_F_COPIES_MIC(nthreads_mic);
@@ -346,11 +345,57 @@ void MIC_reset_F_matrices(int num_devices,
                 {
                     F1[j] = 0.0;
                 }
+            }
+        }
+    }
+#endif
+}
+
+void MIC_reset_F2_matrix(int num_devices,
+                         int sizeD2,
+                         int nthreads_mic)
+{
+#ifdef __INTEL_OFFLOAD
+    int mic_id;
+
+    for(mic_id = 0; mic_id < num_devices; mic_id++)
+    {
+#pragma offload target(mic: mic_id) \
+        in(sizeD2, nthreads_mic) \
+        nocopy(F2: length(0) REUSE)
+        {
+            int j;
+            int num_F_copies = NUM_F_COPIES_MIC(nthreads_mic);
+#pragma omp parallel
+            {
 #pragma omp for
                 for (j = 0; j < num_F_copies * sizeD2; j++)
                 {
                     F2[j] = 0.0;
                 }
+            }
+        }
+    }
+#endif
+}
+
+void MIC_reset_F3_matrix(int num_devices,
+                         int sizeD3,
+                         int nthreads_mic)
+{
+#ifdef __INTEL_OFFLOAD
+    int mic_id;
+
+    for(mic_id = 0; mic_id < num_devices; mic_id++)
+    {
+#pragma offload target(mic: mic_id) \
+        in(sizeD3, nthreads_mic) \
+        nocopy(F3: length(0) REUSE)
+        {
+            int j;
+            int num_F_copies = NUM_F_COPIES_MIC(nthreads_mic);
+#pragma omp parallel
+            {
 #pragma omp for
                 for (j = 0; j < num_F_copies * sizeD3; j++)
                 {
@@ -358,10 +403,21 @@ void MIC_reset_F_matrices(int num_devices,
                 }
             }
         }
-        printf("Reset F matrices on mic:%d\n", mic_id);
     }
-
+#endif
 }
+
+
+void MIC_reset_F_matrices(int num_devices,
+                          int sizeD1, int sizeD2, int sizeD3,
+                          int nthreads_mic)
+{
+    MIC_reset_F1_matrix(num_devices, sizeD1, nthreads_mic);
+    MIC_reset_F2_matrix(num_devices, sizeD2, nthreads_mic);
+    MIC_reset_F3_matrix(num_devices, sizeD3, nthreads_mic);
+    printf("Reset F matrices on MIC cards\n");
+}
+
 
 void reset_F_matrices(int num_devices,
                       int sizeD1, int sizeD2, int sizeD3,
@@ -405,7 +461,8 @@ void compute_task (int num_devices,
                    double *D1, double *D2, double *D3,
                    int ldX1, int ldX2, int ldX3,
                    int sizeX1, int sizeX2, int sizeX3, double mic_fraction,
-                   double *totalcalls, double *totalnintls)
+                   double *totalcalls, double *totalnintls,
+                   int toOffload)
 {
     int startMN;
     int endMN;
@@ -416,29 +473,18 @@ void compute_task (int num_devices,
     startPQ = shellptr[startP];
     endPQ = shellptr[endP + 1];
 
-    //printf("startMN = %d, endMN = %d\n", startMN, endMN);
-    //printf("startPQ = %d, endPQ = %d\n", startPQ, endPQ);
-
     int chunksMN = (endMN - startMN) / CHUNK_SIZE;
     int chunksPQ = (endPQ - startPQ) / CHUNK_SIZE;
     int totalChunks = chunksMN * chunksPQ;
 
-    int initialChunksMIC = totalChunks * mic_fraction;
     int head = 0;
-/*
-    int sx;
-    for(sx = startMN; sx < endMN; sx++)
-    {
-        printf("M = %d, N = %d\n", shellrid[sx], shellid[sx]);
-    }
-    for(sx = startPQ; sx < endPQ; sx++)
-    {
-        printf("P = %d, Q = %d\n", shellrid[sx], shellid[sx]);
-    }
-    */
 
 #ifdef  __INTEL_OFFLOAD
-    head = num_devices * initialChunksMIC;
+    int initialChunksMIC = totalChunks * mic_fraction;
+    if(toOffload)
+    {
+        head = num_devices * initialChunksMIC;
+    }
 #endif
     #pragma omp parallel
     {
@@ -451,7 +497,7 @@ void compute_task (int num_devices,
         double *K3 = &(F3[tid * sizeX3]);
 
 
-        if(tid == 0)
+        if((toOffload == 1) && (tid == 0))
         {
 #ifdef __INTEL_OFFLOAD
             int signalled[num_devices];
@@ -493,7 +539,7 @@ void compute_task (int num_devices,
                 printf("Launched %d tasks on mic:%d in %lld cycles\n", initialChunksMIC, mic_id, end - start);
                 startChunk += initialChunksMIC;
             }
-#if 1
+
             int num_devices_active = num_devices;
 
             while(num_devices_active > 0)
@@ -504,7 +550,7 @@ void compute_task (int num_devices,
                     {
                         int sig = _Offload_signaled (mic_id, finish_tag);
                         int chunksMIC = 0;
-                        //printf("%d) signaled = %d\n", mic_id, sig);
+
                         if (sig != 0)
                         {
                             signalled[mic_id] = 0;
@@ -558,39 +604,7 @@ void compute_task (int num_devices,
                 }
             }
 #endif
-#if 0
-            while(1)
-            {
-#pragma omp critical
-                {
-                    my_chunk = head;
-                    head+=MIC_WORK_SIZE;
-                }
-                if(my_chunk >= totalChunks) break;
-
-                int chunkIdMN = my_chunk / chunksMN;
-                int chunkIdPQ = my_chunk % chunksMN;
-
-                int startChunkMN = startMN + chunkIdMN * CHUNK_SIZE;
-                int endChunkMN   = startChunkMN + CHUNK_SIZE;
-                int startChunkPQ = startPQ + chunkIdPQ * CHUNK_SIZE;
-                int endChunkPQ   = startChunkPQ + CHUNK_SIZE;
-
-                compute_chunk (basis, erd_,
-                        shellptr, shellvalue,
-                        shellid, shellrid, f_startind,
-                        rowpos, colpos, rowptr, colptr,
-                        tolscr2, startrow, startcol,
-                        startChunkMN, endChunkMN, startChunkPQ, endChunkPQ,
-                        D1, D2, D3,
-                        J1, J2, K3,
-                        ldX1, ldX2, ldX3,
-                        sizeX1, sizeX2, sizeX3,
-                        totalcalls, totalnintls, tid);
-            }
-#endif
-#endif
-        }
+        } /* (toOffload == 1) && (tid == 0) */
         else
         {
             while(1)
@@ -625,7 +639,6 @@ void compute_task (int num_devices,
                         totalcalls, totalnintls, tid);
             }
         }
-        //printf("tid = %d\n", nt);
     } /* #pragma omp parallel */
 
 }
@@ -633,51 +646,54 @@ void compute_task (int num_devices,
 
 void reduce_F_on_individual_devices(int num_devices,
               int sizeD1, int sizeD2, int sizeD3,
-              int nthreads, int nthreads_mic)
+              int nthreads, int nthreads_mic,
+              int toOffload)
 {
     long start, end;
-
 #ifdef __INTEL_OFFLOAD
     int dummy_tag = 0;
     int *finish_tag = &dummy_tag;
     int mic_id;
-    for(mic_id = 0; mic_id < num_devices; mic_id++)
+    if(toOffload)
     {
-        printf("Reducing on mic:%d\n", mic_id);
-        start = __rdtsc();
-#pragma offload target(mic:mic_id) \
-        in(sizeD1, sizeD2, sizeD3, nthreads_mic) \
-        nocopy(F1, F2, F3) \
-        signal(finish_tag)
+        for(mic_id = 0; mic_id < num_devices; mic_id++)
         {
-            int j;
-            int num_F_copies = NUM_F_COPIES_MIC(nthreads_mic);
-#pragma omp parallel
+            printf("Reducing on mic:%d\n", mic_id);
+            start = __rdtsc();
+#pragma offload target(mic:mic_id) \
+            in(sizeD1, sizeD2, sizeD3, nthreads_mic) \
+            nocopy(F1, F2, F3) \
+            signal(finish_tag)
             {
-                int i;
-                // reduction on MIC
-                for (i = 1; i < num_F_copies; i++)
+                int j;
+                int num_F_copies = NUM_F_COPIES_MIC(nthreads_mic);
+#pragma omp parallel
                 {
-#pragma omp for
-                    for (j = 0; j < sizeD1; j++)
+                    int i;
+                    // reduction on MIC
+                    for (i = 1; i < num_F_copies; i++)
                     {
-                        F1[j + 0 * sizeD1] += F1[j + i * sizeD1];
-                    }
 #pragma omp for
-                    for (j = 0; j < sizeD2; j++)
-                    {
-                        F2[j + 0 * sizeD2] += F2[j + i * sizeD2];
-                    }
+                        for (j = 0; j < sizeD1; j++)
+                        {
+                            F1[j + 0 * sizeD1] += F1[j + i * sizeD1];
+                        }
+#pragma omp for
+                        for (j = 0; j < sizeD2; j++)
+                        {
+                            F2[j + 0 * sizeD2] += F2[j + i * sizeD2];
+                        }
 #pragma omp for 
-                    for (j = 0; j < sizeD3; j++)
-                    {
-                        F3[j + 0 * sizeD3] += F3[j + i * sizeD3];
+                        for (j = 0; j < sizeD3; j++)
+                        {
+                            F3[j + 0 * sizeD3] += F3[j + i * sizeD3];
+                        }
                     }
                 }
             }
+            end = __rdtsc();
+            printf("mic:%d reduce cycles = %lld\n", mic_id, end - start);
         }
-        end = __rdtsc();
-        printf("mic:%d reduce cycles = %lld\n", mic_id, end - start);
     }
 #endif
 
@@ -710,9 +726,12 @@ void reduce_F_on_individual_devices(int num_devices,
     printf("CPU reduce cycles = %lld\n", end - start);
 
 #ifdef __INTEL_OFFLOAD
-    for(mic_id = 0; mic_id < num_devices; mic_id++)
+    if(toOffload)
     {
+        for(mic_id = 0; mic_id < num_devices; mic_id++)
+        {
 #pragma offload_wait target(mic:mic_id) wait(finish_tag)
+        }
     }
 #endif
 
@@ -724,8 +743,8 @@ void copy_F_MIC_to_CPU(int num_devices,
                        int sizeD1, int sizeD2, int sizeD3,
                        int *finish_tag)
 {
-    long start, end;
 #ifdef __INTEL_OFFLOAD
+    long start, end;
     int mic_id;
     for(mic_id = 0; mic_id < num_devices; mic_id++)
     {
@@ -768,7 +787,6 @@ void reduce_F_across_devices(int num_devices,
     int i, j;
     long start, end;
 
-    printf("F1[0]: cpu: %E, mic0:%E, mic1:%E\n", F1[0], F1_mic[0], F1_mic[sizeD1]);
     start = __rdtsc();
     for(i = 0; i < num_devices; i++)
     {

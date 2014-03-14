@@ -36,7 +36,6 @@ void create_buffers (int nshells, int nnz,
                      int *rowfuncs, int *colfuncs,
                      int *rowsize, int *colsize);
 
-#ifdef __INTEL_OFFLOAD
 int MIC_init_devices();
 
 void MIC_copy_buffers (int num_devices, int nshells, int nnz,
@@ -52,14 +51,28 @@ void MIC_create_matrices(int num_devices,
                          int sizeD1, int sizeD2, int sizeD3,
                          int nthreads_mic);
 
+void copy_double_array_CPU_to_MIC(int num_devices,
+                                  double *A, int size);
+
 void MIC_copy_D_matrices(int num_devices,
                          double *D1, double *D2, double *D3,
                          int sizeD1, int sizeD2, int sizeD3);
 
+void MIC_reset_F1_matrix(int num_devices,
+                         int sizeD1,
+                         int nthreads_mic);
+
+void MIC_reset_F2_matrix(int num_devices,
+                         int sizeD2,
+                         int nthreads_mic);
+
+void MIC_reset_F3_matrix(int num_devices,
+                         int sizeD3,
+                         int nthreads_mic);
+
 void MIC_reset_F_matrices(int num_devices,
                           int sizeD1, int sizeD2, int sizeD3,
                           int nthreads_mic);
-#endif /* __INTEL_OFFLOAD */
 
 void reset_F_matrices(int num_devices,
                       int sizeD1, int sizeD2, int sizeD3,
@@ -76,11 +89,13 @@ void compute_task (int num_devices,
                    double *D1, double *D2, double *D3,
                    int ldX1, int ldX2, int ldX3,
                    int sizeX1, int sizeX2, int sizeX3, double mic_fraction,
-                   double *totalcalls, double *totalnintls);
+                   double *totalcalls, double *totalnintls,
+                   int toOffload);
 
 void reduce_F_on_individual_devices(int num_devices,
               int sizeD1, int sizeD2, int sizeD3,
-              int nthreads, int nthreads_mic);
+              int nthreads, int nthreads_mic,
+              int toOffload);
 
 void copy_F_MIC_to_CPU(int num_devices,
                        double *F1_mic, double *F2_mic, double *F3_mic,
