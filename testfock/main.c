@@ -226,13 +226,13 @@ int main (int argc, char **argv)
                   startM, startM + sizetask - 1,
                   startP, startP + sizetask - 1,
                   D1, D2, D3,
-                  rowsize, colsize, colsize, sizeD1, sizeD2, sizeD3, mic_fraction,
+                  rowsize, colsize, colsize, sizeD1_aligned, sizeD2_aligned, sizeD3_aligned, mic_fraction,
                   totalcalls, totalnintls, toOffload);
     end = __rdtsc();
     printf("Compute cycles = %lld\n", end - start);
 
     start = __rdtsc();
-    reduce_F_on_individual_devices(num_devices, sizeD1, sizeD2, sizeD3,
+    reduce_F_on_individual_devices(num_devices, sizeD1_aligned, sizeD2_aligned, sizeD3_aligned,
              nthreads, nthreads_mic, toOffload);
     end = __rdtsc();
     printf("Reduce cycles = %lld\n", end - start);
@@ -243,12 +243,12 @@ int main (int argc, char **argv)
         int finish_tag = 0;
         copy_F_MIC_to_CPU(num_devices,
                 F1_mic, F2_mic, F3_mic,
-                sizeD1, sizeD2, sizeD3,
+                sizeD1_aligned, sizeD2_aligned, sizeD3_aligned,
                 &finish_tag);
         wait_for_MIC_to_CPU_copy(num_devices, &finish_tag);
         reduce_F_across_devices(num_devices,
                 F1_mic, F2_mic, F3_mic,
-                sizeD1, sizeD2, sizeD3);
+                sizeD1_aligned, sizeD2_aligned, sizeD3_aligned);
         end = __rdtsc();
         printf("CPU-MIC Reduce cycles = %lld\n", end - start);
     }
