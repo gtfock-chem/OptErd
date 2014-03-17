@@ -417,7 +417,7 @@ int erd__e0f0_pcgto_block (int nij, int nkl,
 #endif
     erd__2d_coefficients (nij, nkl, ngqp, p, q,
                           px, py, pz, qx, qy, qz,
-                          pax, pay, paz, qcx, qcy, qcz,
+                          xa, ya, za, xc, yc, zc,
                           pinvhf, qinvhf, pqpinv, rts,
                           case2d, b00, b01, b10,
                           c00x, c00y, c00z,
