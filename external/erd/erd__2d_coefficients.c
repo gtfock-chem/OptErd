@@ -9,7 +9,7 @@
 #endif
 
 
-#ifdef __MIC__
+#if defined (__MIC__)
 #define ERD_2D_COEFF(n) \
     \
 __m512d pqx512 = _mm512_sub_pd(pxij512, qxkl512); \
@@ -64,7 +64,8 @@ __m512d d00z512 = _mm512_add_pd(qzkl512, proot_pqz512); \
 d00z512 = _mm512_sub_pd(d00z512, zc512); \
 _mm512_store_pd(&d00z[n], d00z512);
 
-#else
+#elif defined (__AVX__)
+
 #define ERD_2D_COEFF(n) \
     __m256d pqx256 = _mm256_sub_pd(pxij256, qxkl256); \
 __m256d pqy256 = _mm256_sub_pd(pyij256, qykl256); \

@@ -194,10 +194,8 @@ int erd__e0f0_pcgto_block (int nij, int nkl,
                            double *rhoab, double *rhocd,
                            double *p, double *px,
                            double *py, double *pz,
-                           double *pax, double *pay, double *paz,
                            double *pinvhf, double *scalep, double *q,
                            double *qx, double *qy, double *qz,
-                           double *qcx, double *qcy, double *qcz,
                            double *qinvhf, double *scaleq,
                            double *rts, double *gqscr, double *tval,
                            double *pqpinv, double *b00, double *b01, double *b10,
@@ -214,12 +212,6 @@ int erd__e0f0_pcgto_block (int nij, int nkl,
     int case2d;
     double pscale, invers, pqmult, pqplus;
     int nijkl;
-    double abx;
-    double aby;
-    double abz;
-    double cdx;
-    double cdy;
-    double cdz;
     int mgqijkl;
 #ifdef __ERD_PROFILE__   
     uint64_t start_clock, end_clock; 
@@ -258,12 +250,6 @@ int erd__e0f0_pcgto_block (int nij, int nkl,
     case2d = MIN(2, shellq) * 3 + MIN(2, shellp) + 1;
     nijkl = nij * nkl;
     mgqijkl = ngqp * nijkl;
-    abx = xa - xb;
-    aby = ya - yb;
-    abz = za - zb;
-    cdx = xc - xd;
-    cdy = yc - yd;
-    cdz = zc - zd;
     
     #pragma simd
     #pragma vector aligned
@@ -276,13 +262,9 @@ int erd__e0f0_pcgto_block (int nij, int nkl,
         pval = expa + expb;
         pinv = 1. / pval;
         p[ij] = pval;
-        pval = -expb * pinv;
-        pax[ij] = pval * abx;
-        pay[ij] = pval * aby;
-        paz[ij] = pval * abz;
-        px[ij] = pax[ij] + xa;
-        py[ij] = pay[ij] + ya;
-        pz[ij] = paz[ij] + za;
+        px[ij] = (expa * xa + expb * xb) * pinv;
+        py[ij] = (expa * ya + expb * yb) * pinv;
+        pz[ij] = (expa * za + expb * zb) * pinv;
         pinvhf[ij] = pinv * 0.5;
         scalep[ij] = norma[i] * normb[j] * rhoab[ij];
         scalep[ij] *= cca[i] * ccb[j];
@@ -299,13 +281,9 @@ int erd__e0f0_pcgto_block (int nij, int nkl,
         qval = expc + expd;
         qinv = 1.0 / qval;
         q[kl] = qval;
-        qval = -expd * qinv;
-        qcx[kl] = qval * cdx;
-        qcy[kl] = qval * cdy;
-        qcz[kl] = qval * cdz;
-        qx[kl] = qcx[kl] + xc;
-        qy[kl] = qcy[kl] + yc;
-        qz[kl] = qcz[kl] + zc;
+        qx[kl] = (expc * xc + expd * xd) * qinv;
+        qy[kl] = (expc * yc + expd * yd) * qinv;
+        qz[kl] = (expc * zc + expd * zd) * qinv;
         qinvhf[kl] = qinv * 0.5;
         scaleq[kl] = normc[k] * normd[l] * rhocd[kl];
         scaleq[kl] *= ccc[k] * ccd[l];

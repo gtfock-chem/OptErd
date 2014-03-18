@@ -134,9 +134,9 @@ int erd__int2d_to_e0f0 (int shella, int shellp, int shellc, int shellq,
     int indz;
     int indb;
     double sum = 0;
-                
-    tabe = vrrtab[shella * ldvrrtab + shellp];
-    tabf = vrrtab[shellc * ldvrrtab + shellq];
+               
+    tabe = vrrtab[shella];
+    tabf = vrrtab[shellc];
     for(ke = 0; ke < nxyzet; ke++)
     {
         for (kf = 0; kf < nxyzft; kf++)
@@ -147,13 +147,12 @@ int erd__int2d_to_e0f0 (int shella, int shellp, int shellc, int shellq,
             yf = tabf[kf * 4 + 1];
             ze = tabe[ke * 4 + 2];
             zf = tabf[kf * 4 + 2];
-            i =  tabe[ke * 4 + 3];
-            j =  tabf[kf * 4 + 3];
+            i =  ke;
+            j =  kf;
             indx = (xe + xf * (shellp + 1)) * ngqexq;
             indy = (ye + yf * (shellp + 1)) * ngqexq;
             indz = (ze + zf * (shellp + 1)) * ngqexq;
             indb = i + j * nxyzet;
-        
             sum = 0.0;
             for(m = 0; m < ngqexq; m+=SIMDW)
             {
@@ -168,7 +167,6 @@ int erd__int2d_to_e0f0 (int shella, int shellp, int shellc, int shellq,
             batch[indb] = sum;
         }
     }
-
     return 0;
 }
 
