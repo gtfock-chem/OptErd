@@ -37,9 +37,7 @@
 /*                    RTS          =  all NT quadrature roots */
 /*                    WTS          =  all NT quadrature weights */
 /* ------------------------------------------------------------------------ */
-int erd__rys_1_roots_weights (int nt, double *tval,
-                              double *rts, double *wts)
-{
+void erd__rys_1_roots_weights(int nt, const double tval[restrict], double rts[restrict], double wts[restrict]) {
     int jump1[34] =
         { 1, 2, 2, 3, 3, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 6,
         6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 7
@@ -178,9 +176,6 @@ int erd__rys_1_roots_weights (int nt, double *tval,
       L100:
         ;
     }
-
-
-    return 0;
 }
 
 #ifdef __INTEL_OFFLOAD

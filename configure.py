@@ -38,11 +38,12 @@ erd_ref_sources = [
 ]
 
 erd_opt_sources = [
-	"erd__1111_csgto.c", "erd__1111_def_blocks.c", "erd__2d_coefficients.c", "erd__2d_pq_integrals.c",
+	'erd__memory_csgto.c', 'erd__e0f0_def_blocks.c',
+	"erd__1111_csgto.c", "erd__2d_coefficients.c", "erd__2d_pq_integrals.c",
 	"erd__boys_table.c", "erd__jacobi_table.c", "erd__cartesian_norms.c", "erd__csgto.c",
-	"erd__dsqmin_line_segments.c", "erd__e0f0_def_blocks.c", "erd__e0f0_pcgto_block.c", "erd__hrr_matrix.c",
+	"erd__dsqmin_line_segments.c", "erd__e0f0_pcgto_block.c", "erd__hrr_matrix.c",
 	"erd__hrr_step.c", "erd__hrr_transform.c", "erd__int2d_to_e000.c", "erd__int2d_to_e0f0.c",
-	"erd__memory_1111_csgto.c", "erd__memory_csgto.c", "erd__move_ry.c", "erd__normalize_cartesian.c",
+	"erd__move_ry.c", "erd__normalize_cartesian.c",
 	"erd__pppp_pcgto_block.c", "erd__rys_1_roots_weights.c", "erd__rys_2_roots_weights.c", "erd__rys_3_roots_weights.c",
 	"erd__rys_4_roots_weights.c", "erd__rys_5_roots_weights.c", "erd__rys_roots_weights.c", "erd__rys_x_roots_weights.c",
 	"erd__set_abcd.c", "erd__set_ij_kl_pairs.c", "erd__spherical_transform.c", "erd__sppp_pcgto_block.c",
@@ -87,7 +88,6 @@ cint_sources = ["basisset.c", "erd_integral.c", "oed_integral.c"]
 tab = '  '
 
 with open('build.ninja', 'w') as makefile:
-	print('alignlen = 64', file = makefile)
 	print('FC_NHM = ifort -m64 -xSSE4.2', file = makefile)
 	print('FC_SNB = ifort -m64 -xAVX ', file = makefile)
 	print('FC_IVB = ifort -m64 -xCORE-AVX-I', file = makefile)
@@ -109,8 +109,8 @@ with open('build.ninja', 'w') as makefile:
 	print('CC_SNB_OFFLOAD = icc -m64 -xAVX ' + offload_cflags, file = makefile)
 	print('CC_IVB_OFFLOAD = icc -m64 -xCORE-AVX-I ' + offload_cflags, file = makefile)
 	print('CC_HSW_OFFLOAD = icc -m64 -xCORE-AVX2 ' + offload_cflags, file = makefile)
-	print('CFLAGS = -O3 -g -std=gnu99 -no-intel-extensions -D__ALIGNLEN__=$alignlen -Iexternal/Yeppp/include -Wall -w2 -Wunknown-pragmas -Wunused-variable -Wunknown-pragmas -Wno-unused-variable -openmp', file = makefile)
-	print('LDFLAGS = -static-intel -no-intel-extensions -lifcore -openmp', file = makefile)
+	print('CFLAGS = -O3 -g -std=gnu99 -no-intel-extensions -D__ALIGNLEN__=64 -Iexternal/Yeppp/include -Wall -Wextra -Werror -Wno-unused-variable -openmp', file = makefile)
+	print('LDFLAGS = -static-intel -no-intel-extensions -lifcore -openmp -lrt', file = makefile)
 	print('AR = xiar', file = makefile)
 	print('AR_OFFLOAD = xiar -qoffload-build', file = makefile)
 

@@ -1,13 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
+#include <stdint.h>
 #include <assert.h>
 
 #include "erd.h"
-
-#ifdef __INTEL_OFFLOAD
-#pragma offload_attribute(push, target(mic))
-#endif
-
+#include "erdutil.h"
 
 /* ------------------------------------------------------------------------ */
 /*  OPERATION   : ERD__1111_CSGTO */
@@ -86,344 +84,211 @@
 /*                                    integrals over spherical gaussians */
 /*                                    starting at ZCORE (NFIRST) */
 /* ------------------------------------------------------------------------ */
-int erd__1111_csgto (int zmax, int npgto1, int npgto2,
-                     int npgto3, int npgto4,
-                     int shell1, int shell2,
-                     int shell3, int shell4,
-                     double x1, double y1, double z1,
-                     double x2, double y2, double z2,
-                     double x3, double y3, double z3,
-                     double x4, double y4, double z4,
-                     double *alpha1, double *alpha2,
-                     double *alpha3, double *alpha4,
-                     double *cc1, double *cc2,
-                     double *cc3, double *cc4,
-                     double *norm1, double *norm2,
-                     double *norm3, double *norm4,
-                     int screen,
-                     int *icore, int *nbatch, int *nfirst, double *zcore)
-{    
-    int i;
-    double x12, y12, z12, x34, y34, z34;
-    int zp, zq;
-    int nij, nkl, zpx, zpy,
-        zpz, zqx, zqy, zqz;
-    int nxyz1, nxyz2, nxyz3, nxyz4;
-    int atom12, atom23;
-    int atom34;
-    int zrho12;
-    double rn12sq;
-    int zrho34;
-    double rn34sq;
-    int empty;
-    int nxyzt, iprim1, iprim2, iprim3, iprim4, zscpk2, zscqk2;
-    int znorm;
-    int atomic;
-    int shellp, npgto12, npgto34;
-    int shellt;
-    double spnorm;
-    int zcbatch;
-    int npmin;
-    double factor;
-#ifdef __ERD_PROFILE__    
-    uint64_t start_clock, end_clock;
-    uint64_t start_clock0, end_clock0;
+ERD_OFFLOAD void erd__1111_csgto(
+    uint32_t npgto1, uint32_t npgto2, uint32_t npgto3, uint32_t npgto4,
+    uint32_t shell1, uint32_t shell2, uint32_t shell3, uint32_t shell4,
+    bool atomic,
+    double x1, double y1, double z1,
+    double x2, double y2, double z2,
+    double x3, double y3, double z3,
+    double x4, double y4, double z4,
+    const double alpha1[restrict static npgto1], const double alpha2[restrict static npgto2], const double alpha3[restrict static npgto3], const double alpha4[restrict static npgto4],
+    const double cc1[restrict static npgto1], const double cc2[restrict static npgto2], const double cc3[restrict static npgto3], const double cc4[restrict static npgto4],
+    const double norm1[restrict static npgto1], const double norm2[restrict static npgto2], const double norm3[restrict static npgto3], const double norm4[restrict static npgto4],
+    uint32_t integrals_count[restrict static 1], double integrals_ptr[restrict static 81])
+{
+
+#ifdef __ERD_PROFILE__
     #ifdef _OPENMP
-    const int tid = omp_get_thread_num();
+        const int tid = omp_get_thread_num();
     #else
-    const int tid = 0;
+        const int tid = 0;
     #endif
 #endif
+    ERD_PROFILE_START(erd__1111_csgto)
 
-#ifdef __ERD_PROFILE__
-    start_clock0 = __rdtsc();
-#endif
+    const uint32_t shellp = shell1 + shell2;
+    const uint32_t shellt = shellp + shell3 + shell4;
+    if (atomic && ((shellt % 2) == 1)) {
+        *integrals_count = 0;
+        ERD_PROFILE_END(erd__1111_csgto)
+        return;
+    }
+    /*
+     * ...determine csh equality between center pairs 1,2
+     *    and 3,4 in increasing order of complexity:
+     *    centers -> shells -> exponents -> ctr coefficients
+     * ...calculate relevant data for the [12|34] batch of
+     *    integrals, such as dimensions, total # of integrals
+     *    to be expected, relevant ij and kl primitive exponent
+     *    pairs, etc... The integral prefactor PREFACT has been
+     *    set as a parameter, its value being = 16 / sqrt(pi).
+     *    Calculate here also the overall norm factor SPNORM due
+     *    to presence of s- or p-type shells. The contribution
+     *    to SPNORM is very simple: each s-type shell -> * 1.0,
+     *    each p-type shell -> * 2.0.
+     */
+    const uint32_t nxyz1 = 2 * shell1 + 1;
+    const uint32_t nxyz2 = 2 * shell2 + 1;
+    const uint32_t nxyz3 = 2 * shell3 + 1;
+    const uint32_t nxyz4 = 2 * shell4 + 1;
+    const uint32_t nxyzt = nxyz1 * nxyz2 * nxyz3 * nxyz4;
+    const double x12 = x1 - x2;
+    const double y12 = y1 - y2;
+    const double z12 = z1 - z2;
+    const double rn12sq = x12 * x12 + y12 * y12 + z12 * z12;
+    const double x34 = x3 - x4;
+    const double y34 = y3 - y4;
+    const double z34 = z3 - z4;
+    const double rn34sq = x34 * x34 + y34 * y34 + z34 * z34;
+    const uint32_t npgto12 = npgto1 * npgto2;
+    const uint32_t npgto34 = npgto3 * npgto4;
+    uint32_t prim1[npgto12], prim2[npgto12], prim3[npgto34], prim4[npgto34];
+    const double spnorm = (double)(1 << (shell1 + shell2 + shell3 + shell4));
 
-    shellp = shell1 + shell2;
-    shellt = shellp + shell3 + shell4;
-    atom12 = ((x1 == x2) && (y1 == y2) && (z1 == z2));
-    atom23 = ((x2 == x3) && (y2 == y3) && (z2 == z3));
-    atom34 = ((x3 == x4) && (y3 == y4) && (z3 == z4));
-    atomic = atom12 && atom34 && atom23;
-    if (atomic && shellt % 2 == 1)
-    {
-        *nbatch = 0;
-    #ifdef __ERD_PROFILE__
-        end_clock0 = __rdtsc(); 
-        erd_ticks[tid][erd__1111_csgto_ticks] += (end_clock0 - start_clock0);
-    #endif
-        return 0;
+    ERD_PROFILE_START(erd__1111_set_ij_kl_pairs)
+    ERD_SIMD_ALIGN double rhoab[PAD_LEN(npgto12)];
+    ERD_SIMD_ALIGN double rhocd[PAD_LEN(npgto34)];
+    uint32_t nij, nkl;
+    erd__set_ij_kl_pairs(npgto1, npgto2, npgto3, npgto4,
+                         x1, y1, z1, x2, y2, z2,
+                         x3, y3, z3, x4, y4, z4,
+                         rn12sq, rn34sq, PREFACT,
+                         alpha1, alpha2, alpha3, alpha4, 
+                         &nij, &nkl,
+                         prim1, prim2, prim3, prim4,
+                         rhoab, rhocd);
+    ERD_PROFILE_END(erd__1111_set_ij_kl_pairs)
+    if (nij * nkl == 0) {
+        *integrals_count = 0;
+        ERD_PROFILE_END(erd__1111_csgto)
+        return;
     }
-/*             ...determine csh equality between center pairs 1,2 */
-/*                and 3,4 in increasing order of complexity: */
-/*                 centers -> shells -> exponents -> ctr coefficients */
-/*             ...calculate relevant data for the [12|34] batch of */
-/*                integrals, such as dimensions, total # of integrals */
-/*                to be expected, relevant ij and kl primitive exponent */
-/*                pairs, etc... The integral prefactor PREFACT has been */
-/*                set as a parameter, its value being = 16 / sqrt(pi). */
-/*                Calculate here also the overall norm factor SPNORM due */
-/*                to presence of s- or p-type shells. The contribution */
-/*                to SPNORM is very simple: each s-type shell -> * 1.0, */
-/*                each p-type shell -> * 2.0. */
-    nxyz1 = shell1 + shell1 + 1;
-    nxyz2 = shell2 + shell2 + 1;
-    nxyz3 = shell3 + shell3 + 1;
-    nxyz4 = shell4 + shell4 + 1;
-    nxyzt = nxyz1 * nxyz2 * nxyz3 * nxyz4;
-    x12 = x1 - x2;
-    y12 = y1 - y2;
-    z12 = z1 - z2;
-    rn12sq = x12 * x12 + y12 * y12 + z12 * z12;
-    x34 = x3 - x4;
-    y34 = y3 - y4;
-    z34 = z3 - z4;
-    rn34sq = x34 * x34 + y34 * y34 + z34 * z34;
-    npgto12 = npgto1 * npgto2;
-    npgto34 = npgto3 * npgto4;
-    iprim1 = 0;
-    iprim2 = iprim1 + PAD_LEN2(npgto12);
-    iprim3 = iprim2 + PAD_LEN2(npgto12);
-    iprim4 = iprim3 + PAD_LEN2(npgto34);
-    spnorm = 1.0;
-    if (shell1 == 1)
-    {
-        spnorm += spnorm;
-    }
-    if (shell2 == 1)
-    {
-        spnorm += spnorm;
-    }
-    if (shell3 == 1)
-    {
-        spnorm += spnorm;
-    }
-    if (shell4 == 1)
-    {
-        spnorm += spnorm;
-    }
+    /* 
+     * ...decide on the primitive [12|34] block size and return array sizes and pointers for the primitive [12|34] generation.
+     *    Perform also some preparation steps for contraction.
+     */
 
-#ifdef __ERD_PROFILE__
-    start_clock = __rdtsc();
-#endif
-    erd__set_ij_kl_pairs  (npgto1, npgto2, npgto3, npgto4,
-                           x1, y1, z1, x2, y2, z2,
-                           x3, y3, z3, x4, y4, z4,
-                           rn12sq, rn34sq, PREFACT,
-                           alpha1, alpha2, alpha3, alpha4, 
-                           screen, &empty, &nij, &nkl,
-                           &icore[iprim1], &icore[iprim2],
-                           &icore[iprim3], &icore[iprim4], &zcore[0]);
-#ifdef __ERD_PROFILE__
-    end_clock = __rdtsc();
-    erd_ticks[tid][erd__set_ij_kl_pairs_ticks_1111] += (end_clock - start_clock);
-#endif
-    if (empty)
-    {
-        *nbatch = 0;
-    #ifdef __ERD_PROFILE__
-        end_clock0 = __rdtsc(); 
-        erd_ticks[tid][erd__1111_csgto_ticks] += (end_clock0 - start_clock0);
-    #endif
-        return 0;
-    }
-/*             ...decide on the primitive [12|34] block size and */
-/*                return array sizes and pointers for the primitive */
-/*                [12|34] generation. Perform also some preparation */
-/*                steps for contraction. */
-    erd__1111_def_blocks (zmax, npgto1, npgto2, npgto3, npgto4,
-                          nij, nkl, nxyzt, 0,
-                          &zcbatch, &znorm,
-                          &zrho12, &zrho34,
-                          &zp, &zpx, &zpy, &zpz, &zscpk2,
-                          &zq, &zqx, &zqy, &zqz, &zscqk2);
-#ifdef __ERD_PROFILE__
-    start_clock = __rdtsc();
-#endif 
-    factor = PREFACT * spnorm;
-    npmin = npgto1 < npgto2 ? npgto1 : npgto2;
-    npmin = npmin < npgto3 ? npmin : npgto3;
-    npmin = npmin < npgto4 ? npmin : npgto4;
-    if (npgto1 == npmin)
-    {
-        for (i = 0; i < npgto1; i++)
-        {
-            zcore[znorm + i] = factor * norm1[i];
+    ERD_PROFILE_START(erd__1111_prepare_ctr)
+    const double factor = PREFACT * spnorm;
+    const uint32_t npmin = min4x32u(npgto1, npgto2, npgto3, npgto4);
+    double norm[npmin];
+    if (npgto1 == npmin) {
+        for (uint32_t i = 0; i < npgto1; i++) {
+            norm[i] = factor * norm1[i];
         }
-        norm1 = &zcore[znorm];
-    }
-    else if (npgto2 == npmin)
-    {
-        for (i = 0; i < npgto2; i++)
-        {
-            zcore[znorm + i] = factor * norm2[i];
+        norm1 = &norm[0];
+    } else if (npgto2 == npmin) {
+        for (uint32_t i = 0; i < npgto2; i++) {
+            norm[i] = factor * norm2[i];
         }
-        norm2 = &zcore[znorm];
-    }
-    else if (npgto3 == npmin)
-    {
-        for (i = 0; i < npgto3; i++)
-        {
-            zcore[znorm + i] = factor * norm3[i];
+        norm2 = &norm[0];
+    } else if (npgto3 == npmin) {
+        for (uint32_t i = 0; i < npgto3; i++) {
+            norm[i] = factor * norm3[i];
         }
-        norm3 = &zcore[znorm];
-    }
-    else
-    {
-        for (i = 0; i < npgto4; i++)
-        {
-            zcore[znorm + i] = factor * norm4[i];
+        norm3 = &norm[0];
+    } else {
+        for (uint32_t i = 0; i < npgto4; i++) {
+            norm[i] = factor * norm4[i];
         }
-        norm4 = &zcore[znorm];
+        norm4 = &norm[0];
     }
-    
-#ifdef __ERD_PROFILE__
-    end_clock = __rdtsc();
-    erd_ticks[tid][erd__prepare_ctr_ticks_1111] += (end_clock - start_clock);
-#endif
+    ERD_PROFILE_END(erd__1111_prepare_ctr)
 
-/*             ...evaluate [12|34] in blocks over ij and kl pairs */
-/*                and add to final contracted (12|34) with full */
-/*                contracted index ranges r,s,t,u. The keyword REORDER */
-/*                indicates, if the primitive [12|34] blocks needs to */
-/*                be transposed before being contracted. */
-    for (i = 0; i < nxyzt; i++)
-    {
-        zcore[zcbatch + i] = 0.0;   
+    /* ...evaluate [12|34] in blocks over ij and kl pairs and add to final contracted (12|34) with full contracted index ranges r,s,t,u.
+     *    The keyword REORDER indicates, if the primitive [12|34] blocks needs to be transposed before being contracted. */
+    for (uint32_t i = 0; i < nxyzt; i++) {
+        integrals_ptr[i] = 0.0;
     }
-    if (shellt == 0)
-    {
-    #ifdef __ERD_PROFILE__
-        start_clock = __rdtsc();
-    #endif
-        erd__ssss_pcgto_block (nij, nkl,
-                               x1, y1, z1, x2, y2, z2,
-                               x3, y3, z3, x4, y4, z4,
-                               alpha1, alpha2, alpha3, alpha4,
-                               cc1, cc2, cc3, cc4,
-                               &icore[iprim1],
-                               &icore[iprim2],
-                               &icore[iprim3],
-                               &icore[iprim4],
-                               norm1, norm2, norm3, norm4,
-                               &zcore[zrho12], &zcore[zrho34],
-                               &zcore[zp], &zcore[zpx],
-                               &zcore[zpy], &zcore[zpz], &zcore[zscpk2],
-                               &zcore[zq], &zcore[zqx],
-                               &zcore[zqy], &zcore[zqz], &zcore[zscqk2],
-                               &zcore[zcbatch]);
-    #ifdef __ERD_PROFILE__
-        end_clock = __rdtsc();
-        erd_ticks[tid][erd__ssss_pcgto_block_ticks] += (end_clock - start_clock);
-    #endif
+    switch (shellt) {
+        case 0:
+        {
+            ERD_PROFILE_START(erd__ssss_pcgto_block)
+            erd__ssss_pcgto_block(nij, nkl,
+                x1, y1, z1,
+                x2, y2, z2,
+                x3, y3, z3,
+                x4, y4, z4,
+                alpha1, alpha2, alpha3, alpha4,
+                cc1, cc2, cc3, cc4,
+                prim1, prim2, prim3, prim4,
+                norm1, norm2, norm3, norm4,
+                rhoab, rhocd,
+                integrals_ptr);
+            ERD_PROFILE_END(erd__ssss_pcgto_block)
+            break;
+        }
+        case 1:
+        {
+            ERD_PROFILE_START(erd__sssp_pcgto_block)
+            erd__sssp_pcgto_block(nij, nkl,
+                shell1, shell3, shellp, 
+                x1, y1, z1,
+                x2, y2, z2,
+                x3, y3, z3,
+                x4, y4, z4,
+                alpha1, alpha2, alpha3, alpha4,
+                cc1, cc2, cc3, cc4,
+                prim1, prim2, prim3, prim4,
+                norm1, norm2, norm3, norm4,
+                rhoab, rhocd,
+                integrals_ptr);
+            ERD_PROFILE_END(erd__sssp_pcgto_block)
+            break;
+        }
+        case 2:
+        {
+            ERD_PROFILE_START(erd__sspp_pcgto_block)
+            erd__sspp_pcgto_block(nij, nkl,
+                shell1, shell3, shellp, 
+                x1, y1, z1,
+                x2, y2, z2,
+                x3, y3, z3,
+                x4, y4, z4,
+                alpha1, alpha2, alpha3, alpha4,
+                cc1, cc2, cc3, cc4,
+                prim1, prim2, prim3, prim4,
+                norm1, norm2, norm3, norm4,
+                rhoab, rhocd,
+                integrals_ptr);
+            ERD_PROFILE_END(erd__sspp_pcgto_block)
+            break;
+        }
+        case 3:
+        {
+            ERD_PROFILE_START(erd__sppp_pcgto_block)
+            erd__sppp_pcgto_block(nij, nkl,
+                shell1, shell3, shellp, 
+                x1, y1, z1,
+                x2, y2, z2,
+                x3, y3, z3,
+                x4, y4, z4,
+                alpha1, alpha2, alpha3, alpha4,
+                cc1, cc2, cc3, cc4,
+                prim1, prim2, prim3, prim4,
+                norm1, norm2, norm3, norm4,
+                rhoab, rhocd,
+                integrals_ptr);
+            ERD_PROFILE_END(erd__sppp_pcgto_block)
+            break;
+        }
+        case 4:
+        {
+            ERD_PROFILE_START(erd__pppp_pcgto_block)
+            erd__pppp_pcgto_block(nij, nkl,
+                x1, y1, z1, x2, y2, z2,
+                x3, y3, z3, x4, y4, z4,
+                alpha1, alpha2, alpha3, alpha4,
+                cc1, cc2, cc3, cc4,
+                prim1, prim2, prim3, prim4,
+                norm1, norm2, norm3, norm4,
+                rhoab, rhocd,
+                integrals_ptr);
+            ERD_PROFILE_END(erd__pppp_pcgto_block)
+            break;
+        }
     }
-    else if (shellt == 1)
-    {
-    #ifdef __ERD_PROFILE__
-        start_clock = __rdtsc();
-    #endif
-        erd__sssp_pcgto_block (nij, nkl,
-                               shell1, shell3, shellp, 
-                               x1, y1, z1, x2, y2, z2,
-                               x3, y3, z3, x4, y4, z4,
-                               alpha1, alpha2, alpha3, alpha4,
-                               cc1, cc2, cc3, cc4,
-                               &icore[iprim1],
-                               &icore[iprim2],
-                               &icore[iprim3],
-                               &icore[iprim4],
-                               norm1, norm2, norm3, norm4,
-                               &zcore[zrho12], &zcore[zrho34],
-                               &zcore[zp], &zcore[zpx],
-                               &zcore[zpy], &zcore[zpz], &zcore[zscpk2],
-                               &zcore[zq], &zcore[zqx],
-                               &zcore[zqy], &zcore[zqz], &zcore[zscqk2],
-                               &zcore[zcbatch]);
-    #ifdef __ERD_PROFILE__
-        end_clock = __rdtsc();
-        erd_ticks[tid][erd__sssp_pcgto_block_ticks] += (end_clock - start_clock);
-    #endif
-    }
-    else if (shellt == 2)
-    {
-    #ifdef __ERD_PROFILE__
-        start_clock = __rdtsc();
-    #endif
-        erd__sspp_pcgto_block (nij, nkl,
-                               shell1, shell3, shellp, 
-                               x1, y1, z1, x2, y2, z2,
-                               x3, y3, z3, x4, y4, z4,
-                               alpha1, alpha2, alpha3, alpha4,
-                               cc1, cc2, cc3, cc4,
-                               &icore[iprim1],
-                               &icore[iprim2],
-                               &icore[iprim3],
-                               &icore[iprim4],
-                               norm1, norm2, norm3, norm4,
-                               &zcore[zrho12], &zcore[zrho34],
-                               &zcore[zp], &zcore[zpx],
-                               &zcore[zpy], &zcore[zpz], &zcore[zscpk2],
-                               &zcore[zq], &zcore[zqx],
-                               &zcore[zqy], &zcore[zqz], &zcore[zscqk2],
-                               &zcore[zcbatch]);
-    #ifdef __ERD_PROFILE__
-        end_clock = __rdtsc();
-        erd_ticks[tid][erd__sspp_pcgto_block_ticks] += (end_clock - start_clock);
-    #endif
-    }
-    else if (shellt == 3)
-    {
-    #ifdef __ERD_PROFILE__
-        start_clock = __rdtsc();
-    #endif
-        erd__sppp_pcgto_block (nij, nkl,
-                               shell1, shell3, shellp, 
-                               x1, y1, z1, x2, y2, z2,
-                               x3, y3, z3, x4, y4, z4,
-                               alpha1, alpha2, alpha3, alpha4,
-                               cc1, cc2, cc3, cc4,
-                               &icore[iprim1],
-                               &icore[iprim2],
-                               &icore[iprim3],
-                               &icore[iprim4],
-                               norm1, norm2, norm3, norm4,
-                               &zcore[zrho12], &zcore[zrho34],
-                               &zcore[zp], &zcore[zpx],
-                               &zcore[zpy], &zcore[zpz], &zcore[zscpk2],
-                               &zcore[zq], &zcore[zqx],
-                               &zcore[zqy], &zcore[zqz], &zcore[zscqk2],
-                               &zcore[zcbatch]);
-    #ifdef __ERD_PROFILE__
-        end_clock = __rdtsc();
-        erd_ticks[tid][erd__sppp_pcgto_block_ticks] += (end_clock - start_clock);
-    #endif
-    }
-    else
-    {
-    #ifdef __ERD_PROFILE__
-        start_clock = __rdtsc();
-    #endif
-        erd__pppp_pcgto_block (nij, nkl,
-                               x1, y1, z1, x2, y2, z2,
-                               x3, y3, z3, x4, y4, z4,
-                               alpha1, alpha2, alpha3, alpha4,
-                               cc1, cc2, cc3, cc4,
-                               &icore[iprim1],
-                               &icore[iprim2],
-                               &icore[iprim3],
-                               &icore[iprim4],
-                               norm1, norm2, norm3, norm4,
-                               &zcore[zrho12], &zcore[zrho34],
-                               &zcore[zp], &zcore[zpx],
-                               &zcore[zpy], &zcore[zpz], &zcore[zscpk2],
-                               &zcore[zq], &zcore[zqx],
-                               &zcore[zqy], &zcore[zqz], &zcore[zscqk2],
-                               &zcore[zcbatch]);
-    #ifdef __ERD_PROFILE__
-        end_clock = __rdtsc();
-        erd_ticks[tid][erd__pppp_pcgto_block_ticks] += (end_clock - start_clock);
-    #endif
-    }    
 
 /*             ...expand the contraction indices (if necessary): */
 /*                   batch (nxyzt,r>=s,t>=u) --> batch (nxyzt,r,s,t,u) */
@@ -445,18 +310,7 @@ int erd__1111_csgto (int zmax, int npgto1, int npgto2,
 /*                 iii) batch (nxyz1,nxyz2,rs,nxyz3,t,nxyz4,u) --> */
 /*                               batch (nxyz1,r,nxyz2,s,nxyz3,t,nxyz4,u) */    
 /*             ...set final pointer to integrals in ZCORE array. */
-    *nbatch = nxyzt;
-    *nfirst = zcbatch + 1;
+    *integrals_count = nxyzt;
 
-#ifdef __ERD_PROFILE__
-    end_clock0 = __rdtsc(); 
-    erd_ticks[tid][erd__1111_csgto_ticks] += (end_clock0 - start_clock0);
-#endif
-
-    return 0;
+    ERD_PROFILE_END(erd__1111_csgto)
 }
-
-
-#ifdef __INTEL_OFFLOAD
-#pragma offload_attribute(pop)
-#endif

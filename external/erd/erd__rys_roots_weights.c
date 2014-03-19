@@ -5,12 +5,8 @@
 #include <math.h>
 
 #include "erd.h"
+#include "erdutil.h"
 #include "boys.h"
-
-
-#ifdef __INTEL_OFFLOAD
-#pragma offload_attribute(push, target(mic))
-#endif
 
 /* ------------------------------------------------------------------------ */
 /*  OPERATION   : ERD__RYS_ROOTS_WEIGHTS */
@@ -69,58 +65,54 @@
 /*                    RTS          =  the roots array */
 /*                    WTS          =  the weights array */
 /* ------------------------------------------------------------------------ */
-void erd__rys_roots_weights(int nt, int ngqp, int nmom,
-                            double *tval, double *ryszero,
-                            double *a, double *b, double *mom,
-                            double *dia, double *off,
-                            double *row1, double *row2,
-                            double *rts, double *wts)
+ERD_OFFLOAD void erd__rys_roots_weights(uint32_t nt, uint32_t ngqp, uint32_t nmom,
+                            const double tval[restrict],
+                            double rts[restrict], double wts[restrict])
 {
+    switch (ngqp) {
 #if 1
-    switch (ngqp)
-    {
         case 1:
-            erd__rys_1_roots_weights (nt, tval, rts, wts);
+            erd__rys_1_roots_weights(nt, tval, rts, wts);
             return;
         case 2:
-            erd__rys_2_roots_weights (nt, tval, rts, wts);
+            erd__rys_2_roots_weights(nt, tval, rts, wts);
             return;
         case 3:
-            erd__rys_3_roots_weights (nt, tval, rts, wts);
+            erd__rys_3_roots_weights(nt, tval, rts, wts);
             return;
         case 4:
-            erd__rys_4_roots_weights (nt, tval, rts, wts);
+            erd__rys_4_roots_weights(nt, tval, rts, wts);
             return;
         case 5:
-            erd__rys_5_roots_weights (nt, tval, rts, wts);
+            erd__rys_5_roots_weights(nt, tval, rts, wts);
             return;
-    }
 #endif
-
-/*             ...# of roots and weights >= 6. Accumulate all zeroth */
-/*                Rys moments and call the general routine. */
-    for (int n = 0; n < nt; n++) {
-        const double t = tval[n];
-        if (t == 0.0) {
-            ryszero[n] = 1.0;
-        } else if (t <= tmax) {
-            const int tgrid = lround(t * tvstep);
-            const double delta = tgrid * tstep - t;
-            ryszero[n] = (((((boys_table[tgrid][6] * delta * 0.166666666666667 +
-                              boys_table[tgrid][5]) * delta * 0.2 +
-                              boys_table[tgrid][4]) * delta * 0.25 +
-                              boys_table[tgrid][3]) * delta * 0.333333333333333 +
-                              boys_table[tgrid][2]) * delta * 0.5 +
-                              boys_table[tgrid][1]) * delta +
-                              boys_table[tgrid][0];
-        } else {
-            ryszero[n] = sqrt (3.141592653589793 / t) * .5;
+        default:
+        {
+            ERD_SIMD_ALIGN double ryszero[nt];
+            /* ...# of roots and weights >= 6. Accumulate all zeroth Rys moments and call the general routine. */
+            for (int n = 0; n < nt; n++) {
+                const double t = tval[n];
+                if (t == 0.0) {
+                    ryszero[n] = 1.0;
+                } else if (t <= tmax) {
+                    const int tgrid = lround(t * tvstep);
+                    const double delta = tgrid * tstep - t;
+                    ryszero[n] = (((((boys_table[tgrid][6] * delta * 0.166666666666667 +
+                                      boys_table[tgrid][5]) * delta * 0.2 +
+                                      boys_table[tgrid][4]) * delta * 0.25 +
+                                      boys_table[tgrid][3]) * delta * 0.333333333333333 +
+                                      boys_table[tgrid][2]) * delta * 0.5 +
+                                      boys_table[tgrid][1]) * delta +
+                                      boys_table[tgrid][0];
+                } else {
+                    ryszero[n] = sqrt (3.141592653589793 / t) * .5;
+                }
+            }
+            int ntgqp = nt * ngqp;
+            erd__rys_x_roots_weights(nt, ntgqp, ngqp, nmom, tval, ryszero, rts, wts);
+            return;
         }
     }
-    int ntgqp = nt * ngqp;
-    erd__rys_x_roots_weights(nt, ntgqp, ngqp, nmom, tval, ryszero, a, b, mom, dia, off, row1, row2, rts, wts);
-}
 
-#ifdef __INTEL_OFFLOAD
-#pragma offload_attribute(pop)
-#endif
+}

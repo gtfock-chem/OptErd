@@ -4,133 +4,94 @@
 #include <math.h>
 
 #include "erd.h"
+#include "erdutil.h"
 
-#ifdef __INTEL_OFFLOAD
-#pragma offload_attribute(push, target(mic))
-#endif
-
-
-/* ------------------------------------------------------------------------ */
-/*  OPERATION   : ERD__HRR_MATRIX */
-/*  MODULE      : ELECTRON REPULSION INTEGRALS DIRECT */
-/*  MODULE-ID   : ERD */
-/*  SUBROUTINES : ERD__HRR_STEP */
-/*  DESCRIPTION : This operation constructs the whole HRR transformation */
-/*                matrix T, which will contain the information for */
-/*                the complete transformation in xyz-basis: */
-/*                             (e0| --> (ab|  ;  e = a+b ; a>=b */
-/*                The matrix is constructed stepwise, starting from */
-/*                a unit matrix and operating on its columns with */
-/*                elementary HRR steps. */
-/*                  Input: */
-/*                    NROTHRR   = maximum # of elements of T and ROW */
-/*                                matrix expected during construction */
-/*                                of final T and ROW */
-/*                    NCOLHRR   = maximum # of columns of T and ROW */
-/*                                matrix expected during construction */
-/*                                of final T and ROW */
-/*                    NXYZET    = monomial dimension of the (e0| part. */
-/*                    NXYZA     = monomial dimension for shell a */
-/*                    NXYZP     = monomial dimension for shell p=a+b */
-/*                    SHELLx    = shell types for x=a,b,p */
-/*                    NABCOOR   = # of nonzero coordinate differences */
-/*                                between nuclear centers A and B */
-/*                    ABx       = the coordinate differences between */
-/*                                nuclear centers A and B for x=X,Y,Z */
-/*                    WORK      = scratch space used for assembly of */
-/*                                final NROW vector and T and ROW */
-/*                                matrices */
-/*                  Output: */
-/*                    IN1,IN2   = starting index position of final */
-/*                                NROW vector (IN1) and final T and */
-/*                                ROW matrices (IN2) in the big NROW */
-/*                                T and ROW arrays (which are 2x the */
-/*                                maximum size) */
-/*                    NROWOUT   = maximum # of nonzero row labels */
-/*                                of matrix T and ROW */
-/*                    NROW      = vector containing # of nonzero */
-/*                                entries in columns of T and ROW matrix */
-/*                    ROW       = the nonzero row labels of matrix T */
-/*                    T         = the HRR transformation matrix */
-/*                The xyz-basis for the a- and b-parts in columns */
-/*                of matrix T will be ordered such that a preceeds b. */
-/* ------------------------------------------------------------------------ */
-int erd__hrr_matrix (int nrothrr, int ncolhrr,
-                     int nxyzet, int nxyza, int nxyzp,
-                     int shella, int shellb, int shellp,
-                     int nabcoor, double abx, double aby, double abz,
-                     int *work, int *in1, int *in2,
-                     int *nrowout, int *nrow,
-                     int *row, double *t)
+/**
+ * @brief Constructs the whole HRR transformation matrix
+ * @detailes This operation constructs the whole HRR transformation matrix T, which will contain the information for the complete transformation in xyz-basis:
+ *                             (e0| --> (ab|  ;  e = a+b ; a>=b 
+ *   The matrix is constructed stepwise, starting from a unit matrix and operating on its columns with elementary HRR steps.
+ * @param[in]  nrothrr            Maximum # of elements of @a t and @a row matrix expected during construction of final @a t and @a row.
+ * @param[in]  ncolhrr            Maximum # of columns of @a t and @a row matrix expected during construction of final @a t and @a row.
+ * @param[in]  nxyzet             Monomial dimension of the (e0| part.
+ * @param[in]  nxyza              Monomial dimension for shell a.
+ * @param[in]  nxyzp              Monomial dimension for shell p=a+b.
+ * @param[in]  shella             Sheel type for shell A.
+ * @param[in]  shellb             Sheel type for shell B.
+ * @param[in]  shellp             Sheel type for shell P.
+ * @param[in]  nabcoor            # of nonzero coordinate differences between nuclear centers A and B.
+ * @param[in]  abx                The x-coordinate differences between nuclear centers A and B.
+ * @param[in]  aby                The y-coordinate differences between nuclear centers A and B.
+ * @param[in]  abz                The z-coordinate differences between nuclear centers A and B.
+ * @param[out] in1                Starting index position of final @a nrow vector in the big @a nrow, @a t and @a row arrays (which are 2x the maximum size).
+ * @param[out] in2                Starting index position final @a t and @a row matrices (@a in2) in the big @a nrow, @a t and @a row arrays (which are 2x the maximum size).
+ * @param[out] nrowout            Maximum # of nonzero row labels of matrix @a t and @a row.
+ * @param[out] nrow               Vector containing # of nonzero entries in columns of @a t and @a row matrix
+ * @param[out] row                The nonzero row labels of matrix @a t.
+ * @param[out] t                  The HRR transformation matrix. The xyz-basis for the a- and b-parts in columns of matrix T will be ordered such that a preceeds b.
+ */
+ERD_OFFLOAD void erd__hrr_matrix(uint32_t nrothrr, uint32_t ncolhrr,
+    uint32_t nxyzet, uint32_t nxyza, uint32_t nxyzp,
+    uint32_t shella, uint32_t shellb, uint32_t shellp,
+    uint32_t nabcoor, double abx, double aby, double abz,
+    uint32_t in1_ptr[restrict static 1], uint32_t in2_ptr[restrict static 1],
+    uint32_t nrowout_ptr[restrict static 1], uint32_t nrow[restrict],
+    uint32_t row[restrict], double t[restrict])
 {
-    int add[3] = {0, 0, 1};
+    /* ...accumulate T. */
+    uint32_t in1 = 0;
+    uint32_t out1 = in1 + ncolhrr;
+    uint32_t in2 = 0;
+    uint32_t out2 = in2 + nrothrr;
 
-    int i, j, l, m, n, out1, out2, ngho, base1, base2,
-        tleap;
-    int nxyzg, nxyzh, nxyzi, shellg, shellh, nrowin, nxyzgo,
-        nxyzho;
-
-/* ------------------------------------------------------------------------ */
-/*             ...accumulate T. */
-    *in1 = 0;
-    *in2 = 0;
-    out1 = *in1 + ncolhrr;
-    out2 = *in2 + nrothrr;
-
-/*             ...form initial 'unit' T. */
-    for (i = 0; i < nxyzet; ++i)
-    {
+    /* ...form initial 'unit' T. */
+    for (uint32_t i = 0; i < nxyzet; i++) {
         nrow[i] = 1;
         row[i] = i + 1;
         t[i] = 1.0;
     }
-/*             ...build up the HRR transformation matrix + data. */
-    nxyzg = nxyzet;
-    nxyzh = 1;
-    nxyzgo = nxyzet;
-    nxyzho = 1;
-    nxyzi = nxyzp;
-    shellg = shellp;
-    nrowin = 1;
-    *nrowout = 1;
-    for (shellh = 1; shellh <= shellb; ++shellh)
-    {
+    /* ...build up the HRR transformation matrix + data. */
+    uint32_t nxyzg = nxyzet;
+    uint32_t nxyzh = 1;
+    uint32_t nxyzgo = nxyzet;
+    uint32_t nxyzho = 1;
+    uint32_t nxyzi = nxyzp;
+    uint32_t shellg = shellp;
+    uint32_t nrowin = 1;
+    uint32_t nrowout = 1;
+    for (uint32_t shellh = 1; shellh <= shellb; shellh++) {
         nxyzgo -= nxyzi;
-        nxyzho = nxyzho + shellh + 1;
-        ngho = nxyzgo * nxyzho;
-        if (nabcoor == 3)
-        {
-            m = shellh / 3 + 1;
-            *nrowout += m * (m + add[shellh % 3]);
+        nxyzho += shellh + 1;
+        const uint32_t ngho = nxyzgo * nxyzho;
+        switch (nabcoor) {
+            case 3:
+            {
+                const uint32_t m = shellh / 3 + 1;
+                nrowout += m * (m + ((shellh % 3) == 2));
+                break;
+            }
+            case 2:
+                nrowout += shellh / 2 + 1;
+                break;
+            case 1:
+                nrowout += 1;
+                break;            
         }
-        else if (nabcoor == 2)
-        {
-            *nrowout = *nrowout + shellh / 2 + 1;
-        }
-        else if (nabcoor == 1)
-        {
-            ++(*nrowout);
-        }
-        erd__hrr_step (ngho, nrowin, *nrowout,
+        erd__hrr_step(ngho, nrowin, nrowout,
                        nxyza, nxyzg, nxyzh, nxyzgo,
                        shella, shellg, shellh - 1,
                        abx, aby, abz,
-                       work, &nrow[*in1], &row[*in2], &t[*in2],
+                       &nrow[in1], &row[in2], &t[in2],
                        &nrow[out1], &row[out2], &t[out2]);
         nxyzh = nxyzho;
-        if (shellh != shellb)
-        {
+        if (shellh != shellb) {
             nxyzg = nxyzgo;
-            nxyzi = nxyzi - shellg - 1;
-            --shellg;
-            nrowin = *nrowout;
+            nxyzi -= shellg + 1;
+            nrowin = nrowout;
+            shellg--;
         }
-        i = *in1;
-        *in1 = out1;
-        out1 = i;
-        i = *in2;
-        *in2 = out2;
-        out2 = i;
+        ERD_SWAP(out1, in1);
+        ERD_SWAP(out2, in2);
     }
 
 /*             ...the resulting T matrix of dimension NROWOUT x (NXYZA */
@@ -140,29 +101,23 @@ int erd__hrr_matrix (int nrothrr, int ncolhrr,
 /*                only NROWOUT x NXYZH distinct elements. The same */
 /*                applies to the array NROW of size NXYZA x NXYZH, which */
 /*                also allows for condensation into only NXYZH elements. */
-    l = 1;
-    m = 0;
-    n = 0;
-    base1 = *in1;
-    base2 = *in2;
-    tleap = *nrowout * nxyza;
-    for (j = 0; j < nxyzh; ++j)
-    {
-        nrow[base1 + j] = nrow[base1 + l];
-        for (i = 0; i < *nrowout; ++i)
-        {
-            t[base2 + m + i] = t[base2 + n + i];
+    uint32_t l = 1;
+    uint32_t m = 0;
+    uint32_t n = 0;
+    nrow = &nrow[in1];
+    t = &t[in2];
+    const uint32_t tleap = nrowout * nxyza;
+    for (uint32_t j = 0; j < nxyzh; ++j) {
+        nrow[j] = nrow[l];
+        for (uint32_t i = 0; i < nrowout; ++i) {
+            t[m + i] = t[n + i];
         }
         l += nxyza;
-        m += *nrowout;
+        m += nrowout;
         n += tleap;
     }
 
-    *in1 = *in1 + 1;
-    *in2 = *in2 + 1;
-    return 0;
+    *in1_ptr = in1;
+    *in2_ptr = in2;
+    *nrowout_ptr = nrowout;
 }
-
-#ifdef __INTEL_OFFLOAD
-#pragma offload_attribute(pop)
-#endif

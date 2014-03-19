@@ -4,32 +4,27 @@
 #include <stdint.h>
 #include "boys.h"
 #include "erd.h"
-#define ERD_TABLE_FREE_BOYS_FUNCTIONS
+#include "erdutil.h"
 
-#define TOL 1e-14
 #ifdef __x86_64__
 #include <x86intrin.h>
 #elif defined(__MIC__)
 #include <immintrin.h>
 #endif
 
-#ifdef __INTEL_OFFLOAD
-#pragma offload_attribute(push, target(mic))
-#endif
-
-static YEP_INLINE double pow3o4(double x) {
+ERD_OFFLOAD static YEP_INLINE double pow3o4(double x) {
     return __builtin_sqrt(x * __builtin_sqrt(x));
 }
 
-static YEP_INLINE double square(double x) {
+ERD_OFFLOAD static YEP_INLINE double square(double x) {
     return x * x;
 }
 
-static YEP_INLINE double pow4(double x) {
+ERD_OFFLOAD static YEP_INLINE double pow4(double x) {
     return square(square(x));
 }
 
-static YEP_INLINE double vector_min(const double *YEP_RESTRICT vector, size_t length) {
+ERD_OFFLOAD static YEP_INLINE double vector_min(size_t length, const double vector[restrict static length]) {
     double result = vector[0];
     for (size_t i = 1; i < length; i++) {
         const double element = vector[i];
@@ -38,13 +33,15 @@ static YEP_INLINE double vector_min(const double *YEP_RESTRICT vector, size_t le
     return result;
 }
 
-static const double c0 = 0x1.0B1A240FD5AF4p-8;
-static const double c1 = 0x1.352866F31ED93p+0;
-static const double c2 = -0x1.567450B98A180p-1;
-static const double c3 = 0x1.9721DD0ADF393p-3;
-static const double c4 = -0x1.EF4155EFB6D81p-6;
-static const double c5 = 0x1.DFF4D0D064A26p-10;
-static const double x0 = 0x1.628C5E7D820BFp-5;
+ERD_OFFLOAD static const double TOL = 1.0e-14;
+
+ERD_OFFLOAD static const double c0 = 0x1.0B1A240FD5AF4p-8;
+ERD_OFFLOAD static const double c1 = 0x1.352866F31ED93p+0;
+ERD_OFFLOAD static const double c2 = -0x1.567450B98A180p-1;
+ERD_OFFLOAD static const double c3 = 0x1.9721DD0ADF393p-3;
+ERD_OFFLOAD static const double c4 = -0x1.EF4155EFB6D81p-6;
+ERD_OFFLOAD static const double c5 = 0x1.DFF4D0D064A26p-10;
+ERD_OFFLOAD static const double x0 = 0x1.628C5E7D820BFp-5;
 
 #ifdef __AVX__
     YEP_ALIGN(16) static const uint8_t xmm_pack_table[16*16] = {
@@ -85,35 +82,35 @@ static const double x0 = 0x1.628C5E7D820BFp-5;
 #endif
 
 #ifdef __MIC__
-    static const __m512d zmm_c0 = {  0x1.0B1A240FD5AF4p-8,   0x1.0B1A240FD5AF4p-8,   0x1.0B1A240FD5AF4p-8,   0x1.0B1A240FD5AF4p-8,   0x1.0B1A240FD5AF4p-8,   0x1.0B1A240FD5AF4p-8,   0x1.0B1A240FD5AF4p-8,   0x1.0B1A240FD5AF4p-8  };
-    static const __m512d zmm_c1 = {  0x1.352866F31ED93p+0,   0x1.352866F31ED93p+0,   0x1.352866F31ED93p+0,   0x1.352866F31ED93p+0,   0x1.352866F31ED93p+0,   0x1.352866F31ED93p+0,   0x1.352866F31ED93p+0,   0x1.352866F31ED93p+0  };
-    static const __m512d zmm_c2 = { -0x1.567450B98A180p-1,  -0x1.567450B98A180p-1,  -0x1.567450B98A180p-1,  -0x1.567450B98A180p-1,  -0x1.567450B98A180p-1,  -0x1.567450B98A180p-1,  -0x1.567450B98A180p-1,  -0x1.567450B98A180p-1  };
-    static const __m512d zmm_c3 = {  0x1.9721DD0ADF393p-3,   0x1.9721DD0ADF393p-3,   0x1.9721DD0ADF393p-3,   0x1.9721DD0ADF393p-3,   0x1.9721DD0ADF393p-3,   0x1.9721DD0ADF393p-3,   0x1.9721DD0ADF393p-3,   0x1.9721DD0ADF393p-3  };
-    static const __m512d zmm_c4 = { -0x1.EF4155EFB6D81p-6,  -0x1.EF4155EFB6D81p-6,  -0x1.EF4155EFB6D81p-6,  -0x1.EF4155EFB6D81p-6,  -0x1.EF4155EFB6D81p-6,  -0x1.EF4155EFB6D81p-6,  -0x1.EF4155EFB6D81p-6,  -0x1.EF4155EFB6D81p-6  };
-    static const __m512d zmm_c5 = {  0x1.DFF4D0D064A26p-10,  0x1.DFF4D0D064A26p-10,  0x1.DFF4D0D064A26p-10,  0x1.DFF4D0D064A26p-10,  0x1.DFF4D0D064A26p-10,  0x1.DFF4D0D064A26p-10,  0x1.DFF4D0D064A26p-10,  0x1.DFF4D0D064A26p-10 };
-    static const __m512d zmm_x0 = {  0x1.628C5E7D820BFp-5,   0x1.628C5E7D820BFp-5,   0x1.628C5E7D820BFp-5,   0x1.628C5E7D820BFp-5,   0x1.628C5E7D820BFp-5,   0x1.628C5E7D820BFp-5,   0x1.628C5E7D820BFp-5,   0x1.628C5E7D820BFp-5  };
-    static const __m512d zmm_one = { 0x1.0000000000000p+0,   0x1.0000000000000p+0,   0x1.0000000000000p+0,   0x1.0000000000000p+0,   0x1.0000000000000p+0,   0x1.0000000000000p+0,   0x1.0000000000000p+0,   0x1.0000000000000p+0  };
+    ERD_OFFLOAD static const __m512d zmm_c0 = {  0x1.0B1A240FD5AF4p-8,   0x1.0B1A240FD5AF4p-8,   0x1.0B1A240FD5AF4p-8,   0x1.0B1A240FD5AF4p-8,   0x1.0B1A240FD5AF4p-8,   0x1.0B1A240FD5AF4p-8,   0x1.0B1A240FD5AF4p-8,   0x1.0B1A240FD5AF4p-8  };
+    ERD_OFFLOAD static const __m512d zmm_c1 = {  0x1.352866F31ED93p+0,   0x1.352866F31ED93p+0,   0x1.352866F31ED93p+0,   0x1.352866F31ED93p+0,   0x1.352866F31ED93p+0,   0x1.352866F31ED93p+0,   0x1.352866F31ED93p+0,   0x1.352866F31ED93p+0  };
+    ERD_OFFLOAD static const __m512d zmm_c2 = { -0x1.567450B98A180p-1,  -0x1.567450B98A180p-1,  -0x1.567450B98A180p-1,  -0x1.567450B98A180p-1,  -0x1.567450B98A180p-1,  -0x1.567450B98A180p-1,  -0x1.567450B98A180p-1,  -0x1.567450B98A180p-1  };
+    ERD_OFFLOAD static const __m512d zmm_c3 = {  0x1.9721DD0ADF393p-3,   0x1.9721DD0ADF393p-3,   0x1.9721DD0ADF393p-3,   0x1.9721DD0ADF393p-3,   0x1.9721DD0ADF393p-3,   0x1.9721DD0ADF393p-3,   0x1.9721DD0ADF393p-3,   0x1.9721DD0ADF393p-3  };
+    ERD_OFFLOAD static const __m512d zmm_c4 = { -0x1.EF4155EFB6D81p-6,  -0x1.EF4155EFB6D81p-6,  -0x1.EF4155EFB6D81p-6,  -0x1.EF4155EFB6D81p-6,  -0x1.EF4155EFB6D81p-6,  -0x1.EF4155EFB6D81p-6,  -0x1.EF4155EFB6D81p-6,  -0x1.EF4155EFB6D81p-6  };
+    ERD_OFFLOAD static const __m512d zmm_c5 = {  0x1.DFF4D0D064A26p-10,  0x1.DFF4D0D064A26p-10,  0x1.DFF4D0D064A26p-10,  0x1.DFF4D0D064A26p-10,  0x1.DFF4D0D064A26p-10,  0x1.DFF4D0D064A26p-10,  0x1.DFF4D0D064A26p-10,  0x1.DFF4D0D064A26p-10 };
+    ERD_OFFLOAD static const __m512d zmm_x0 = {  0x1.628C5E7D820BFp-5,   0x1.628C5E7D820BFp-5,   0x1.628C5E7D820BFp-5,   0x1.628C5E7D820BFp-5,   0x1.628C5E7D820BFp-5,   0x1.628C5E7D820BFp-5,   0x1.628C5E7D820BFp-5,   0x1.628C5E7D820BFp-5  };
+    ERD_OFFLOAD static const __m512d zmm_one = { 0x1.0000000000000p+0,   0x1.0000000000000p+0,   0x1.0000000000000p+0,   0x1.0000000000000p+0,   0x1.0000000000000p+0,   0x1.0000000000000p+0,   0x1.0000000000000p+0,   0x1.0000000000000p+0  };
 
-    static const __m512i zmm_increment_j = { 8u, 8u, 8u, 8u, 8u, 8u, 8u, 8u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u };
-    static const __m512i zmm_increment_i = { 1u, 1u, 1u, 1u, 1u, 1u, 1u, 1u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u };
-    static const __m512i zmm_init_j = { 0, 1, 2, 3, 4, 5, 6, 7, 0, 0, 0, 0, 0, 0, 0, 0 };
+    ERD_OFFLOAD static const __m512i zmm_increment_j = { 8u, 8u, 8u, 8u, 8u, 8u, 8u, 8u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u };
+    ERD_OFFLOAD static const __m512i zmm_increment_i = { 1u, 1u, 1u, 1u, 1u, 1u, 1u, 1u, 0u, 0u, 0u, 0u, 0u, 0u, 0u, 0u };
+    ERD_OFFLOAD static const __m512i zmm_init_j = { 0, 1, 2, 3, 4, 5, 6, 7, 0, 0, 0, 0, 0, 0, 0, 0 };
 #endif
 
-static YEP_NOINLINE void set_pairs(
+ERD_OFFLOAD static YEP_NOINLINE void set_pairs(
     uint32_t npgtoa, uint32_t npgtob, double rnabsq,
-    double *YEP_RESTRICT alphaa, double *YEP_RESTRICT alphab,
-    uint32_t *YEP_RESTRICT nij_ptr,
-    int *YEP_RESTRICT prima, int *YEP_RESTRICT primb,
-    double *YEP_RESTRICT rho,
+    const double alphaa[restrict static npgtoa], const double alphab[restrict static npgtoa],
+    uint32_t *restrict nij_ptr,
+    uint32_t prima[restrict static npgtoa*npgtob], uint32_t primb[restrict static npgtoa*npgtob],
+    double rho[restrict static npgtoa*npgtob],
     double qmin, double smaxcd, double rminsq)
 {
     const double csmaxcd = smaxcd * (0x1.C5BF891B4EF6Bp-1 / TOL);
     uint32_t nij = 0;
     if (npgtoa > npgtob) {
-        double *YEP_RESTRICT alphaa_copy = alphaa;
+        const double *restrict alphaa_copy = alphaa;
         alphaa = alphab;
         alphab = alphaa_copy;
-        int *YEP_RESTRICT prima_copy = prima;
+        uint32_t *restrict prima_copy = prima;
         prima = primb;
         primb = prima_copy;
         uint32_t npgtoa_copy = npgtoa;
@@ -787,63 +784,29 @@ static YEP_NOINLINE void set_pairs(
     *nij_ptr = nij;
 }
 
-int erd__set_ij_kl_pairs(
-    int npgtoa, int npgtob, int npgtoc, int npgtod,
+ERD_OFFLOAD void erd__set_ij_kl_pairs(
+    uint32_t npgtoa, uint32_t npgtob, uint32_t npgtoc, uint32_t npgtod,
     double xa, double ya, double za,
     double xb, double yb, double zb,
     double xc, double yc, double zc,
     double xd, double yd, double zd,
     double rnabsq, double rncdsq, double prefact,
-    double *YEP_RESTRICT alphaa,
-    double *YEP_RESTRICT alphab,
-    double *YEP_RESTRICT alphac,
-    double *YEP_RESTRICT alphad, int screen,
-    int *YEP_RESTRICT empty, int *YEP_RESTRICT nij_ptr,
-    int *YEP_RESTRICT nkl_ptr, int *YEP_RESTRICT prima,
-    int *YEP_RESTRICT primb, int *YEP_RESTRICT primc,
-    int *YEP_RESTRICT primd, double *YEP_RESTRICT rho)
+    const double alphaa[restrict static npgtoa],
+    const double alphab[restrict static npgtob],
+    const double alphac[restrict static npgtoc],
+    const double alphad[restrict static npgtod],
+    uint32_t nij_ptr[restrict static 1], uint32_t nkl_ptr[restrict static 1],
+    uint32_t prima[restrict static npgtoa*npgtob], uint32_t primb[restrict static npgtoa*npgtob], uint32_t primc[restrict static npgtoc*npgtod], uint32_t primd[restrict static npgtoc*npgtod],
+    double rhoab[restrict static npgtoa*npgtob],
+    double rhocd[restrict static npgtoc*npgtod])
 {
-    *empty = 0;
-
-    uint32_t nij = 0;
-    uint32_t nkl = 0;
-    uint32_t padnij = 0;
-    
-    // if not screening
-    if (!(screen)) {
-        for (uint32_t i = 0; i < npgtoa; i += 1) {
-            const double a = alphaa[i];
-            for (uint32_t j = 0; j < npgtob; j += 1) {
-                const double b = alphab[j];
-                *rho++ = __builtin_exp(-a * b * rnabsq / (a + b));
-                *prima++ = i;
-                *primb++ = j;
-            }
-        }
-        padnij = PAD_LEN(npgtoa * npgtob);
-        rho += padnij - npgtoa * npgtob;
-
-        for (uint32_t k = 0; k < npgtoc; k += 1) {
-            const double c = alphac[k];
-            for (uint32_t l = 0; l < npgtod; l += 1) {
-                const double d = alphad[l];
-                *rho++ = __builtin_exp(-c * d * rncdsq / (c + d));
-                *primc++ = k;
-                *primd++ = l;
-            }
-        }
-        *nij_ptr = npgtoa * npgtob;
-        *nkl_ptr = npgtoc * npgtod;
-        return 0;
-    }
-
     // compute min
     const double rminsq = erd__dsqmin_line_segments(xa, ya, za, xb, yb, zb, xc, yc, zc, xd, yd, zd);
 
-    const double a = vector_min(alphaa, npgtoa);
-    const double b = vector_min(alphab, npgtob);
-    const double c = vector_min(alphac, npgtoc);
-    const double d = vector_min(alphad, npgtod);
+    const double a = vector_min(npgtoa, alphaa);
+    const double b = vector_min(npgtob, alphab);
+    const double c = vector_min(npgtoc, alphac);
+    const double d = vector_min(npgtod, alphad);
 
     const double pmin = a + b;
     const double qmin = c + d;
@@ -855,30 +818,22 @@ int erd__set_ij_kl_pairs(
     const double smaxcd = prefact * pow3o4(cdmin) * __builtin_exp(-cdmin * rncdsq * qinv) * qinv;
 
     /* ...perform K2 primitive screening on A,B part. */
-    set_pairs(npgtoa, npgtob, rnabsq, alphaa, alphab, &nij, prima, primb, rho, qmin, smaxcd, rminsq);
+    uint32_t nij = 0;
+    set_pairs(npgtoa, npgtob, rnabsq, alphaa, alphab, &nij, prima, primb, rhoab, qmin, smaxcd, rminsq);
     if (nij == 0) {
-        *empty = 1;
-
-        *nij_ptr = nij;
-        *nkl_ptr = nkl;
-        return 0;
+        *nij_ptr = 0;
+        *nkl_ptr = 0;
+        return;
     }
-    padnij = PAD_LEN (nij);
-    
-    set_pairs(npgtoc, npgtod, rncdsq, alphac, alphad, &nkl, primc, primd, &rho[padnij], pmin, smaxab, rminsq);
-    if (nkl == 0) {
-        *empty = 1;
 
-        *nij_ptr = nij;
-        *nkl_ptr = nkl;
-        return 0;
+    uint32_t nkl = 0;
+    set_pairs(npgtoc, npgtod, rncdsq, alphac, alphad, &nkl, primc, primd, rhocd, pmin, smaxab, rminsq);
+    if (nkl == 0) {
+        *nij_ptr = 0;
+        *nkl_ptr = 0;
+        return;
     }
 
     *nij_ptr = nij;
     *nkl_ptr = nkl;
-    return 0;
 }
-
-#ifdef __INTEL_OFFLOAD
-#pragma offload_attribute(pop)
-#endif

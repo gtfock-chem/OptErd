@@ -3,11 +3,7 @@
 #include <assert.h>
 
 #include "erd.h"
-
-
-#ifdef __INTEL_OFFLOAD
-#pragma offload_attribute(push, target(mic))
-#endif
+#include "erdutil.h"
 
 /* ------------------------------------------------------------------------ */
 /*  OPERATION   : ERD__NORMALIZE_CARTESIAN */
@@ -43,38 +39,15 @@
 /*                  Output: */
 /*                    BATCH       =  batch of normalized integrals */
 /* ------------------------------------------------------------------------ */
-int erd__normalize_cartesian (int m, int l,
-                              double *norm, double *batch)
-{
-    int batch_offset;
-
-    int i, n, x, y, z, ybeg;
-    double xnorm, scalar;
-
-    batch_offset = 1 + m * 1;
-    batch -= batch_offset;
-
-    n = 0;
-    for (x = l; x >= 0; x--)
-    {
-        xnorm = norm[x];
-        ybeg = l - x;
-        for (y = ybeg; y >= 0; --y)
-        {
-            z = ybeg - y;
-            scalar = xnorm * norm[y] * norm[z];
-            ++n;
-            for (i = 1; i <= m; ++i)
-            {
-                batch[i + n * m] =
-                    scalar * batch[i + n * m];
+ERD_OFFLOAD void erd__normalize_cartesian(uint32_t m, uint32_t l, const double norm[restrict static l+1], double batch[restrict]) {
+    for (ssize_t x = l; x >= 0; x--) {
+        const double xnorm = norm[x];
+        const ssize_t ybeg = l - x;
+        for (ssize_t y = ybeg; y >= 0; y--) {
+            const double scalar = xnorm * norm[y] * norm[ybeg - y];
+            for (uint32_t i = 0; i < m; i++) {
+                *batch++ *= scalar;
             }
         }
     }
-
-    return 0;
 }
-
-#ifdef __INTEL_OFFLOAD
-#pragma offload_attribute(pop)
-#endif

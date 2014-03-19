@@ -16,18 +16,20 @@
 #include <math.h>
 #include <assert.h>
 #include "erd.h"
+#include "erdutil.h"
 
-#ifdef __INTEL_OFFLOAD
-#pragma offload_attribute(push, target(mic))
-#endif
-
-void erd__rys_x_roots_weights(int nt, int ntgqp, 
-    int ngqp, int nmom, double *tval, double *ryszero, 
-    double *a, double *b, double *mom, double *dia, 
-    double *off, double *row1, double *row2, double *rts, 
-    double *wts)
+ERD_OFFLOAD void erd__rys_x_roots_weights(int nt, int ntgqp, int ngqp,
+    int nmom, const double tval[restrict],
+    const double ryszero[restrict],
+    double rts[restrict], double wts[restrict])
 {
-    int nrts;
+    ERD_SIMD_ALIGN double a[nmom];
+    ERD_SIMD_ALIGN double b[nmom-1];
+    ERD_SIMD_ALIGN double mom[nmom];
+    ERD_SIMD_ALIGN double dia[ngqp];
+    ERD_SIMD_ALIGN double off[ngqp];
+    ERD_SIMD_ALIGN double row1[nmom];
+    ERD_SIMD_ALIGN double row2[nmom];
 
 /* ------------------------------------------------------------------------ */
 /*  OPERATION   : ERD__RYS_X_ROOTS_WEIGHTS */
@@ -199,16 +201,8 @@ void erd__rys_x_roots_weights(int nt, int ntgqp,
 /*             ...declare and set the data. */
 
 
-    /* Parameter adjustments */
-    --off;
-    --dia;
-    --row2;
-    --row1;
-    --mom;
-    b -= 2;
-
     /* Function Body */
-    nrts = 0;
+    int nrts = 0;
     for (int n = 0; n < nt; n += 1) {
         const double t = tval[n];
         const double momzero = ryszero[n];
@@ -343,18 +337,18 @@ void erd__rys_x_roots_weights(int nt, int ntgqp,
             if (t <= 1.0e-16) {
                 const int imax = (nmom < 16) ? nmom : 16;
                 a[0] = ajac[0];
-                mom[1] = csmall[0] * t;
+                mom[0] = csmall[0] * t;
                 double tpower = t;
                 for (int i = 2; i <= imax; ++i) {
                     tpower *= t;
                     a[i-1] = ajac[i - 1];
-                    b[i] = bjac[i - 2];
-                    mom[i] = csmall[i - 1] * tpower;
+                    b[i-2] = bjac[i - 2];
+                    mom[i-1] = csmall[i - 1] * tpower;
                 }
                 for (int i = imax + 1; i <= nmom; ++i) {
                     a[i-1] = ajac[i - 1];
-                    b[i] = bjac[i - 2];
-                    mom[i] = 0.;
+                    b[i-2] = bjac[i - 2];
+                    mom[i-1] = 0.;
                 }
             } else {
                 /*
@@ -413,7 +407,7 @@ void erd__rys_x_roots_weights(int nt, int ntgqp,
                     r1 -= 2.0;
                     const double r = r1 * tinvhf + r2[i - 1];
                     const double momim1 = sinv[i - 1] * (momip1 - r * momi);
-                    mom[i - 1] = momim1;
+                    mom[i - 2] = momim1;
                     momip1 = momi;
                     momi = momim1;
                 }
@@ -430,11 +424,11 @@ void erd__rys_x_roots_weights(int nt, int ntgqp,
                 assert(fabs(zmom) >= 1.0e-300);
                 a[0] = ajac[0];
                 const double zinv = 1. / zmom;
-                mom[1] *= zinv;
+                mom[0] *= zinv;
                 for (int i = 2; i <= nmom; ++i) {
                     a[i-1] = ajac[i - 1];
-                    b[i] = bjac[i - 2];
-                    mom[i] *= zinv;
+                    b[i-2] = bjac[i - 2];
+                    mom[i-1] *= zinv;
                 }
             }
         } else {
@@ -520,14 +514,14 @@ void erd__rys_x_roots_weights(int nt, int ntgqp,
             const double scale = -tinvhf * texp / momzero;
             if (nmom == 1) {
                 a[0] = tinvhf;
-                mom[1] = scale;
+                mom[0] = scale;
             } else {
                 a[0] = tinvhf;
                 a[1] = tinvhf + tinv2;
-                b[2] = tinvsq * .5;
-                mom[1] = scale;
+                b[0] = tinvsq * .5;
+                mom[0] = scale;
                 double r = 1. - tinv * 1.5;
-                mom[2] = scale * r;
+                mom[1] = scale * r;
                 double s = 0.0;
                 double binc = 0.5;
                 double sinc = -0.5;
@@ -536,12 +530,12 @@ void erd__rys_x_roots_weights(int nt, int ntgqp,
                 for (int i = 3; i <= nmom; ++i) {
                     binc += 2.;
                     a[i-1] = a[i-2] + tinv2;
-                    b[i] = b[i - 1] + binc * tinvsq;
+                    b[i-2] = b[i - 3] + binc * tinvsq;
                     sinc += 2.;
                     r -= tinv2;
                     s += sinc * tinvsq;
                     const double lim1 = r * lim2 - s * lim3;
-                    mom[i] = scale * lim1;
+                    mom[i-1] = scale * lim1;
                     lim3 = lim2;
                     lim2 = lim1;
                 }
@@ -585,13 +579,13 @@ void erd__rys_x_roots_weights(int nt, int ntgqp,
          */
 
         if (ngqp == 1) {
-            dia[1] = mom[1] + a[0];
+            dia[0] = mom[0] + a[0];
         } else if (ngqp == 2) {
-            const double sigma = mom[1] + a[0];
-            dia[1] = sigma;
-            const double theta = (a[1] - sigma) * mom[1] + mom[2] + b[2];
-            off[1] = sqrt(theta);
-            dia[2] = ((a[2] - sigma) * mom[2] + mom[3] + b[3] * mom[1]) / theta - mom[1] + a[1];
+            const double sigma = mom[0] + a[0];
+            dia[0] = sigma;
+            const double theta = (a[1] - sigma) * mom[0] + mom[1] + b[0];
+            off[0] = sqrt(theta);
+            dia[1] = ((a[2] - sigma) * mom[1] + mom[2] + b[1] * mom[0]) / theta - mom[0] + a[1];
         } else {
             /*
              * ...Handle case for number of quadrature points > 2.
@@ -603,27 +597,27 @@ void erd__rys_x_roots_weights(int nt, int ntgqp,
              * IF WE REMOVE STATIC, THE PROGRAM CRASHES IN RUN-TIME.
              * THIS LIKELY INDICATES A BUG SOMEWHERE
              */
-            volatile int jmax = 0;
+            static int jmax = 0;
             jmax = ngqp + imax;
             for (int j = 1; j <= jmax; ++j) {
-                row1[j] = mom[j];
+                row1[j-1] = mom[j-1];
             }
-            double sigma = row1[1] + a[0];
-            dia[1] = sigma;
+            double sigma = row1[0] + a[0];
+            dia[0] = sigma;
 
 
             /* ...evaluate 2nd row of terminal matrix. */
 
 
-            row2[1] = (a[1] - sigma) * row1[1] + row1[2] + b[2];
-            double theta = row2[1];
-            off[1] = sqrt(theta);
+            row2[0] = (a[1] - sigma) * row1[0] + row1[1] + b[0];
+            double theta = row2[0];
+            off[0] = sqrt(theta);
             --jmax;
             for (int j = 2; j <= jmax; ++j) {
-                row2[j] = (a[j] - sigma) * row1[j] + row1[j+1] + b[j+1] * row1[j - 1];
+                row2[j-1] = (a[j] - sigma) * row1[j-1] + row1[j] + b[j-1] * row1[j - 2];
             }
-            sigma = row2[2] / theta - row1[1] + a[1];
-            dia[2] = sigma;
+            sigma = row2[1] / theta - row1[0] + a[1];
+            dia[1] = sigma;
 
 
             /* ...proceed with higher rows. */
@@ -633,19 +627,19 @@ void erd__rys_x_roots_weights(int nt, int ntgqp,
                 --jmax;
                 if (i % 2 == 0) {
                     for (int j = i; j <= jmax; ++j) {
-                        row1[j] = (a[j] - sigma) * row2[j] + row2[j+1] + b[j+1] * row2[j - 1] - theta * row1[j];
+                        row1[j-1] = (a[j] - sigma) * row2[j-1] + row2[j] + b[j-1] * row2[j - 2] - theta * row1[j-1];
                     }
-                    sigma = a[i] - row2[i] / row2[i - 1] + row1[i+1] / row1[i];
-                    theta = row1[i] / row2[i - 1];
+                    sigma = a[i] - row2[i-1] / row2[i - 2] + row1[i] / row1[i-1];
+                    theta = row1[i-1] / row2[i - 2];
                 } else {
                     for (int j = i; j <= jmax; ++j) {
-                        row2[j] = (a[j] - sigma) * row1[j] + row1[j+1] + b[j+1] * row1[j - 1] - theta * row2[j];
+                        row2[j-1] = (a[j] - sigma) * row1[j-1] + row1[j] + b[j-1] * row1[j - 2] - theta * row2[j-1];
                     }
-                    sigma = a[i] - row1[i] / row1[i - 1] + row2[i+1] / row2[i];
-                    theta = row2[i] / row1[i - 1];
+                    sigma = a[i] - row1[i-1] / row1[i - 2] + row2[i] / row2[i-1];
+                    theta = row2[i-1] / row1[i - 2];
                 }
-                dia[i+1] = sigma;
-                off[i] = sqrt(theta);
+                dia[i] = sigma;
+                off[i-1] = sqrt(theta);
             }
         }
 
@@ -690,7 +684,7 @@ void erd__rys_x_roots_weights(int nt, int ntgqp,
 
         if (ngqp == 1) {
             ++nrts;
-            rts[nrts-1] = dia[1];
+            rts[nrts-1] = dia[0];
             wts[nrts-1] *= momzero;
         } else {
             /*
@@ -709,52 +703,52 @@ void erd__rys_x_roots_weights(int nt, int ntgqp,
             /* ...QL iterations. */
 
 
-            off[ngqp] = 0.0;
+            off[ngqp-1] = 0.0;
             int m, iter = 0;
             for (int j = 1; j <= ngqp; ++j) {
 next_iteration:
                 for (m = j; m < ngqp; ++m) {
-                    const double test1 = fabs(dia[m]) + fabs(dia[m + 1]);
-                    const double test2 = test1 + fabs(off[m]);
+                    const double test1 = fabs(dia[m-1]) + fabs(dia[m]);
+                    const double test2 = test1 + fabs(off[m-1]);
                     if (test2 == test1) {
                         break;
                     }
                 }
-                double p = dia[j];
+                double p = dia[j-1];
                 if (m != j) {
                     /* Root not converged */
                     assert(iter != 30);
                     ++iter;
-                    double g = (dia[j + 1] - p) / (off[j] * 2.);
+                    double g = (dia[j] - p) / (off[j-1] * 2.);
                     double r = sqrt(g * g + 1.);
-                    g = dia[m] - p + off[j] / (g + copysign(r, g));
+                    g = dia[m-1] - p + off[j-1] / (g + copysign(r, g));
                     double s = 1.0;
                     double c = 1.0;
                     p = 0.0;
                     for (int i = m - 1; i >= j; --i) {
-                        double f = s * off[i];
-                        const double d = c * off[i];
+                        double f = s * off[i-1];
+                        const double d = c * off[i-1];
                         r = sqrt(f * f + g * g);
-                        off[i + 1] = r;
+                        off[i] = r;
                         if (r == 0.0) {
-                            dia[i + 1] -= p;
-                            off[m] = 0.0;
+                            dia[i] -= p;
+                            off[m-1] = 0.0;
                             goto next_iteration;
                         }
                         s = f / r;
                         c = g / r;
-                        g = dia[i + 1] - p;
-                        r = (dia[i] - g) * s + c * 2. * d;
+                        g = dia[i] - p;
+                        r = (dia[i-1] - g) * s + c * 2. * d;
                         p = s * r;
-                        dia[i + 1] = g + p;
+                        dia[i] = g + p;
                         g = c * r - d;
                         f = a[i];
                         a[i] = s * a[i-1] + c * f;
                         a[i-1] = c * a[i-1] - s * f;
                     }
-                    dia[j] -= p;
-                    off[j] = g;
-                    off[m] = 0.0;
+                    dia[j-1] -= p;
+                    off[j-1] = g;
+                    off[m-1] = 0.0;
                     goto next_iteration;
                 }
             }
@@ -768,7 +762,7 @@ next_iteration:
 
 
             for (int i = 1; i <= ngqp; ++i) {
-                const double root = dia[i];
+                const double root = dia[i-1];
                 /* Quadrature root not in range 0-1 */
                 assert((root >= 0.0) && (root <= 1.0));
                 rts[nrts+i-1] = root;
@@ -783,7 +777,3 @@ next_iteration:
 
     }
 }
-
-#ifdef __INTEL_OFFLOAD
-#pragma offload_attribute(pop)
-#endif

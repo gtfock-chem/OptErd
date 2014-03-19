@@ -1,27 +1,29 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <assert.h>
+#include <inttypes.h>
 #include <stdint.h>
 #include <math.h>
-#include <sys/time.h>
+#include <time.h>
+#include <malloc.h>
 
 #include <screening.h>
 
-struct ShellPair {
-    int MP;
-    int NQ;
-    double absValue;
-};
+static uint64_t getTimerTicks(void) {
+    struct timespec ts;
+    const int result = clock_gettime(CLOCK_MONOTONIC, &ts);
+    if (result != 0) {
+        perror("clock_gettime");
+        abort();
+    }
+    return ((uint64_t)ts.tv_sec) * UINT64_C(1000000000) + ((uint64_t)ts.tv_nsec);
+}
+
+static uint64_t getTimerFrequency(void) {
+    return UINT64_C(1000000000);
+}
 
 int main(int argc, char **argv) {
-    double totalcalls = 0;
-    int *shellptr;
-    int *shellid;
-    int *shellrid;
-    double *shellvalue;
-    struct timeval tv1;
-    struct timeval tv2;
-    double totalintls = 0;
 
     if (argc != 3) {
         printf("Usage: %s <basisset> <xyz>\n", argv[0]);
@@ -32,12 +34,14 @@ int main(int argc, char **argv) {
         fprintf(stderr, "ivalues.ref does not exist\n");
         exit (0);
     }
-    int errcount; 
-    errcount = 0;
-    // load basis set   
+
     BasisSet_t basis;
     CInt_createBasisSet(&basis);
     CInt_loadBasisSet(basis, argv[1], argv[2]);
+    int *shellptr;
+    int *shellid;
+    int *shellrid;
+    double *shellvalue;
     int nnz;
     schwartz_screening(basis, &shellptr, &shellid, &shellrid, &shellvalue, &nnz);
 
@@ -51,121 +55,138 @@ int main(int argc, char **argv) {
     CInt_createERD(basis, &erd, 1);
 
     printf("Computing integrals ...\n");
-    const int ns = CInt_getNumShells(basis);
+    const uint32_t shellCount = CInt_getNumShells(basis);
     int dimMax = CInt_getMaxShellDim(basis);
-    double *integrals0 = (double *)malloc(sizeof(double) * dimMax * dimMax * dimMax * dimMax);
-    assert(integrals0 != NULL);
+    double *referenceIntegrals = (double *)malloc(sizeof(double) * dimMax * dimMax * dimMax * dimMax);
+    assert(referenceIntegrals != NULL);
 
-    int numShellPairs = 0;
-    for (int i = 0; i < shellptr[ns]; i++) {
-        const int M = shellrid[i];
-        const int N = shellid[i];
-        if (M <= N)
-            numShellPairs += 1;
-    }
-    struct ShellPair* shellPairs = (struct ShellPair*)malloc(sizeof(struct ShellPair) * numShellPairs);
-    uint32_t shellIndex = 0;
-    for (int i = 0; i < shellptr[ns]; i++) {
-        const int M = shellrid[i];
-        const int N = shellid[i];
-        if (M <= N) {
-            shellPairs[shellIndex].MP = M;
-            shellPairs[shellIndex].NQ = N;
-            shellPairs[shellIndex].absValue = fabs(shellvalue[i]);
-            shellIndex++;
-        }
-    }
+    uint64_t totalCalls = 0;
+    uint64_t totalIntegralsCount = 0;
+    uint64_t totalTicks = 0;
+    uint32_t errcount = 0;
+    for (uint32_t shellIndexM = 0; shellIndexM != shellCount; shellIndexM++) {
+        const uint32_t shellIndexNStart = shellptr[shellIndexM];
+        const uint32_t shellIndexNEnd = shellptr[shellIndexM+1];
+        for (uint32_t shellIndexP = 0; shellIndexP != shellCount; shellIndexP++) {
+            const uint32_t shellIndexQStart = shellptr[shellIndexP];
+            const uint32_t shellIndexQEnd = shellptr[shellIndexP+1];
 
-    double timepass = 0.0;
-    for (int i = 0; i < numShellPairs; i++) {
-        const int M = shellPairs[i].MP;
-        const int N = shellPairs[i].NQ;
-        const double absValueMN = shellPairs[i].absValue;
-        for (int j = 0; j < numShellPairs; j++) {
-            const int P = shellPairs[j].MP;
-            const int Q = shellPairs[j].NQ;
-            if ((M + N) > (P + Q))
-                continue;
+            uint32_t* shellIndicesN = memalign(64, sizeof(double) * (shellIndexNEnd - shellIndexNStart) * (shellIndexQEnd - shellIndexQStart));
+            uint32_t* shellIndicesQ = memalign(64, sizeof(double) * (shellIndexNEnd - shellIndexNStart) * (shellIndexQEnd - shellIndexQStart));
+            uint32_t shellIndicesCount = 0;
 
-            const double absValuePQ = shellPairs[j].absValue;
-            if (absValueMN * absValuePQ < TOLSRC * TOLSRC)
-                continue;
+            /* Prepare indices */
+            for (uint32_t shellIndexNOffset = shellIndexNStart; shellIndexNOffset != shellIndexNEnd; shellIndexNOffset++) {
+                const uint32_t shellIndexN = shellid[shellIndexNOffset];
+                if (shellIndexM > shellIndexN)
+                    continue;
 
-            totalcalls += 1;
-            gettimeofday(&tv1, NULL);
+                const double shellValueMN = shellvalue[shellIndexNOffset];
+                for (uint32_t shellIndexQOffset = shellIndexQStart; shellIndexQOffset != shellIndexQEnd; shellIndexQOffset++) {
+                    const uint32_t shellIndexQ = shellid[shellIndexQOffset];
+                    if (shellIndexP > shellIndexQ)
+                        continue;
 
-            double *integrals;
-            int nints;
-            CInt_computeShellQuartet(basis, erd, 0, M, N, P, Q, &integrals, &nints);
+                    if (shellIndexM + shellIndexN > shellIndexP + shellIndexQ)
+                        continue;
 
-            gettimeofday(&tv2, NULL);
-            timepass += (tv2.tv_sec - tv1.tv_sec) + (tv2.tv_usec - tv1.tv_usec) * 1.0e-6;
-            totalintls = totalintls + nints;
-            
-            int nints0;
-            fread (&nints0, sizeof(int), 1, ref_data_file);
-            if (nints0 != 0) {
-                fread (integrals0, sizeof(double), nints0, ref_data_file);
+                    const double shellValuePQ = shellvalue[shellIndexQOffset];
+                    if (shellValueMN * shellValuePQ < TOLSRC * TOLSRC)
+                        continue;
+
+                    shellIndicesN[shellIndicesCount] = shellIndexN;
+                    shellIndicesQ[shellIndicesCount] = shellIndexQ;
+                    shellIndicesCount++;
+                }
             }
-            // compare results
-            if (nints == 0 && nints0 == 0) {
-                continue;
-            } else if (nints != 0 && nints0 == 0) {
-                for (int k = 0; k < nints; k++) {
-                    if (integrals[k] > 1e-10) {
-                        printf ("ERROR: %d %d %d %d: %le %le\n",
-                            M, N, P, Q, 0.0, integrals[k]);
-                        errcount++;
-                    }
+
+            /* Validate results */
+            for (uint32_t shellIndexIndex = 0; shellIndexIndex != shellIndicesCount; shellIndexIndex++) {
+                /* Process batch of indices */
+                totalCalls += 1;
+                const uint64_t startTicks = getTimerTicks();
+
+                double *integrals;
+                int integralsCount;
+                CInt_computeShellQuartets(basis, erd, 0 /* Thread ID */,
+                    shellIndexM, &shellIndicesN[shellIndexIndex], shellIndexP, &shellIndicesQ[shellIndexIndex], 1,
+                    &integrals, &integralsCount);
+
+                const uint64_t endTicks = getTimerTicks();
+                totalTicks += endTicks - startTicks;
+                totalIntegralsCount += integralsCount;
+
+                const uint32_t shellIndexN = shellIndicesN[shellIndexIndex];
+                const uint32_t shellIndexQ = shellIndicesQ[shellIndexIndex];
+                
+                int referenceIntegralsCount;
+                fread(&referenceIntegralsCount, sizeof(int), 1, ref_data_file);
+                if (referenceIntegralsCount != 0) {
+                    fread(referenceIntegrals, sizeof(double), referenceIntegralsCount, ref_data_file);
                 }
-            } else if (nints == 0 && nints0 != 0) {
-                for (int k = 0; k < nints0; k++) {
-                    if (integrals0[k] > 1e-10) {
-                        printf ("ERROR: %d %d %d %d: %le %le\n",
-                            M, N, P, Q, integrals0[k], 0.0);
-                        errcount++;
-                    }
-                }
-            } else if (nints == nints0 && nints != 0) {
-                for (int k = 0; k < nints0; k++) {
-                    if ((fabs(integrals0[k]) < 1.0e-6) ||
-                        (fabs(integrals[k]) < 1.0e-6))
-                    {
-                        if (fabs(integrals0[k] - integrals[k]) > 1e-10) {
-                            printf ("1 ERROR: %d %d %d %d: %le %le\n",
-                                M, N, P, Q, integrals0[k], integrals[k]);
+
+                if (integralsCount == 0 && referenceIntegralsCount == 0) {
+                    continue;
+                } else if (integralsCount != 0 && referenceIntegralsCount == 0) {
+                    for (int k = 0; k < integralsCount; k++) {
+                        if (integrals[k] > 1.0e-10) {
+                            printf("ERROR: %"PRIu32" %"PRIu32" %"PRIu32" %"PRIu32": %le %le\n",
+                                shellIndexM, shellIndexN, shellIndexP, shellIndexQ, 0.0, integrals[k]);
                             errcount++;
                         }
-                    } else {
-                        if ((fabs(integrals0[k] - integrals[k])/fabs(integrals0[k]) > 1.0e-6) &&
-                            (errcount < 10))
+                    }
+                } else if (integralsCount == 0 && referenceIntegralsCount != 0) {
+                    for (int k = 0; k < referenceIntegralsCount; k++) {
+                        if (referenceIntegrals[k] > 1e-10) {
+                            printf("ERROR: %"PRIu32" %"PRIu32" %"PRIu32" %"PRIu32": %le %le\n",
+                                shellIndexM, shellIndexN, shellIndexP, shellIndexQ, referenceIntegrals[k], 0.0);
+                            errcount++;
+                        }
+                    }
+                } else if (integralsCount == referenceIntegralsCount && integralsCount != 0) {
+                    for (int k = 0; k < referenceIntegralsCount; k++) {
+                        if ((fabs(referenceIntegrals[k]) < 1.0e-6) ||
+                            (fabs(integrals[k]) < 1.0e-6))
                         {
-                            printf ("2 ERROR: %d %d %d %d: %le %le: %le\n",
-                                M, N, P, Q, integrals0[k], integrals[k],
-                                fabs(integrals0[k] - integrals[k])/fabs(integrals0[k]));
-                            errcount++;
+                            if (fabs(referenceIntegrals[k] - integrals[k]) > 1.0e-10) {
+                                printf ("1 ERROR: %"PRIu32" %"PRIu32" %"PRIu32" %"PRIu32": %le %le\n",
+                                    shellIndexM, shellIndexN, shellIndexP, shellIndexQ, referenceIntegrals[k], integrals[k]);
+                                errcount++;
+                            }
+                        } else {
+                            if ((fabs(referenceIntegrals[k] - integrals[k])/fabs(referenceIntegrals[k]) > 1.0e-6) &&
+                                (errcount < 10))
+                            {
+                                printf ("2 ERROR: %"PRIu32" %"PRIu32" %"PRIu32" %"PRIu32": %le %le: %le\n",
+                                    shellIndexM, shellIndexN, shellIndexP, shellIndexQ, referenceIntegrals[k], integrals[k],
+                                    fabs(referenceIntegrals[k] - integrals[k])/fabs(referenceIntegrals[k]));
+                                errcount++;
+                            }
+
                         }
-
-                    }
-                }   
-            } else {
-                printf ("ERROR: nints0 %d nints %d\n", nints0, nints);
+                    }   
+                } else {
+                    printf ("ERROR: nints0 %d nints %d\n", referenceIntegralsCount, integralsCount);
+                }
+                if (errcount > 0) {
+                    goto end;
+                }
             }
+            
+            free(shellIndicesN);
+            free(shellIndicesQ);
 
-            if (errcount > 0) {
-                goto end;
-            }
         }
     }
 
-    printf("Done\n");
-    printf("\n");
-    printf("Number of calls: %.6le, Number of integrals: %.6le\n", totalcalls, totalintls);
-    printf("Total time: %.4lf secs\n", timepass);
-    printf("Average time per call: %.3le us\n", 1000.0 * 1000.0 * timepass / totalcalls);
+    printf("Done\n\n");
+    const double totalTime = (double)totalTicks / (double)getTimerFrequency();
+    printf("Number of calls: %"PRIu64", Number of integrals: %"PRIu64"\n", totalCalls, totalIntegralsCount);
+    printf("Total time: %.4lf secs\n", totalTime);
+    printf("Average time per call: %.3lf us\n", totalTime / totalCalls * 1.0e+6);
 
 end:
-    free(integrals0);
+    free(referenceIntegrals);
     CInt_destroyERD(erd);
     CInt_destroyBasisSet(basis);
     free(shellptr);

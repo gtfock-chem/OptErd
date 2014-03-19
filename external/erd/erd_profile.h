@@ -28,8 +28,8 @@ typedef enum
     erd__csgto_ticks                    = 13,
 
     // 1111 case
-    erd__prepare_ctr_ticks_1111         = 14,
-    erd__set_ij_kl_pairs_ticks_1111     = 15,
+    erd__1111_prepare_ctr_ticks         = 14,
+    erd__1111_set_ij_kl_pairs_ticks     = 15,
     erd__ssss_pcgto_block_ticks         = 16,
     erd__sssp_pcgto_block_ticks         = 17,
     erd__sspp_pcgto_block_ticks         = 18,

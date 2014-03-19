@@ -3,10 +3,7 @@
 #include <assert.h>
 
 #include "erd.h"
-
-#ifdef __INTEL_OFFLOAD
-#pragma offload_attribute(push, target(mic))
-#endif
+#include "erdutil.h"
 
 /* ------------------------------------------------------------------------ */
 /*  OPERATION   : ERD__DSQMIN_LINE_SEGMENTS */
@@ -105,165 +102,115 @@
 /*                     XQ1,YQ1,ZQ1 =  x,y,z coordinates of second point */
 /*                                    defining line segment Q */
 /* ------------------------------------------------------------------------ */
-double erd__dsqmin_line_segments (double xp0, double yp0,
+ERD_OFFLOAD double erd__dsqmin_line_segments (double xp0, double yp0,
                                   double zp0, double xp1,
                                   double yp1, double zp1,
                                   double xq0, double yq0,
                                   double zq0, double xq1,
                                   double yq1, double zq1)
 {
-    double ret_val;
-    double sc, sd, td, tc, xc, yc, zc, sn, tn, xu, yu, zu, xv, yv,
-        zv, xw, yw, zw, denom, udotu, udotv, vdotv, udotw, vdotw;
-
-
-/*             ...set direction vectors U and V and reference vector W. */
-    xu = xp1 - xp0;
-    yu = yp1 - yp0;
-    zu = zp1 - zp0;
-    xv = xq1 - xq0;
-    yv = yq1 - yq0;
-    zv = zq1 - zq0;
-    xw = xp0 - xq0;
-    yw = yp0 - yq0;
-    zw = zp0 - zq0;
-    udotu = xu * xu + yu * yu + zu * zu;
-    vdotv = xv * xv + yv * yv + zv * zv;
-    if (udotu < 1e-12 && vdotv < 1e-12)
-    {
-/*             ...both line segments are points. */
-        ret_val = xw * xw + yw * yw + zw * zw;
-        return ret_val;
-    }
-    else if (udotu < 1e-12)
-    {
-/*             ...only P line segment is a point. */
-        vdotw = xv * xw + yv * yw + zv * zw;
-        if (vdotw < 0.0)
-        {
-            ret_val = xw * xw + yw * yw + zw * zw;
-            return ret_val;
-        }
-        else if (vdotw > vdotv)
-        {
+    /* ...set direction vectors U and V and reference vector W. */
+    const double xu = xp1 - xp0;
+    const double yu = yp1 - yp0;
+    const double zu = zp1 - zp0;
+    const double xv = xq1 - xq0;
+    const double yv = yq1 - yq0;
+    const double zv = zq1 - zq0;
+    const double xw = xp0 - xq0;
+    const double yw = yp0 - yq0;
+    const double zw = zp0 - zq0;
+    const double udotu = xu * xu + yu * yu + zu * zu;
+    const double vdotv = xv * xv + yv * yv + zv * zv;
+    double xc, yc, zc;
+    if (udotu < 1.0e-12 && vdotv < 1.0e-12) {
+        /* ...both line segments are points. */
+        return xw * xw + yw * yw + zw * zw;
+    } else if (udotu < 1.0e-12) {
+        /* ...only P line segment is a point. */
+        const double vdotw = xv * xw + yv * yw + zv * zw;
+        if (vdotw < 0.0) {
+            return xw * xw + yw * yw + zw * zw;
+        } else if (vdotw > vdotv) {
             xc = xw - xv;
             yc = yw - yv;
             zc = zw - zv;
-        }
-        else
-        {
-            tc = vdotw / vdotv;
+        } else {
+            const double tc = vdotw / vdotv;
             xc = xw - tc * xv;
             yc = yw - tc * yv;
             zc = zw - tc * zv;
         }
-    }
-    else if (vdotv < 1e-12)
-    {
-/*             ...only Q line segment is a point. */
-        udotw = -(xu * xw + yu * yw + zu * zw);
-        if (udotw < 0.)
-        {
-            ret_val = xw * xw + yw * yw + zw * zw;
-            return ret_val;
-        }
-        else if (udotw > udotu)
-        {
+    } else if (vdotv < 1.0e-12) {
+        /* ...only Q line segment is a point. */
+        const double udotw = -(xu * xw + yu * yw + zu * zw);
+        if (udotw < 0.0) {
+            return xw * xw + yw * yw + zw * zw;
+        } else if (udotw > udotu) {
             xc = xw + xu;
             yc = yw + yu;
             zc = zw + zu;
-        }
-        else
-        {
-            sc = udotw / udotu;
+        } else {
+            const double sc = udotw / udotu;
             xc = xw + sc * xu;
             yc = yw + sc * yu;
             zc = zw + sc * zu;
         }
-    }
-    else
-    {
-/*           ...both P and Q are line segments. */
-        udotv = xu * xv + yu * yv + zu * zv;
-        udotw = xu * xw + yu * yw + zu * zw;
-        vdotw = xv * xw + yv * yw + zv * zw;
-        denom = udotu * vdotv - udotv * udotv;
-        if (denom < 1e-12)
-        {
+    } else {
+        /* ...both P and Q are line segments. */
+        const double udotv = xu * xv + yu * yv + zu * zv;
+        const double udotw = xu * xw + yu * yw + zu * zw;
+        const double vdotw = xv * xw + yv * yw + zv * zw;
+        const double denom = udotu * vdotv - udotv * udotv;
+        double sn, sd, tn, td;
+        if (denom < 1.0e-12) {
             sn = 0.0;
             sd = 1.0;
             tn = vdotw;
             td = vdotv;
-        }
-        else
-        {
+        } else {
             sn = udotv * vdotw - vdotv * udotw;
             sd = denom;
-            if (sn < 0.0)
-            {
+            if (sn < 0.0) {
                 sn = 0.0;
                 tn = vdotw;
                 td = denom;
-            }
-            else if (sn > denom)
-            {
+            } else if (sn > denom) {
                 sn = denom;
                 sd = denom;
                 tn = vdotw + udotv;
                 td = vdotv;
-            }
-            else
-            {
+            } else {
                 tn = udotu * vdotw - udotv * udotw;
                 td = denom;
             }
         }
-        if (tn < 0.0)
-        {
+        if (tn < 0.0) {
             tn = 0.0;
             sn = -udotw;
-            if (sn < 0.0)
-            {
+            if (sn < 0.0) {
                 sn = 0.0;
-            }
-            else if (sn > udotu)
-            {
+            } else if (sn > udotu) {
                 sn = sd;
-            }
-            else
-            {
+            } else {
                 sn = -udotw;
                 sd = udotu;
             }
-        }
-        else if (tn > td)
-        {
+        } else if (tn > td) {
             tn = td;
             sn = udotv - udotw;
-            if (sn < 0.0)
-            {
+            if (sn < 0.0) {
                 sn = 0.0;
-            }
-            else if (sn > udotu)
-            {
+            } else if (sn > udotu) {
                 sn = sd;
-            }
-            else
-            {
+            } else {
                 sd = udotu;
             }
         }
-        sc = sn / sd;
-        tc = tn / td;
+        const double sc = sn / sd;
+        const double tc = tn / td;
         xc = xw + sc * xu - tc * xv;
         yc = yw + sc * yu - tc * yv;
         zc = zw + sc * zu - tc * zv;
     }
-    ret_val = xc * xc + yc * yc + zc * zc;
-
-    return ret_val;
+    return xc * xc + yc * yc + zc * zc;
 }
-
-#ifdef __INTEL_OFFLOAD
-#pragma offload_attribute(pop)
-#endif

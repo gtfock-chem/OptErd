@@ -3,10 +3,7 @@
 #include <assert.h>
 
 #include "erd.h"
-
-#ifdef __INTEL_OFFLOAD
-#pragma offload_attribute(push, target(mic))
-#endif
+#include "erdutil.h"
 
 /* ------------------------------------------------------------------------ */
 /*  OPERATION   : ERD__HRR_TRANSFORM */
@@ -50,20 +47,11 @@
 /*                     Y          =  batch of HRR transformed integrals */
 /*                                   (m,ab) */
 /* ------------------------------------------------------------------------ */
-int erd__hrr_transform (int m, int nrow,
-                        int nxyza, int nxyzb,
-                        int *lrow, int *row,
-                        double *rot, double *x, double *y)
+ERD_OFFLOAD void erd__hrr_transform(uint32_t m, uint32_t nrow,
+    uint32_t nxyza, uint32_t nxyzb,
+    const uint32_t lrow[restrict static nxyzb], const uint32_t row[restrict],
+    const double rot[restrict], const double x[restrict], double y[restrict])
 {
-    int a;
-    int b;
-    int i;
-    int j;
-    int n;
-    double rot1;
-    int mrow;
-    int xcol1;
-
 /*             ...perform the HRR transformation. One of the main */
 /*                properties of this transformation is that the */
 /*                last nonzero element of the HRR transformation */
@@ -71,32 +59,21 @@ int erd__hrr_transform (int m, int nrow,
 /*                the multiplication with that element. */
 /*                Use basic row grouping of the transformation */
 /*                to improve cache line reusing. */
-    n = 0;
-    for (b = 0; b < nxyzb; ++b)
-    {
-        mrow = lrow[b];
-        for (a = 0; a < nxyza; ++a)
-        {
-            for (j = 0; j < m; ++j)
-            {
+    uint32_t n = 0;
+    for (uint32_t b = 0; b < nxyzb; b++) {
+        const uint32_t mrow = lrow[b];
+        for (uint32_t a = 0; a < nxyza; a++) {
+            for (uint32_t j = 0; j < m; j++) {
                 y[j + n * m] = 0.0;
             }           
-            for (i = 0; i < mrow; i++)
-            {
-                xcol1 = row[i + n * nrow] - 1;
-                rot1 = rot[i + b * nrow];
-                for (j = 0; j < m; ++j)
-                {
+            for (uint32_t i = 0; i < mrow; i++) {
+                const uint32_t xcol1 = row[i + n * nrow] - 1;
+                const double rot1 = rot[i + b * nrow];
+                for (uint32_t j = 0; j < m; j++) {
                     y[j + n * m] += rot1 * x[j + xcol1 * m];
                 }
             }
-            ++n;
+            n++;
         }      
     }
-
-    return 0;
 }
-
-#ifdef __INTEL_OFFLOAD
-#pragma offload_attribute(pop)
-#endif

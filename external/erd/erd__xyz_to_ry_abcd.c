@@ -3,11 +3,7 @@
 #include <assert.h>
 
 #include "erd.h"
-
-
-#ifdef __INTEL_OFFLOAD
-#pragma offload_attribute(push, target(mic))
-#endif
+#include "erdutil.h"
 
 /* ------------------------------------------------------------------------ */
 /*  OPERATION   : ERD__XYZ_TO_RY_ABCD */
@@ -68,137 +64,92 @@
 /*                Only mutually different transformation matrices + */
 /*                associated data are generated. */
 /* ------------------------------------------------------------------------ */
-int erd__xyz_to_ry_abcd (int nxyza, int nxyzb, int nxyzc, int nxyzd,
-                         int nrya, int nryb, int nryc, int nryd,
-                         int shella, int shellb,
-                         int shellc, int shelld,
-                         int istart, int zstart,
-                         int *nrowa, int *nrowb,
-                         int *nrowc, int *nrowd,
-                         int *nrota, int *nrotb,
-                         int *nrotc, int *nrotd,
-                         int *z00a, int *z00b, int *z00c, int *z00d,
-                         int *i0a1, int *i0b1, int *i0c1, int *i0d1,
-                         int *i0a2, int *i0b2, int *i0c2, int *i0d2,
-                         int *iused, int *zused,
-                         int *icore, double *zcore)
+ERD_OFFLOAD void erd__xyz_to_ry_abcd(uint32_t nxyza, uint32_t nxyzb, uint32_t nxyzc, uint32_t nxyzd,
+    uint32_t nrya, uint32_t nryb, uint32_t nryc, uint32_t nryd,
+    uint32_t shella, uint32_t shellb, uint32_t shellc, uint32_t shelld,
+    uint32_t nrowa[restrict static 1], uint32_t nrowb[restrict static 1], uint32_t nrowc[restrict static 1], uint32_t nrowd[restrict static 1],
+    uint32_t nrota[restrict static 1], uint32_t nrotb[restrict static 1], uint32_t nrotc[restrict static 1], uint32_t nrotd[restrict static 1],
+    uint32_t z00a[restrict static 1], uint32_t z00b[restrict static 1], uint32_t z00c[restrict static 1], uint32_t z00d[restrict static 1],
+    uint32_t i0a1[restrict static 1], uint32_t i0b1[restrict static 1], uint32_t i0c1[restrict static 1], uint32_t i0d1[restrict static 1],
+    uint32_t i0a2[restrict static 1], uint32_t i0b2[restrict static 1], uint32_t i0c2[restrict static 1], uint32_t i0d2[restrict static 1],
+    uint32_t icore[restrict static 1], double zcore[restrict static 1])
 {
-    int z0at, z0bt, z0ct, z0dt;
-    int bdata, cdata;
-
-    --zcore;
-    --icore;
-
-/*             ...shell D data. */
-    *iused = 0;
-    *zused = 0;
-    if (shelld > 1)
-    {
+    /* ...shell D data. */
+    if (shelld > 1) {
         *nrowd = (shelld / 2 + 1) * (shelld / 2 + 2) / 2;
         *nrotd = *nrowd * nryd;
-        *z00d = zstart;
-        z0dt = *z00d + *nrotd;
-        *i0d1 = istart;
+        *z00d = 0;
+        const uint32_t z0dt = *z00d + *nrotd;
+        *i0d1 = 0;
         *i0d2 = *i0d1 + nryd;
-        erd__xyz_to_ry_matrix (nxyzd, *nrowd, shelld,
-                               &zcore[z0dt], &icore[*i0d1],
-                               &icore[*i0d2], &zcore[*z00d]);
-        *iused = nryd + *nrotd;
-        *zused = *nrotd;
-    }
-    else
-    {
+        erd__xyz_to_ry_matrix(nxyzd, *nrowd, shelld, &zcore[z0dt], &icore[*i0d1], &icore[*i0d2], &zcore[*z00d]);
+    } else {
         *nrowd = 0;
         *nrotd = 0;
-        *z00d = zstart;
-        *i0d2 = istart;
+        *z00d = 0;
+        *i0d2 = 0;
     }
 
-/*             ...shell C data. */
-    cdata = 0;
-    if (shellc > 1)
-    {
-        if (shellc == shelld)
-        {
+    /* ...shell C data. */
+    bool cdata = false;
+    if (shellc > 1) {
+        if (shellc == shelld) {
             *z00c = *z00d;
             *i0c1 = *i0d1;
             *i0c2 = *i0d2;
             *nrowc = *nrowd;
             *nrotc = *nrotd;
-        }
-        else
-        {
+        } else {
             *nrowc = (shellc / 2 + 1) * (shellc / 2 + 2) / 2;
             *nrotc = *nrowc * nryc;
             *z00c = *z00d + *nrotd;
-            z0ct = *z00c + *nrotc;
+            const uint32_t z0ct = *z00c + *nrotc;
             *i0c1 = *i0d2 + *nrotd;
             *i0c2 = *i0c1 + nryc;
-            erd__xyz_to_ry_matrix (nxyzc, *nrowc, shellc,
-                                   &zcore[z0ct], &icore[*i0c1],
-                                   &icore[*i0c2], &zcore[*z00c]);
-            *iused = *iused + nryc + *nrotc;
-            *zused += *nrotc;
-            cdata = 1;
+            erd__xyz_to_ry_matrix(nxyzc, *nrowc, shellc, &zcore[z0ct], &icore[*i0c1], &icore[*i0c2], &zcore[*z00c]);
+            cdata = true;
         }
-    }
-    else
-    {
+    } else {
         *nrowc = 0;
         *nrotc = 0;
         *z00c = *z00d;
         *i0c2 = *i0d2;
     }
 
-/*             ...shell B data (being careful, using SHELLD data if */
-/*                SHELLC data is not present!). */
-    bdata = 0;
-    if (shellb > 1)
-    {
-        if (shellb == shellc)
-        {
+    /* ...shell B data (being careful, using SHELLD data if SHELLC data is not present!). */
+    bool bdata = false;
+    if (shellb > 1) {
+        if (shellb == shellc) {
             *z00b = *z00c;
             *i0b1 = *i0c1;
             *i0b2 = *i0c2;
             *nrowb = *nrowc;
             *nrotb = *nrotc;
-        }
-        else if (shellb == shelld)
-        {
+        } else if (shellb == shelld) {
             *z00b = *z00d;
             *i0b1 = *i0d1;
             *i0b2 = *i0d2;
             *nrowb = *nrowd;
             *nrotb = *nrotd;
-        }
-        else
-        {
+        } else {
             *nrowb = (shellb / 2 + 1) * (shellb / 2 + 2) / 2;
             *nrotb = *nrowb * nryb;
-            if (cdata)
-            {
+            uint32_t z0bt;
+            if (cdata) {
                 *z00b = *z00c + *nrotc;
                 z0bt = *z00b + *nrotb;
                 *i0b1 = *i0c2 + *nrotc;
                 *i0b2 = *i0b1 + nryb;
-            }
-            else
-            {
+            } else {
                 *z00b = *z00d + *nrotd;
                 z0bt = *z00b + *nrotb;
                 *i0b1 = *i0d2 + *nrotd;
                 *i0b2 = *i0b1 + nryb;
             }
-            erd__xyz_to_ry_matrix (nxyzb, *nrowb, shellb,
-                                   &zcore[z0bt], &icore[*i0b1],
-                                   &icore[*i0b2], &zcore[*z00b]);
-            *iused = *iused + nryb + *nrotb;
-            *zused += *nrotb;
-            bdata = 1;
+            erd__xyz_to_ry_matrix(nxyzb, *nrowb, shellb, &zcore[z0bt], &icore[*i0b1], &icore[*i0b2], &zcore[*z00b]);
+            bdata = true;
         }
-    }
-    else
-    {
+    } else {
         *nrowb = 0;
         *nrotb = 0;
         *z00b = *z00c;
@@ -206,71 +157,47 @@ int erd__xyz_to_ry_abcd (int nxyza, int nxyzb, int nxyzc, int nxyzd,
     }
 
 
-/*             ...shell A data (being careful, using SHELLC data if */
-/*                SHELLB data is not present or using SHELLD data if */
-/*                also SHELLC data is not present!). */
-    if (shella > 1)
-    {
-        if (shella == shellb)
-        {
+    /* ...shell A data (being careful, using SHELLC data if SHELLB data is not present or using SHELLD data if also SHELLC data is not present!). */
+    if (shella > 1) {
+        if (shella == shellb) {
             *z00a = *z00b;
             *i0a1 = *i0b1;
             *i0a2 = *i0b2;
             *nrowa = *nrowb;
             *nrota = *nrotb;
-        }
-        else if (shella == shellc)
-        {
+        } else if (shella == shellc) {
             *z00a = *z00c;
             *i0a1 = *i0c1;
             *i0a2 = *i0c2;
             *nrowa = *nrowc;
             *nrota = *nrotc;
-        }
-        else if (shella == shelld)
-        {
+        } else if (shella == shelld) {
             *z00a = *z00d;
             *i0a1 = *i0d1;
             *i0a2 = *i0d2;
             *nrowa = *nrowd;
             *nrota = *nrotd;
-        }
-        else
-        {
+        } else {
             *nrowa = (shella / 2 + 1) * (shella / 2 + 2) / 2;
             *nrota = *nrowa * nrya;
-            if (bdata)
-            {
+            uint32_t z0at;
+            if (bdata) {
                 *z00a = *z00b + *nrotb;
                 z0at = *z00a + *nrota;
                 *i0a1 = *i0b2 + *nrotb;
                 *i0a2 = *i0a1 + nrya;
-            }
-            else if (cdata)
-            {
+            } else if (cdata) {
                 *z00a = *z00c + *nrotc;
                 z0at = *z00a + *nrota;
                 *i0a1 = *i0c2 + *nrotc;
                 *i0a2 = *i0a1 + nrya;
-            }
-            else
-            {
+            } else {
                 *z00a = *z00d + *nrotd;
                 z0at = *z00a + *nrota;
                 *i0a1 = *i0d2 + *nrotd;
                 *i0a2 = *i0a1 + nrya;
             }
-            erd__xyz_to_ry_matrix (nxyza, *nrowa, shella,
-                                   &zcore[z0at], &icore[*i0a1],
-                                   &icore[*i0a2], &zcore[*z00a]);
-            *iused = *iused + nrya + *nrota;
-            *zused += *nrota;
+            erd__xyz_to_ry_matrix(nxyza, *nrowa, shella, &zcore[z0at], &icore[*i0a1], &icore[*i0a2], &zcore[*z00a]);
         }
     }
-     
-    return 0;
 }
-
-#ifdef __INTEL_OFFLOAD
-#pragma offload_attribute(pop)
-#endif

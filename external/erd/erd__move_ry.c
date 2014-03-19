@@ -48,46 +48,31 @@
 /*                                     after the move */
 /*                       Y          =  final set of integrals */
 /* ------------------------------------------------------------------------ */
-int erd__move_ry (int nindex, int notmove, int move, int nry,
-                  int index, double *x,
-                  int *ixoff, double *y)
+void erd__move_ry(uint32_t nindex, uint32_t notmove, uint32_t move, uint32_t nry,
+    uint32_t index, const double x[restrict static notmove * move * nry],
+    uint32_t ixoff[restrict static nindex], double y[restrict static notmove * move * nry])
 {
-    int i;
-    int j;
-    int k;
 /*             ...check, if the move is simply a transposition */
 /*                or a more general ijkl -> ikjl move. */
-    if (notmove == 1)
-    {
-        for (j = 0; j < move; j++)
-        {
-            for (i = 0; i < nry; i++)
-            {
+    if (notmove == 1) {
+        for (uint32_t j = 0; j < move; j++) {
+            for (uint32_t i = 0; i < nry; i++) {
                 y[j * nry + i] = x[i * move + j];
             }
         }
-    }
-    else
-    {
-        for (k = 0; k < nry; k++)
-        {
-            for (j = 0; j < move; j++)
-            {
-                for (i = 0; i < notmove; i++)
-                {
-                    y[j * nry * notmove + k * notmove + i] =
-                        x[k * move * notmove + j * notmove + i];
+    } else {
+        for (uint32_t k = 0; k < nry; k++) {
+            for (uint32_t j = 0; j < move; j++) {
+                for (uint32_t i = 0; i < notmove; i++) {
+                    y[(j * nry + k) * notmove + i] = x[(k * move + j) * notmove + i];
                 }
             }
         }
     }
 
-    for (i = index; i < nindex; i++)
-    {
+    for (uint32_t i = index; i < nindex; i++) {
         ixoff[i] *= nry;
     }
-
-    return 0;
 }
 
 #ifdef __INTEL_OFFLOAD

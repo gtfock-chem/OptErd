@@ -2,11 +2,7 @@
 #include <stdlib.h>
 
 #include "erd.h"
-
-
-#ifdef __INTEL_OFFLOAD
-#pragma offload_attribute(push, target(mic))
-#endif
+#include "erdutil.h"
 
 /* ------------------------------------------------------------------------ */
 /*  OPERATION   : ERD__MEMORY_CSGTO */
@@ -46,28 +42,22 @@
 /*                    IMIN,IOPT    =  minimum/optimum int memory */
 /*                    ZMIN,ZOPT    =  minimum/optimum flp memory */
 /* ------------------------------------------------------------------------ */
-int erd__memory_csgto (int npgto1, int npgto2,
-                       int npgto3, int npgto4,
-                       int shell1, int shell2, int shell3, int shell4,
-                       double x1, double y1, double z1,
-                       double x2, double y2, double z2,
-                       double x3, double y3, double z3,
-                       double x4, double y4, double z4,
-                       int spheric, int *iopt, int *zopt)
+ERD_OFFLOAD void erd__memory_csgto(uint32_t npgto1, uint32_t npgto2, uint32_t npgto3, uint32_t npgto4,
+    uint32_t shell1, uint32_t shell2, uint32_t shell3, uint32_t shell4,
+    double x1, double y1, double z1,
+    double x2, double y2, double z2,
+    double x3, double y3, double z3,
+    double x4, double y4, double z4,
+    bool spheric, size_t *iopt, size_t *zopt)
 {
-    int nxyzhrr, nij, nkl;
-    int ngqp, nmom, nrya, nryb, nryc,
-        nryd, zout2, ineed;
-    int zneed, nrota, nrotb, nrotc, nrotd, nrowa, nrowb, nrowc,
-        nrowd;
-    int empty;
-    int nxyza, nxyzb, nxyzc, nxyzd, nxyzt, shella, shellb, shellc,
-        shelld, shellp, npgtoa, npgtob,
-        npgtoc, npgtod, shellq, ngqscr, shellt, mnprim, dummyi[15];
+    uint32_t nxyzhrr;
+    uint32_t nrya, nryb, nryc, nryd;
+    uint32_t nxyza, nxyzb, nxyzc, nxyzd, shella, shellb, shellc, shelld, npgtoa, npgtob,
+        npgtoc, npgtod, mnprim, dummyi[15];
     int mxprim;
     double dummyr[12];
-    int mxsize, nxyzet, nxyzft;
-    int npgtoab, npgtocd, ncolhrr, mxshell, nrothrr;
+    uint32_t mxsize, nxyzet, nxyzft;
+    uint32_t ncolhrr, nrothrr;
 
     *iopt = 0;
     *zopt = 0;
@@ -77,33 +67,35 @@ int erd__memory_csgto (int npgto1, int npgto2,
 /*                evaluate the memory requirements and is dumped into */
 /*                the DUMMYx arrays with x=I,R,L standing for int, */
 /*                real and int, respectively. */ 
-    erd__set_abcd (npgto1, npgto2, npgto3, npgto4,
-                   shell1, shell2, shell3, shell4,
-                   x1, y1, z1, x2, y2, z2,
-                   x3, y3, z3, x4, y4, z4, spheric,
-                   &npgtoa, &npgtob, &npgtoc, &npgtod,
-                   &shella, &shellb, &shellc, &shelld,
-                   &dummyr[0], &dummyr[1], &dummyr[2],
-                   &dummyr[3], &dummyr[4], &dummyr[5],
-                   &dummyr[6], &dummyr[7], &dummyr[8],
-                   &dummyr[9], &dummyr[10], &dummyr[11],
-                   &nxyza, &nxyzb,
-                   &nxyzc, &nxyzd,
-                   &nxyzet, &nxyzft,
-                   &nrya, &nryb, &nryc, &nryd,
-                   &dummyi[0], &dummyi[1],
-                   &ncolhrr, &nrothrr,
-                   &nxyzhrr, &empty, &dummyi[14]);
-    if (empty)
-    {
-        return 0;
+    const bool atomic = false;
+    bool empty, tr1234;
+    erd__set_abcd(npgto1, npgto2, npgto3, npgto4,
+        shell1, shell2, shell3, shell4,
+        atomic,
+        x1, y1, z1, x2, y2, z2,
+        x3, y3, z3, x4, y4, z4, spheric,
+        &npgtoa, &npgtob, &npgtoc, &npgtod,
+        &shella, &shellb, &shellc, &shelld,
+        &dummyr[0], &dummyr[1], &dummyr[2],
+        &dummyr[3], &dummyr[4], &dummyr[5],
+        &dummyr[6], &dummyr[7], &dummyr[8],
+        &dummyr[9], &dummyr[10], &dummyr[11],
+        &nxyza, &nxyzb,
+        &nxyzc, &nxyzd,
+        &nxyzet, &nxyzft,
+        &nrya, &nryb, &nryc, &nryd,
+        &dummyi[0], &dummyi[1],
+        &ncolhrr, &nrothrr,
+        &nxyzhrr, &empty, &tr1234);
+    if (empty) {
+        return;
     }
 
 /*             ...simulate the cartesian contracted (e0|f0) batch */
 /*                generation. */
-    npgtoab = npgtoa * npgtob;
-    npgtocd = npgtoc * npgtod;
-    nxyzt = nxyzet * nxyzft;
+    const uint32_t npgtoab = npgtoa * npgtob;
+    const uint32_t npgtocd = npgtoc * npgtod;
+    const uint32_t nxyzt = nxyzet * nxyzft;
 
 /*             ...at this point we would determine the IJ and KL */
 /*                exponent pairs necessay to evaluate the cartesian */
@@ -114,10 +106,10 @@ int erd__memory_csgto (int npgto1, int npgto2,
 /*                will be changed in the future, this is where a memory */
 /*                routine handling the IJ and KL pair determination */
 /*                should be placed. */
-    nij = npgtoab;
-    nkl = npgtocd;
-    zneed = PAD_LEN(npgtoab) + PAD_LEN(npgtocd);
-    ineed = 2 * PAD_LEN2(npgtoab) + 2 * PAD_LEN2(npgtocd);
+    const uint32_t nij = npgtoab;
+    const uint32_t nkl = npgtocd;
+    uint32_t zneed = PAD_LEN(npgtoab) + PAD_LEN(npgtocd);
+    uint32_t ineed = 2 * PAD_LEN2(npgtoab) + 2 * PAD_LEN2(npgtocd);
     *iopt = MAX (*iopt, ineed);
     *zopt = MAX (*zopt, zneed);
 
@@ -125,28 +117,20 @@ int erd__memory_csgto (int npgto1, int npgto2,
 /*             ...determine minimum and optimum flp needs for the */
 /*                unnormalized cartesian (e0|f0) contracted batch */
 /*                generation. */
-    shellp = shella + shellb;
-    shellq = shellc + shelld;
-    shellt = shellp + shellq;
-    ngqp = shellt / 2 + 1;
-    nmom = (ngqp << 1) - 1;
-    ngqscr = nmom * 5 + (ngqp << 1) - 2;
-    mxshell = MAX(shell1, shell2);
-    mxshell = MAX(mxshell, shell3);
-    mxshell = MAX(mxshell, shell4);
+    const uint32_t shellp = shella + shellb;
+    const uint32_t shellq = shellc + shelld;
+    const uint32_t shellt = shellp + shellq;
+    const uint32_t ngqp = shellt / 2 + 1;
+    const uint32_t nmom = (ngqp << 1) - 1;
+    const uint32_t ngqscr = nmom * 5 + (ngqp << 1) - 2;
+    const uint32_t mxshell = max4x32u(shell1, shell2, shell3, shell4);
 
-    erd__e0f0_def_blocks (0, npgtoa, npgtob, npgtoc, npgtod,
+    int zout2;
+    erd__e0f0_def_blocks(0, npgtoa, npgtob, npgtoc, npgtod,
                           shellp, shellq, nij, nkl,
                           ngqp, ngqscr, nxyzt,
                           1, &zout2,
-                          NULL, NULL, NULL, NULL, NULL,
-                          NULL, NULL, NULL, NULL, NULL,
-                          NULL, NULL, NULL, NULL, NULL,
-                          NULL, NULL, NULL, NULL, NULL,
-                          NULL, NULL, NULL,
-                          NULL, NULL, NULL, NULL, NULL,
-                          NULL, NULL, NULL, NULL, NULL,
-                          NULL, NULL, NULL, NULL, NULL);
+                          NULL);
 
     mnprim = MAX (MIN (npgtoa, npgtob), MIN (npgtoc, npgtod));    
     mxprim = MAX (npgtoa, npgtob);
@@ -182,45 +166,35 @@ int erd__memory_csgto (int npgto1, int npgto2,
 
 
 /*             ...memory for Zone 3. */
-    if (spheric)
-    {
-        if (mxshell > 1)
-        {
-            if (shelld > 1)
-            {
-                nrowd = (shelld / 2 + 1) * (shelld / 2 + 2) / 2;
-                nrotd = nrowd * nryd;
+    if (spheric) {
+        if (mxshell > 1) {
+            if (shelld > 1) {
+                const uint32_t nrowd = (shelld / 2 + 1) * (shelld / 2 + 2) / 2;
+                const uint32_t nrotd = nrowd * nryd;
                 ineed = ineed + nryd + nrotd;
                 zneed = zneed + nrotd + nxyzd;
             }
-            if (shellc > 1 && shellc != shelld)
-            {
-                nrowc = (shellc / 2 + 1) * (shellc / 2 + 2) / 2;
-                nrotc = nrowc * nryc;
+            if (shellc > 1 && shellc != shelld) {
+                const uint32_t nrowc = (shellc / 2 + 1) * (shellc / 2 + 2) / 2;
+                const uint32_t nrotc = nrowc * nryc;
                 ineed = ineed + nryc + nrotc;
                 zneed = zneed + nrotc + nxyzc;
             }
-            if (shellb > 1 && shellb != shellc && shellb != shelld)
-            {
-                nrowb = (shellb / 2 + 1) * (shellb / 2 + 2) / 2;
-                nrotb = nrowb * nryb;
+            if (shellb > 1 && shellb != shellc && shellb != shelld) {
+                const uint32_t nrowb = (shellb / 2 + 1) * (shellb / 2 + 2) / 2;
+                const uint32_t nrotb = nrowb * nryb;
                 ineed = ineed + nryb + nrotb;
                 zneed = zneed + nrotb + nxyzb;
             }
-            if (shella > 1 && shella != shellb && shella != shellc && shella
-                != shelld)
-            {
-                nrowa = (shella / 2 + 1) * (shella / 2 + 2) / 2;
-                nrota = nrowa * nrya;
+            if (shella > 1 && shella != shellb && shella != shellc && shella != shelld) {
+                const uint32_t nrowa = (shella / 2 + 1) * (shella / 2 + 2) / 2;
+                const uint32_t nrota = nrowa * nrya;
                 ineed = ineed + nrya + nrota;
                 zneed = zneed + nrota + nxyza;
             }
         }
-    }
-    else
-    {
-        if (mxshell > 1)
-        {
+    } else {
+        if (mxshell > 1) {
             zneed = zneed + mxshell + 1;
         }
     }
@@ -231,10 +205,4 @@ int erd__memory_csgto (int npgto1, int npgto2,
     zneed += nrothrr << 1;
     *iopt = MAX (*iopt, ineed);
     *zopt = MAX (*zopt, zneed);
-    
-    return 0;
 }
-
-#ifdef __INTEL_OFFLOAD
-#pragma offload_attribute(pop)
-#endif

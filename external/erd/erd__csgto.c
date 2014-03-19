@@ -2,15 +2,12 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <math.h>
+#include <string.h>
 #ifdef _OPENMP
 #include <omp.h>
 #endif
 #include "erd.h"
-
-#ifdef __INTEL_OFFLOAD
-#pragma offload_attribute(push, target(mic))
-#endif
-
+#include "erdutil.h"
 
 /* ------------------------------------------------------------------------ */
 /*  OPERATION   : ERD__CSGTO */
@@ -84,8 +81,8 @@
 /*                                    ones are wanted */
 /*                    SCREEN       =  is true, if screening will be */
 /*                                    done at primitive integral level */
-/*                    ICORE        =  int scratch space */
-/*                    ZCORE (part) =  flp scratch space */
+/*                    ICORE        =  int output_buffer space */
+/*                    ZCORE (part) =  flp output_buffer space */
 /*                  Output: */
 /*                    NBATCH       =  # of integrals in batch */
 /*                    NFIRST       =  first address location inside the */
@@ -152,228 +149,100 @@
 /*                [E0|F0] integrals will be essential for numerical */
 /*                stability during contraction. */
 /* ------------------------------------------------------------------------ */
-int erd__csgto (int zmax, int npgto1, int npgto2,
-                int npgto3, int npgto4,
-                int shell1, int shell2,
-                int shell3, int shell4,
-                double x1, double y1, double z1,
-                double x2, double y2, double z2,
-                double x3, double y3, double z3,
-                double x4, double y4, double z4,
-                double *alpha1, double *alpha2,
-                double *alpha3, double *alpha4,
-                double *cc1, double *cc2,
-                double *cc3, double *cc4,
-                double *norm1, double *norm2,
-                double *norm3, double *norm4,
-                int **vrrtab, int ldvrrtab,
-                int spheric, int screen, int *icore,
-                int *nbatch, int *nfirst, double *zcore)
+ERD_OFFLOAD void erd__csgto(
+    bool atomic,
+    uint32_t npgto1, uint32_t npgto2, uint32_t npgto3, uint32_t npgto4,
+    uint32_t shell1, uint32_t shell2, uint32_t shell3, uint32_t shell4,
+    double x1, double y1, double z1,
+    double x2, double y2, double z2,
+    double x3, double y3, double z3,
+    double x4, double y4, double z4,
+    const double alpha1[restrict static npgto1], const double alpha2[restrict static npgto2], const double alpha3[restrict static npgto3], const double alpha4[restrict static npgto4],
+    const double cc1[restrict static npgto1], const double cc2[restrict static npgto2], const double cc3[restrict static npgto3], const double cc4[restrict static npgto4],
+    const double norm1[restrict static npgto1], const double norm2[restrict static npgto2], const double norm3[restrict static npgto3], const double norm4[restrict static npgto4],
+    int **vrrtab, int ldvrrtab,
+    bool spheric,
+    uint32_t buffer_capacity, uint32_t output_length[restrict static 1], double output_buffer[restrict static 1])
 {
-    int nxyzhrr;   
-    int in;
-    double xa, ya, za, xb, yb, zb, xc, yc, zc, xd, yd, zd;
-    int zp, zq;
-    int zb00, zb01, zb10;
-    int nij;
-    int nkl;
-    int out, zpx, zpy, zpz, zqx, zqy, zqz,
-        pos1, pos2;
-    int zc00x, ngqp, move, nmom, nrya, nryb, nryc, nryd,
-        temp, zc00y, zc00z, zpax, zpay, zpaz, zqcx, zqcy, zqcz, zd00x,
-        zd00y, zd00z;
-    int zrts;
-    int zbase;    
-    int ihscr, iused, ixoff[4];
-    int nrota, nrotb, nrotc, nrotd, ihrow, nrowa, zused, nrowb,
-        nrowc, nrowd;
-    int empty;
-    int ztval, zhrot, nxyza, nxyzb, nxyzc, nxyzd, nint2d,
-        nxyzp, nxyzq, nxyzt, zscpk2, zscqk2;
-    int indexa, indexb, indexc, indexd;
-    int iprima, iprimb, iprimc, iprimd,
-        isrowa, ihnrow,
-        isrowb;
-    int isrowc, isrowd, ngqscr;
-    int mxsize;
-    int npgtoa, npgtob, npgtoc, npgtod,
-        shella, shellb, shellc, shelld, shellp, nxyzet, nxyzft, shellq,
-        shellt, znorm, zcnorm, zrhoab, zrhocd,
-        zgqscr, zsrota, zsrotb, zsrotc, zsrotd;
-    double rnabsq, rncdsq, spnorm;
-    int zint2dx, zint2dy, zint2dz;
-    int zcbatch, nabcoor, ncdcoor, npgtoab,
-        npgtocd;
-    int ncolhrr;
-    int mxshell, isnrowa, isnrowb, isnrowc, isnrowd, zpinvhf,
-        notmove, zqinvhf, nrothrr, nrowhrr;
-    int zpqpinv;
-    double abx, aby, abz, cdx, cdy, cdz;
-    double *alphaa;
-    double *alphab;
-    double *alphac;
-    double *alphad;
-    double *cca;
-    double *ccb;
-    double *ccc;
-    double *ccd;
-    double *norma;
-    double *normb;
-    double *normc;
-    double *normd;    
-    int npmin;
-    int i;
-    double factor;
-    int tr1234;
-    int swap12;
-    int swap34;
-            
 #ifdef __ERD_PROFILE__
-    uint64_t start_clock, end_clock;
-    uint64_t start_clock0, end_clock0;
     #ifdef _OPENMP
     const int tid = omp_get_thread_num();
     #else
     const int tid = 0;
     #endif
-#endif    
-    --icore;
-    --zcore;
-
-#ifdef __ERD_PROFILE__
-    start_clock0 = __rdtsc();
 #endif
+    ERD_PROFILE_START(erd__csgto)
 
 /*             ...fix the A,B,C,D labels from the 1,2,3,4 ones. */
 /*                Calculate the relevant data for the A,B,C,D batch of */
 /*                integrals. */
-    erd__set_abcd (npgto1, npgto2, npgto3, npgto4,
-                   shell1, shell2, shell3, shell4,
-                   x1, y1, z1, x2, y2, z2,
-                   x3, y3, z3, x4, y4, z4, spheric,
-                   &npgtoa, &npgtob, &npgtoc, &npgtod,
-                   &shella, &shellb, &shellc, &shelld,
-                   &xa, &ya, &za, &xb, &yb, &zb,
-                   &xc, &yc, &zc, &xd, &yd, &zd,
-                   &nxyza, &nxyzb, &nxyzc, &nxyzd,
-                   &nxyzet, &nxyzft,
-                   &nrya, &nryb, &nryc, &nryd,
-                   &nabcoor, &ncdcoor,
-                   &ncolhrr, &nrothrr, &nxyzhrr, &empty, &tr1234);
-    if (empty)
-    {
-        *nbatch = 0;
-    #ifdef __ERD_PROFILE__
-        end_clock0 = __rdtsc(); 
-        erd_ticks[tid][erd__csgto_ticks] += (end_clock0 - start_clock0);
-    #endif
-        return 0;
+    bool empty, tr1234;
+    double xa, ya, za, xb, yb, zb, xc, yc, zc, xd, yd, zd;
+    uint32_t npgtoa, npgtob, npgtoc, npgtod;
+    uint32_t shella, shellb, shellc, shelld;
+    uint32_t nxyza, nxyzb, nxyzc, nxyzd;
+    uint32_t nxyzet, nxyzft;
+    uint32_t nrya, nryb, nryc, nryd;
+    uint32_t nabcoor, ncdcoor;
+    uint32_t ncolhrr, nrothrr, nxyzhrr;
+
+    erd__set_abcd(npgto1, npgto2, npgto3, npgto4,
+        shell1, shell2, shell3, shell4,
+        atomic,
+        x1, y1, z1, x2, y2, z2,
+        x3, y3, z3, x4, y4, z4, spheric,
+        &npgtoa, &npgtob, &npgtoc, &npgtod,
+        &shella, &shellb, &shellc, &shelld,
+        &xa, &ya, &za, &xb, &yb, &zb,
+        &xc, &yc, &zc, &xd, &yd, &zd,
+        &nxyza, &nxyzb, &nxyzc, &nxyzd,
+        &nxyzet, &nxyzft,
+        &nrya, &nryb, &nryc, &nryd,
+        &nabcoor, &ncdcoor,
+        &ncolhrr, &nrothrr, &nxyzhrr, &empty, &tr1234);
+    if (empty) {
+        *output_length = 0;
+        ERD_PROFILE_END(erd__csgto)
+        return;
     }
 
-    swap12 = (shell1 < shell2);
-    swap34 = (shell3 < shell4);  
-    if (!tr1234)
-    {
-        if (!swap12)
-        {
-            alphaa = alpha1;
-            alphab = alpha2;
-            cca = cc1;
-            ccb = cc2;
-            norma = norm1;
-            normb = norm2;
-            indexa = 1;
-            indexb = 2;
-        }
-        else
-        {
-            alphaa = alpha2;
-            alphab = alpha1;
-            cca = cc2;
-            ccb = cc1;
-            norma = norm2;
-            normb = norm1;           
-            indexa = 2;
-            indexb = 1;
-        }
-        if (!swap34)
-        {
-            alphac = alpha3;
-            alphad = alpha4;
-            ccc = cc3;
-            ccd = cc4;
-            normc = norm3;
-            normd = norm4;           
-            indexc = 3;
-            indexd = 4;
-        }
-        else
-        {
-            alphac = alpha4;
-            alphad = alpha3;
-            ccc = cc4;
-            ccd = cc3;
-            normc = norm4;
-            normd = norm3;           
-            indexc = 4;
-            indexd = 3;
-        }
+    uint32_t indexa = 0, indexb = 1, indexc = 2, indexd = 3;
+    if (tr1234) {
+        ERD_SWAP(alpha1, alpha3);
+        ERD_SWAP(alpha2, alpha4);
+        ERD_SWAP(cc1, cc3);
+        ERD_SWAP(cc2, cc4);
+        ERD_SWAP(norm1, norm3);
+        ERD_SWAP(norm2, norm4);
+        ERD_SWAP(indexa, indexc);
+        ERD_SWAP(indexb, indexd);
+        ERD_SWAP(shell1, shell3);
+        ERD_SWAP(shell2, shell4);
     }
-    else
-    {
-        if (!swap12)
-        {
-            alphac = alpha1;
-            alphad = alpha2;
-            ccc = cc1;
-            ccd = cc2;
-            normc = norm1;
-            normd = norm2;           
-            indexc = 1;
-            indexd = 2;
-        }
-        else
-        {
-            alphac = alpha2;
-            alphad = alpha1;
-            ccc = cc2;
-            ccd = cc1;
-            normc = norm2;
-            normd = norm1;           
-            indexc = 2;
-            indexd = 1;
-        }
-        if (!swap34)
-        {
-            alphaa = alpha3;
-            alphab = alpha4;
-            cca = cc3;
-            ccb = cc4;
-            norma = norm3;
-            normb = norm4;                      
-            indexa = 3;
-            indexb = 4;
-        }
-        else
-        {
-            alphaa = alpha4;
-            alphab = alpha3;
-            cca = cc4;
-            ccb = cc3;
-            norma = norm4;
-            normb = norm3;           
-            indexa = 4;
-            indexb = 3;
-        }
+    
+    const double *restrict alphaa = alpha1, *restrict alphab = alpha2, *restrict alphac = alpha3, *restrict alphad = alpha4;
+    const double *restrict cca = cc1, *restrict ccb = cc2, *restrict ccc = cc3, *restrict ccd = cc4;
+    const double *restrict norma = norm1, *restrict normb = norm2, *restrict normc = norm3, *restrict normd = norm4;
+    if (shell1 < shell2) {
+        ERD_SWAP(alphaa, alphab);
+        ERD_SWAP(cca, ccb);
+        ERD_SWAP(norma, normb);
+        ERD_SWAP(indexa, indexb);
+    }
+    if (shell3 < shell4) {
+        ERD_SWAP(alphac, alphad);
+        ERD_SWAP(ccc, ccd);
+        ERD_SWAP(normc, normd);
+        ERD_SWAP(indexc, indexd);
     }
     
     // initialize values
-    abx = xa - xb;
-    aby = ya - yb;
-    abz = za - zb;
-    cdx = xc - xd;
-    cdy = yc - yd;
-    cdz = zc - zd;
+    const double abx = xa - xb;
+    const double aby = ya - yb;
+    const double abz = za - zb;
+    const double cdx = xc - xd;
+    const double cdy = yc - yd;
+    const double cdz = zc - zd;
 /*             ...the new A,B,C,D shells are set. Calculate the */
 /*                following info: 1) control variables to be used */
 /*                during contraction, 2) total shell values for */
@@ -385,147 +254,102 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
 /*                or spherical transformation routines. The contribution */
 /*                to SPNORM is very simple: each s-type shell -> * 1.0, */
 /*                each p-type shell -> * 2.0. */
-    shellp = shella + shellb;
-    shellq = shellc + shelld;
-    shellt = shellp + shellq;
-    mxshell = MAX(shell1, shell2);
-    mxshell = MAX(mxshell, shell3);
-    mxshell = MAX(mxshell, shell4);
-    nxyzp = (shellp + 1) * (shellp + 2) / 2;
-    nxyzq = (shellq + 1) * (shellq + 2) / 2;
+    const uint32_t shellp = shella + shellb;
+    const uint32_t shellq = shellc + shelld;
+    const uint32_t shellt = shellp + shellq;
+    const uint32_t mxshell = max4x32u(shella, shellb, shellc, shelld);
+    const uint32_t nxyzp = (shellp + 1) * (shellp + 2) / 2;
+    const uint32_t nxyzq = (shellq + 1) * (shellq + 2) / 2;
     // spnorm
-    spnorm = 1.;
-    if (shella == 1)
-    {
+    double spnorm = 1.0;
+    if (shella == 1) {
         spnorm += spnorm;
     }
-    if (shellb == 1)
-    {
+    if (shellb == 1) {
         spnorm += spnorm;
     }
-    if (shellc == 1)
-    {
+    if (shellc == 1) {
         spnorm += spnorm;
     }
-    if (shelld == 1)
-    {
+    if (shelld == 1) {
         spnorm += spnorm;
     }
-    rnabsq = abx * abx + aby * aby + abz * abz;
-    rncdsq = cdx * cdx + cdy * cdy + cdz * cdz;
+    const double rnabsq = abx * abx + aby * aby + abz * abz;
+    const double rncdsq = cdx * cdx + cdy * cdy + cdz * cdz;
 
    
 /*             ...enter the cartesian contracted (e0|f0) batch */
 /*                generation. Set the ij and kl primitive exponent */
 /*                pairs and the corresponding exponential prefactors. */
-    npgtoab = npgtoa * npgtob;
-    npgtocd = npgtoc * npgtod;
-    nxyzt = nxyzet * nxyzft;
-    iprima = 1;
-    iprimb = iprima + PAD_LEN2(npgtoab);
-    iprimc = iprimb + PAD_LEN2(npgtoab);
-    iprimd = iprimc + PAD_LEN2(npgtocd);
+    const uint32_t npgtoab = npgtoa * npgtob;
+    const uint32_t npgtocd = npgtoc * npgtod;
+    const uint32_t nxyzt = nxyzet * nxyzft;
 
-#ifdef __ERD_PROFILE__
-    start_clock = __rdtsc();
-#endif
-    erd__set_ij_kl_pairs (npgtoa, npgtob, npgtoc, npgtod,
-                          xa, ya, za, xb, yb, zb,
-                          xc, yc, zc, xd, yd, zd,
-                          rnabsq, rncdsq, PREFACT,
-                          alphaa, alphab,
-                          alphac, alphad,
-                          screen, &empty, &nij, &nkl,
-                          &icore[iprima], &icore[iprimb], &icore[iprimc],
-                          &icore[iprimd], &zcore[1]);
-#ifdef __ERD_PROFILE__
-    end_clock = __rdtsc(); 
-    erd_ticks[tid][erd__set_ij_kl_pairs_ticks] += (end_clock - start_clock);
-#endif
+    uint32_t prima[npgtoab], primb[npgtoab], primc[npgtocd], primd[npgtocd];
+    ERD_SIMD_ALIGN double rhoab[PAD_LEN(npgtoab)];
+    ERD_SIMD_ALIGN double rhocd[PAD_LEN(npgtocd)];
+    uint32_t nij, nkl;
+    ERD_PROFILE_START(erd__set_ij_kl_pairs)
+    erd__set_ij_kl_pairs(npgtoa, npgtob, npgtoc, npgtod,
+        xa, ya, za,
+        xb, yb, zb,
+        xc, yc, zc,
+        xd, yd, zd,
+        rnabsq, rncdsq, PREFACT,
+        alphaa, alphab, alphac, alphad,
+        &nij, &nkl,
+        prima, primb, primc, primd,
+        rhoab, rhocd);
+    ERD_PROFILE_END(erd__set_ij_kl_pairs)
 
-    if (empty)
-    {
-        *nbatch = 0;
-    #ifdef __ERD_PROFILE__
-        end_clock0 = __rdtsc(); 
-        erd_ticks[tid][erd__csgto_ticks] += (end_clock0 - start_clock0);
-    #endif
-        return 0;
+    if (nij * nkl == 0) {
+        *output_length = 0;
+        ERD_PROFILE_END(erd__csgto)
+        return;
     }
 
 /*             ...decide on the primitive [e0|f0] block size and */
 /*                return array sizes and pointers for the primitive */
 /*                [e0|f0] generation. Perform also some preparation */
 /*                steps for contraction. */
-    ngqp = shellt / 2 + 1;
-    nmom = (ngqp << 1) - 1;
-    ngqscr = nmom * 5 + (ngqp << 1) - 2;
-    erd__e0f0_def_blocks (zmax, npgtoa, npgtob, npgtoc, npgtod,
-                          shellp, shellq, nij, nkl,
-                          ngqp, ngqscr, nxyzt, 0,
-                          &nint2d, &zcbatch,
-                          &znorm, &zrhoab, &zrhocd, &zp, &zpx, &zpy, &zpz, &zpax,
-                          &zpay, &zpaz, &zpinvhf, &zscpk2,
-                          &zq, &zqx, &zqy, &zqz, &zqcx, &zqcy,
-                          &zqcz, &zqinvhf, &zscqk2,
-                          &zrts, &zgqscr, &ztval,
-                          &zpqpinv, &zb00, &zb01, &zb10,
-                          &zc00x, &zc00y, &zc00z,
-                          &zd00x, &zd00y, &zd00z,
-                          &zint2dx, &zint2dy, &zint2dz);
-#ifdef __ERD_PROFILE__
-    start_clock = __rdtsc();
-#endif
-    factor = PREFACT * spnorm;
-    npmin = npgtoa < npgtob ? npgtoa : npgtob;
-    npmin = npmin < npgtoc ? npmin : npgtoc;
-    npmin = npmin < npgtod ? npmin : npgtod;
-    if (npgtoa == npmin)
-    {
-        for (i = 0; i < npgtoa; i++)
-        {
-            zcore[znorm + i] = factor * norma[i];
+    const uint32_t ngqp = shellt / 2 + 1;
+    const uint32_t nmom = (ngqp << 1) - 1;
+    const uint32_t ngqscr = nmom * 5 + (ngqp << 1) - 2;
+
+    ERD_PROFILE_START(erd__prepare_ctr)
+    const double factor = PREFACT * spnorm;
+    const uint32_t npmin = min4x32u(npgtoa, npgtob, npgtoc, npgtod);
+    double norm[npmin];
+    if (npgtoa == npmin) {
+        for (uint32_t i = 0; i < npgtoa; i++) {
+            norm[i] = factor * norma[i];
         }
-        norma = &zcore[znorm];
-    }
-    else if (npgtob == npmin)
-    {
-        for (i = 0; i < npgtob; i++)
-        {
-            zcore[znorm + i] = factor * normb[i];
+        norma = &norm[0];
+    } else if (npgtob == npmin) {
+        for (uint32_t i = 0; i < npgtob; i++) {
+            norm[i] = factor * normb[i];
         }
-        normb = &zcore[znorm];
-    }
-    else if (npgtoc == npmin)
-    {
-        for (i = 0; i < npgtoc; i++)
-        {
-            zcore[znorm + i] = factor * normc[i];
+        normb = &norm[0];
+    } else if (npgtoc == npmin) {
+        for (uint32_t i = 0; i < npgtoc; i++) {
+            norm[i] = factor * normc[i];
         }
-        normc = &zcore[znorm];
-    }
-    else
-    {
-        for (i = 0; i < npgtod; i++)
-        {
-            zcore[znorm + i] = factor * normd[i];
+        normc = &norm[0];
+    } else {
+        for (uint32_t i = 0; i < npgtod; i++) {
+            norm[i] = factor * normd[i];
         }
-        normd = &zcore[znorm];
+        normd = &norm[0];
     }
-    
-#ifdef __ERD_PROFILE__
-    end_clock = __rdtsc();
-    erd_ticks[tid][erd__prepare_ctr_ticks] += (end_clock - start_clock);
-#endif
+    ERD_PROFILE_END(erd__prepare_ctr)
+
 /*             ...evaluate unnormalized rescaled [e0|f0] in blocks */
 /*                over ij and kl pairs and add to final contracted */
 /*                (e0|f0). The keyword REORDER indicates, if the */
 /*                primitive [e0|f0] blocks need to be transposed */
 /*                before being contracted. */
-#ifdef __ERD_PROFILE__
-    start_clock = __rdtsc();
-#endif
-    erd__e0f0_pcgto_block (nij, nkl, ngqp, nmom,
+    ERD_PROFILE_START(erd__e0f0_pcgto_block)
+    erd__e0f0_pcgto_block(nij, nkl, ngqp, nmom,
                            nxyzet, nxyzft, nxyzp, nxyzq,
                            shella, shellp, shellc, shellq,
                            xa, ya, za, xb, yb, zb,
@@ -533,26 +357,11 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
                            alphaa, alphab, alphac, alphad, 
                            cca, ccb, ccc, ccd,
                            vrrtab, ldvrrtab,
-                           &icore[iprima], &icore[iprimb],
-                           &icore[iprimc], &icore[iprimd],
+                           prima, primb, primc, primd,
                            norma, normb, normc, normd,
-                           &zcore[zrhoab], &zcore[zrhocd],
-                           &zcore[zp], &zcore[zpx], &zcore[zpy], &zcore[zpz],
-                           &zcore[zpax], &zcore[zpay], &zcore[zpaz],
-                           &zcore[zpinvhf], &zcore[zscpk2],
-                           &zcore[zq], &zcore[zqx], &zcore[zqy], &zcore[zqz],
-                           &zcore[zqcx], &zcore[zqcy], &zcore[zqcz],
-                           &zcore[zqinvhf], &zcore[zscqk2],
-                           &zcore[zrts], &zcore[zgqscr], &zcore[ztval],
-                           &zcore[zpqpinv], &zcore[zb00], &zcore[zb01], &zcore[zb10],
-                           &zcore[zc00x], &zcore[zc00y], &zcore[zc00z],
-                           &zcore[zd00x], &zcore[zd00y], &zcore[zd00z],
-                           &zcore[zint2dx], &zcore[zint2dy], &zcore[zint2dz],
-                           &zcore[zcbatch]);
-#ifdef __ERD_PROFILE__
-    end_clock = __rdtsc();
-    erd_ticks[tid][erd__e0f0_pcgto_block_ticks] += (end_clock - start_clock);
-#endif
+                           rhoab, rhocd,
+                           output_buffer);
+    ERD_PROFILE_END(erd__e0f0_pcgto_block)
 /*             ...the unnormalized cartesian (e0|f0) contracted batch is */
 /*                ready. Expand the contraction indices (if necessary): */
 /*                   batch (nxyzt,r>=s,t>=u) --> batch (nxyzt,r,s,t,u) */
@@ -579,14 +388,9 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
 /*                following dimension inequality: */
 /*                              NXYZT =< NXYZHRR */
 
-    ixoff[0] = 1;
-    ixoff[1] = 1;
-    ixoff[2] = 1;
-    ixoff[3] = 1;
-    mxsize = nxyzhrr;
-    in = zcbatch;
-    out = in + mxsize;
-   
+    uint32_t in = 0;
+    uint32_t out = nxyzhrr;
+
 /*             ...enter the HRR contraction and cartesian -> spherical */
 /*                transformation / cartesian normalization section. */
 /*                The sequence of events is to apply the HRR followed */
@@ -633,7 +437,7 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
 /*                         each HRR matrix column */
 /*                 IHROW = offset for nonzero row labels for the HRR */
 /*                         matrix */
-/*                 IHSCR = int scratch space for HRR matrix */
+/*                 IHSCR = int output_buffer space for HRR matrix */
 /*                         assembly */
 /*                In case of s- or p-shells no transformation matrix is */
 /*                generated, hence if we have s- and/or p-shells, then */
@@ -647,54 +451,32 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
 /*                This factor was introduced together with the overall */
 /*                prefactor during evaluation of the primitive integrals */
 /*                in order to save multiplications. */
-    zbase = MAX (in, out) + mxsize;
-    if (spheric)
-    {
-        if (mxshell > 1)
-        {
-        #ifdef __ERD_PROFILE__
-            start_clock = __rdtsc();
-        #endif
-            erd__xyz_to_ry_abcd (nxyza, nxyzb, nxyzc, nxyzd,
+    const uint32_t nrowmx = (mxshell / 2 + 1) * (mxshell / 2 + 2) / 2;
+    double fbuffer[spheric ? nrowmx * 4 : 0];
+    uint32_t ibuffer[spheric ? nrowmx * 4 + nrya + nryb + nryc + nryd : 0];
+
+    double cartnorm[spheric ? 0 : mxshell + 1];
+    uint32_t isrowa, isrowb, isrowc, isrowd;
+    uint32_t nrota, nrotb, nrotc, nrotd, nrowa, nrowb, nrowc, nrowd;
+    uint32_t zsrota, zsrotb, zsrotc, zsrotd;
+    uint32_t isnrowa, isnrowb, isnrowc, isnrowd;
+    if (mxshell > 1) {
+        if (spheric) {
+            ERD_PROFILE_START(erd__xyz_to_ry_abcd)
+            erd__xyz_to_ry_abcd(nxyza, nxyzb, nxyzc, nxyzd,
                                  nrya, nryb, nryc, nryd,
                                  shella, shellb, shellc, shelld,
-                                 1, zbase,
                                  &nrowa, &nrowb, &nrowc, &nrowd,
                                  &nrota, &nrotb, &nrotc, &nrotd,
                                  &zsrota, &zsrotb, &zsrotc, &zsrotd,
                                  &isnrowa, &isnrowb, &isnrowc, &isnrowd,
                                  &isrowa, &isrowb, &isrowc, &isrowd,
-                                 &iused, &zused, &icore[1], &zcore[1]);
-        #ifdef __ERD_PROFILE__
-            end_clock = __rdtsc();
-            erd_ticks[tid][erd__xyz_to_ry_abcd_ticks] += (end_clock - start_clock);
-        #endif
-        }
-        else
-        {
-            iused = 0;
-            zused = 0;
+                                 ibuffer, fbuffer);
+            ERD_PROFILE_END(erd__xyz_to_ry_abcd)
+        } else {
+            erd__cartesian_norms(mxshell, cartnorm);
         }
     }
-    else
-    {
-        if (mxshell > 1)
-        {
-            zcnorm = zbase;
-            erd__cartesian_norms (mxshell, &zcore[zcnorm]);
-            iused = 0;
-            zused = mxshell + 1;
-        }
-        else
-        {
-            iused = 0;
-            zused = 0;
-        }
-    }
-    ihnrow = iused + 1;
-    ihrow = ihnrow + ncolhrr + ncolhrr;
-    ihscr = ihrow + nrothrr + nrothrr;
-    zhrot = zbase + zused;
 
 /*             ...do the first stage of processing the integrals: */
 /*                   batch (ijkl,e0,f0) --> batch (ijkl,e0,cd) */
@@ -702,279 +484,171 @@ int erd__csgto (int zmax, int npgto1, int npgto2,
 /*                   batch (ijkl,e0,c,d') --> batch (ijkl[d'],e0,c) */
 /*                   batch (ijkl[d'],e0,c) --> batch (ijkl[d'],e0,c') */
 /*                   batch (ijkl[d'],e0,c') --> batch (ijkl[c'd'],e0) */
-    if (shelld != 0)
-    {
-    #ifdef __ERD_PROFILE__
-        start_clock = __rdtsc();
-    #endif
-        erd__hrr_matrix (nrothrr, ncolhrr, nxyzft, nxyzc, nxyzq,
+    uint32_t ixoff[4] = { 1, 1, 1, 1 };
+    if (shelld != 0) {
+        uint32_t pos1, pos2, nrowhrr;
+        ERD_SIMD_ALIGN double t[nrothrr*2];
+        ERD_SIMD_ALIGN uint32_t row[nrothrr*2];
+        ERD_SIMD_ALIGN uint32_t nrow[ncolhrr*2];
+        ERD_PROFILE_START(erd__hrr_matrix)
+        erd__hrr_matrix(nrothrr, ncolhrr, nxyzft, nxyzc, nxyzq,
                          shellc, shelld, shellq,
                          ncdcoor, cdx, cdy, cdz,
-                         &icore[ihscr], &pos1, &pos2, &nrowhrr,
-                         &icore[ihnrow], &icore[ihrow], &zcore[zhrot]);
-    #ifdef __ERD_PROFILE__
-        end_clock = __rdtsc();
-        erd_ticks[tid][erd__hrr_matrix_ticks] += (end_clock - start_clock);
-    #endif
+                         &pos1, &pos2, &nrowhrr,
+                         nrow, row, t);
+        ERD_PROFILE_END(erd__hrr_matrix)
 
-    #ifdef __ERD_PROFILE__
-        start_clock = __rdtsc();
-    #endif
-        erd__hrr_transform (nxyzet, nrowhrr, nxyzc, nxyzd,
-                            &icore[ihnrow + pos1 - 1],
-                            &icore[ihrow + pos2 - 1],
-                            &zcore[zhrot + pos2 - 1], &zcore[in],
-                            &zcore[out]);
-    #ifdef __ERD_PROFILE__
-        end_clock = __rdtsc();
-        erd_ticks[tid][erd__hrr_transform_ticks] += (end_clock - start_clock);
-    #endif
-    
-        temp = in;
-        in = out;
-        out = temp;
-        if (shelld > 1)
-        {
-            if (spheric)
-            {
-            #ifdef __ERD_PROFILE__
-                start_clock = __rdtsc();
-            #endif
-                erd__spherical_transform (nxyzet * nxyzc,
-                                          nrowd, nryd,
-                                          &icore[isnrowd], &icore[isrowd],
-                                          &zcore[zsrotd], &zcore[in],
-                                          &zcore[out]);
-            #ifdef __ERD_PROFILE__
-                end_clock = __rdtsc();
-                erd_ticks[tid][erd__spherical_transform_ticks] += (end_clock - start_clock);
-            #endif
-                temp = in;
-                in = out;
-                out = temp;
-            }
-            else
-            {
-                erd__normalize_cartesian (nxyzet * nxyzc, shelld,
-                                          &zcore[zcnorm], &zcore[in]);
+        ERD_PROFILE_START(erd__hrr_transform)
+        erd__hrr_transform(nxyzet, nrowhrr, nxyzc, nxyzd,
+                            &nrow[pos1],
+                            &row[pos2],
+                            &t[pos2], &output_buffer[in],
+                            &output_buffer[out]);
+        ERD_PROFILE_END(erd__hrr_transform)
+
+        ERD_SWAP(in, out);
+        if (shelld > 1) {
+            if (spheric) {
+                ERD_PROFILE_START(erd__spherical_transform)
+                erd__spherical_transform(nxyzet * nxyzc, nrowd, nryd,
+                                          (uint32_t*)&ibuffer[isnrowd], (uint32_t*)&ibuffer[isrowd],
+                                          &fbuffer[zsrotd], &output_buffer[in],
+                                          &output_buffer[out]);
+                ERD_PROFILE_END(erd__spherical_transform)
+
+                ERD_SWAP(in, out);
+            } else {
+                erd__normalize_cartesian(nxyzet * nxyzc, shelld, cartnorm, &output_buffer[in]);
             }
         }
     }
-    if (nryd > 1)
-    {
-        *nbatch = nxyzet * nxyzc * nryd;
-        notmove = ixoff[indexd - 1];
-        move = *nbatch / (notmove * nryd);
-        if (move > 1)
-        {
-        #ifdef __ERD_PROFILE__
-            start_clock = __rdtsc();
-        #endif
-            erd__move_ry (4, notmove, move, nryd, indexd - 1,
-                          &zcore[in], ixoff, &zcore[out]);
-        #ifdef __ERD_PROFILE__
-            end_clock = __rdtsc();
-            erd_ticks[tid][erd__move_ry_ticks] += (end_clock - start_clock);
-        #endif
-            temp = in;
-            in = out;
-            out = temp;
-        }
-    } 
-    if (shellc > 1)
-    {
-        if (spheric)
-        {
-        #ifdef __ERD_PROFILE__
-                start_clock = __rdtsc();
-        #endif
-            erd__spherical_transform (nxyzet * nryd,
-                                      nrowc, nryc,
-                                      &icore[isnrowc], &icore[isrowc],
-                                      &zcore[zsrotc], &zcore[in],
-                                      &zcore[out]);
-        #ifdef __ERD_PROFILE__
-                end_clock = __rdtsc();
-                erd_ticks[tid][erd__spherical_transform_ticks] += (end_clock - start_clock);
-        #endif
-            temp = in;
-            in = out;
-            out = temp;
-        }
-        else
-        {
-            erd__normalize_cartesian (nxyzet * nryd, shellc,
-                                      &zcore[zcnorm], &zcore[in]);
+    if (nryd > 1) {
+        const uint32_t batch_size = nxyzet * nxyzc * nryd;
+        const uint32_t notmove = ixoff[indexd];
+        const uint32_t move = batch_size / (notmove * nryd);
+        if (move > 1) {
+            ERD_PROFILE_START(erd__move_ry)
+            erd__move_ry(4, notmove, move, nryd, indexd, &output_buffer[in], ixoff, &output_buffer[out]);
+            ERD_PROFILE_END(erd__move_ry)
+
+            ERD_SWAP(in, out);
         }
     }
-    if (nryc > 1)
-    {
-        *nbatch = nryd * nxyzet * nryc;
-        notmove = ixoff[indexc - 1];
-        move = *nbatch / (notmove * nryc);
-        if (move > 1)
-        {
-        #ifdef __ERD_PROFILE__
-            start_clock = __rdtsc();
-        #endif
-            erd__move_ry (4, notmove, move, nryc, indexc - 1,
-                          &zcore[in], ixoff, &zcore[out]);
-        #ifdef __ERD_PROFILE__
-            end_clock = __rdtsc();
-            erd_ticks[tid][erd__move_ry_ticks] += (end_clock - start_clock);
-        #endif
-            temp = in;
-            in = out;
-            out = temp;
+    if (shellc > 1) {
+        if (spheric) {
+            ERD_PROFILE_START(erd__spherical_transform)
+            erd__spherical_transform(nxyzet * nryd, nrowc, nryc,
+                                      (uint32_t*)&ibuffer[isnrowc], (uint32_t*)&ibuffer[isrowc],
+                                      &fbuffer[zsrotc], &output_buffer[in],
+                                      &output_buffer[out]);
+            ERD_PROFILE_END(erd__spherical_transform)
+
+            ERD_SWAP(in, out);
+        } else {
+            erd__normalize_cartesian(nxyzet * nryd, shellc, cartnorm, &output_buffer[in]);
+        }
+    }
+    if (nryc > 1) {
+        const uint32_t batch_size = nryd * nxyzet * nryc;
+        const uint32_t notmove = ixoff[indexc];
+        const uint32_t move = batch_size / (notmove * nryc);
+        if (move > 1) {
+            ERD_PROFILE_START(erd__move_ry)
+            erd__move_ry(4, notmove, move, nryc, indexc, &output_buffer[in], ixoff, &output_buffer[out]);
+            ERD_PROFILE_END(erd__move_ry)
+
+            ERD_SWAP(in, out);
         }
     }
 
-/*             ...do the second stage of processing the integrals: */
-/*                   batch (ijkl[c'd'],e0) --> batch (ijkl[c'd'],ab) */
-/*                   batch (ijkl[c'd'],a,b) --> batch (ijkl[c'd'],a,b') */
-/*                   batch (ijkl[c'd'],a,b') --> batch (ijkl[b'c'd'],a) */
-/*                   batch (ijkl[b'c'd'],a) --> batch (ijkl[b'c'd'],a') */
-/*                   batch (ijkl[b'c'd'],a') --> batch (ijkl[a'b'c'd']) */
-    if (shellb != 0)
-    {
-    #ifdef __ERD_PROFILE__
-        start_clock = __rdtsc();
-    #endif
-        erd__hrr_matrix (nrothrr, ncolhrr, nxyzet, nxyza, nxyzp,
+    /*
+     * ...do the second stage of processing the integrals:
+     *    batch (ijkl[c'd'],e0) --> batch (ijkl[c'd'],ab)
+     *    batch (ijkl[c'd'],a,b) --> batch (ijkl[c'd'],a,b')
+     *    batch (ijkl[c'd'],a,b') --> batch (ijkl[b'c'd'],a)
+     *    batch (ijkl[b'c'd'],a) --> batch (ijkl[b'c'd'],a')
+     *    batch (ijkl[b'c'd'],a') --> batch (ijkl[a'b'c'd'])
+     */
+    if (shellb != 0) {
+        uint32_t pos1, pos2, nrowhrr;
+        ERD_SIMD_ALIGN double t[nrothrr*2];
+        ERD_SIMD_ALIGN uint32_t row[nrothrr*2];
+        ERD_SIMD_ALIGN uint32_t nrow[ncolhrr*2];
+        ERD_PROFILE_START(erd__hrr_matrix)
+        erd__hrr_matrix(nrothrr, ncolhrr, nxyzet, nxyza, nxyzp,
                          shella, shellb, shellp,
                          nabcoor, abx, aby, abz,
-                         &icore[ihscr], &pos1, &pos2, &nrowhrr,
-                         &icore[ihnrow], &icore[ihrow], &zcore[zhrot]);
-    #ifdef __ERD_PROFILE__
-        end_clock = __rdtsc();
-        erd_ticks[tid][erd__hrr_matrix_ticks] += (end_clock - start_clock);
-    #endif
+                         &pos1, &pos2, &nrowhrr,
+                         nrow, row, t);
+        ERD_PROFILE_END(erd__hrr_matrix)
 
-    #ifdef __ERD_PROFILE__
-        start_clock = __rdtsc();
-    #endif
-        erd__hrr_transform (nryc * nryd, nrowhrr, nxyza, nxyzb,
-                            &icore[ihnrow + pos1 - 1],
-                            &icore[ihrow + pos2 - 1],
-                            &zcore[zhrot + pos2 - 1], &zcore[in],
-                            &zcore[out]);
-    #ifdef __ERD_PROFILE__
-        end_clock = __rdtsc();
-        erd_ticks[tid][erd__hrr_transform_ticks] += (end_clock - start_clock);
-    #endif
-        temp = in;
-        in = out;
-        out = temp;
-        if (shellb > 1)
-        {
-            if (spheric)
-            {
-            #ifdef __ERD_PROFILE__
-                start_clock = __rdtsc();
-            #endif
-                erd__spherical_transform (nryc * nryd * nxyza,
-                                          nrowb, nryb,
-                                          &icore[isnrowb], &icore[isrowb],
-                                          &zcore[zsrotb], &zcore[in],
-                                          &zcore[out]);
-            #ifdef __ERD_PROFILE__
-                end_clock = __rdtsc();
-                erd_ticks[tid][erd__spherical_transform_ticks] += (end_clock - start_clock);
-            #endif
-                temp = in;
-                in = out;
-                out = temp;
-            }
-            else
-            {
-                erd__normalize_cartesian (nryc * nryd * nxyza, shellb,
-                                          &zcore[zcnorm], &zcore[in]);
+        ERD_PROFILE_START(erd__hrr_transform)
+        erd__hrr_transform(nryc * nryd, nrowhrr, nxyza, nxyzb,
+                            &nrow[pos1],
+                            &row[pos2],
+                            &t[pos2], &output_buffer[in],
+                            &output_buffer[out]);
+        ERD_PROFILE_END(erd__hrr_transform)
+
+        ERD_SWAP(in, out);
+        if (shellb > 1) {
+            if (spheric) {
+                ERD_PROFILE_START(erd__spherical_transform)
+                erd__spherical_transform(nryc * nryd * nxyza, nrowb, nryb,
+                                          (uint32_t*)&ibuffer[isnrowb], (uint32_t*)&ibuffer[isrowb],
+                                          &fbuffer[zsrotb], &output_buffer[in], &output_buffer[out]);
+                ERD_PROFILE_END(erd__spherical_transform)
+
+                ERD_SWAP(in, out);
+            } else {
+                erd__normalize_cartesian(nryc * nryd * nxyza, shellb, cartnorm, &output_buffer[in]);
             }
         }
     }
-    if (nryb > 1)
-    {
-        *nbatch = nryc * nryd * nxyza * nryb;
-        notmove = ixoff[indexb - 1];
-        move = *nbatch / (notmove * nryb);
-        if (move > 1)
-        {
-        #ifdef __ERD_PROFILE__
-            start_clock = __rdtsc();
-        #endif
-            erd__move_ry (4, notmove, move, nryb, indexb - 1,
-                          &zcore[in], ixoff, &zcore[out]);
-        #ifdef __ERD_PROFILE__
-            end_clock = __rdtsc();
-            erd_ticks[tid][erd__move_ry_ticks] += (end_clock - start_clock);
-        #endif
-            temp = in;
-            in = out;
-            out = temp;
-        }
-    }
-    if (shella > 1)
-    {
-        if (spheric)
-        {
-        #ifdef __ERD_PROFILE__
-            start_clock = __rdtsc();
-        #endif
-            erd__spherical_transform (nryb * nryc * nryd,
-                                      nrowa, nrya,
-                                      &icore[isnrowa], &icore[isrowa],
-                                      &zcore[zsrota], &zcore[in],
-                                      &zcore[out]);
+    if (nryb > 1) {
+        const uint32_t batch_size = nryc * nryd * nxyza * nryb;
+        const uint32_t notmove = ixoff[indexb];
+        const uint32_t move = batch_size / (notmove * nryb);
+        if (move > 1) {
+            ERD_PROFILE_START(erd__move_ry)
+            erd__move_ry(4, notmove, move, nryb, indexb, &output_buffer[in], ixoff, &output_buffer[out]);
+            ERD_PROFILE_END(erd__move_ry)
 
-        #ifdef __ERD_PROFILE__
-            end_clock = __rdtsc();
-            erd_ticks[tid][erd__spherical_transform_ticks] += (end_clock - start_clock);
-        #endif
-            temp = in;
-            in = out;
-            out = temp;
-        }
-        else
-        {
-            erd__normalize_cartesian (nryb * nryc * nryd, shella,
-                                      &zcore[zcnorm], &zcore[in]);
+            ERD_SWAP(in, out);
         }
     }
-    *nbatch = nryb * nryc * nryd * nrya;
-    if (nrya > 1)
-    {
-        notmove = ixoff[indexa - 1];
-        move = *nbatch / (notmove * nrya);
-        if (move > 1)
-        {
-        #ifdef __ERD_PROFILE__
-            start_clock = __rdtsc();
-        #endif
-            erd__move_ry (4, notmove, move, nrya, indexa - 1,
-                          &zcore[in], ixoff, &zcore[out]);
-        #ifdef __ERD_PROFILE__
-            end_clock = __rdtsc();
-            erd_ticks[tid][erd__move_ry_ticks] += (end_clock - start_clock);
-        #endif
-            temp = in;
-            in = out;
-            out = temp;
+    if (shella > 1) {
+        if (spheric) {
+            ERD_PROFILE_START(erd__spherical_transform)
+            erd__spherical_transform(nryb * nryc * nryd, nrowa, nrya,
+                                      &ibuffer[isnrowa], (uint32_t*)&ibuffer[isrowa],
+                                      &fbuffer[zsrota], &output_buffer[in],
+                                      &output_buffer[out]);
+            ERD_PROFILE_END(erd__spherical_transform)
+
+            ERD_SWAP(in, out);
+        } else {
+            erd__normalize_cartesian(nryb * nryc * nryd, shella, cartnorm, &output_buffer[in]);
+        }
+    }
+    const uint32_t batch_size = nryb * nryc * nryd * nrya;
+    if (nrya > 1) {
+        const uint32_t notmove = ixoff[indexa];
+        const uint32_t move = batch_size / (notmove * nrya);
+        if (move > 1) {
+            ERD_PROFILE_START(erd__move_ry)
+            erd__move_ry(4, notmove, move, nrya, indexa, &output_buffer[in], ixoff, &output_buffer[out]);
+            ERD_PROFILE_END(erd__move_ry)
+
+            ERD_SWAP(in, out);
         }
     }
 
+    if (in != 0) {
+        memcpy(output_buffer, &output_buffer[in], batch_size * sizeof(double));
+    }
 
-/*             ...set final pointer to integrals in ZCORE array. */
-    *nfirst = in;
-
-#ifdef __ERD_PROFILE__
-    end_clock0 = __rdtsc(); 
-    erd_ticks[tid][erd__csgto_ticks] += (end_clock0 - start_clock0);
-#endif
-
-    return 0;
+    /* ...set final pointer to integrals in ZCORE array. */
+    *output_length = batch_size;
+    ERD_PROFILE_END(erd__csgto)
 }
-
-
-#ifdef __INTEL_OFFLOAD
-#pragma offload_attribute(pop)
-#endif

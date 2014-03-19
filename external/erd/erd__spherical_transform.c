@@ -3,11 +3,7 @@
 #include <assert.h>
 
 #include "erd.h"
-
-
-#ifdef __INTEL_OFFLOAD
-#pragma offload_attribute(push, target(mic))
-#endif
+#include "erdutil.h"
 
 /* ------------------------------------------------------------------------ */
 /*  OPERATION   : ERD__SPHERICAL_TRANSFORM */
@@ -49,43 +45,23 @@
 /*                  Output: */
 /*                    Y           =  output batch of spherical integrals */
 /* ------------------------------------------------------------------------ */
-int erd__spherical_transform (int m, int nrow, int nry,
-                              int *lrow, int *row, double *rot,
-                              double *x, double *y)
-{   
-    int i;
-    int n;
-    int r;
-    double rot1;
-    int mrow;
-    int xcol1;
-
+ERD_OFFLOAD void erd__spherical_transform(uint32_t m, uint32_t nrow, uint32_t nry, uint32_t lrow[restrict static nry], uint32_t row[restrict], const double rot[restrict], const double x[restrict], double y[restrict]) {   
 /*             ...perform the cartesian -> spherical transformation. */
 /*                Use basic row grouping of the transformation */
 /*                to improve cache line reusing. */
-    for (r = 0; r < nry; ++r)
-    {
-        mrow = lrow[r];
+    for (uint32_t r = 0; r < nry; r++) {
+        const uint32_t mrow = lrow[r];
 
-        for (n = 0; n < m; ++n)
-        {
+        for (uint32_t n = 0; n < m; n++) {
             y[r * m + n] = 0.0;
         }
         
-        for (i = 0; i < mrow; ++i)
-        {
-            xcol1 = row[r * nrow + i] - 1;
-            rot1 = rot[r * nrow + i];
-            for (n = 0; n < m; ++n)
-            {
+        for (uint32_t i = 0; i < mrow; i++) {
+            const uint32_t xcol1 = row[r * nrow + i] - 1;
+            const double rot1 = rot[r * nrow + i];
+            for (uint32_t n = 0; n < m; n++) {
                 y[r * m + n] += rot1 * x[xcol1 * m + n];
             }
         }
     }
-
-    return 0;
 }
-
-#ifdef __INTEL_OFFLOAD
-#pragma offload_attribute(pop)
-#endif

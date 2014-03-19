@@ -3,11 +3,7 @@
 #include <assert.h>
 
 #include "erd.h"
-
-#ifdef __INTEL_OFFLOAD
-#pragma offload_attribute(push, target(mic))
-#endif
-
+#include "erdutil.h"
 
 /* ------------------------------------------------------------------------ */
 /*  OPERATION   : ERD__2D_COEFFICIENTS */
@@ -67,398 +63,360 @@
 /*                                    cartesian components x=X,Y,Z) for */
 /*                                    shell expansion on center Q */
 /* ------------------------------------------------------------------------ */
-int erd__2d_coefficients (int mij, int mkl, int ngqp,
-                          double *p, double *q,
-                          double *px, double *py, double *pz,
-                          double *qx, double *qy, double *qz,
-                          double *pax, double *pay, double *paz,
-                          double *qcx, double *qcy, double *qcz,
-                          double *pinvhf, double *qinvhf, double *pqpinv,
-                          double *rts, int case2d,
-                          double *b00, double *b01, double *b10,
-                          double *c00x, double *c00y, double *c00z,
-                          double *d00x, double *d00y, double *d00z)
+ERD_OFFLOAD void erd__2d_coefficients(uint32_t mij, uint32_t mkl, uint32_t ngqp,
+    const double *restrict p, const double *restrict q,
+    const double *restrict px, const double *restrict py, const double *restrict pz,
+    const double *restrict qx, const double *restrict qy, const double *restrict qz,
+    const double *restrict pax, const double *restrict pay, const double *restrict paz,
+    const double *restrict qcx, const double *restrict qcy, const double *restrict qcz,
+    const double *restrict pinvhf, const double *restrict qinvhf, const double *restrict pqpinv,
+    const double *restrict rts, uint32_t case2d,
+    double *restrict b00, double *restrict b01, double *restrict b10,
+    double *restrict c00x, double *restrict c00y, double *restrict c00z,
+    double *restrict d00x, double *restrict d00y, double *restrict d00z)
 {
-    int m, n, ij, ng, kl;
-    double pij, pqx, pqy, pqz, pxij, pyij, pzij, root, twop, twoq,
-        paxij, payij, pazij, qcxkl, qcykl, qczkl, proot, qroot, twopq,
-        pscale, qscale;
-    goto L9;
-    
-    switch (case2d)
-    {
-    case 1:
-        goto L1;
-    case 2:
-        goto L2;
-    case 3:
-        goto L5;
-    case 4:
-        goto L3;
-    case 5:
-        goto L4;
-    case 6:
-        goto L7;
-    case 7:
-        goto L6;
-    case 8:
-        goto L8;
-    case 9:
-        goto L9;
-    }
-
-
-/*             ...the case P = s-shell and Q = s-shell. */
-/*                (no coefficients here) */
-  L1:
-    return 0;
-
-
-/*             ...the case P = p-shell and Q = s-shell. */
-/*                (no B00,B01,B10,D00) */
-  L2:
-    {
-        m = 0;
-        n = 0;
-        for (ij = 0; ij < mij; ++ij)
+#if 0
+    switch (case2d) {
+        case 1:
+            /* ...the case P = s-shell and Q = s-shell. (no coefficients here) */
+            return;
+        case 2:
         {
-            pxij = px[ij];
-            pyij = py[ij];
-            pzij = pz[ij];
-            paxij = pax[ij];
-            payij = pay[ij];
-            pazij = paz[ij];
-            for (kl = 0; kl < mkl; ++kl)
-            {
-                pqx = pxij - qx[kl];
-                pqy = pyij - qy[kl];
-                pqz = pzij - qz[kl];           
-                qscale = q[kl] * pqpinv[m];
-                ++m;
-                for (ng = 0; ng < ngqp; ++ng)
-                {   
-                    qroot = qscale * rts[n];
-                    c00x[n] = paxij - qroot * pqx;
-                    c00y[n] = payij - qroot * pqy;
-                    c00z[n] = pazij - qroot * pqz;
-                    ++n;
+            /* ...the case P = p-shell and Q = s-shell. (no B00,B01,B10,D00) */
+            uint32_t m = 0;
+            uint32_t n = 0;
+            for (uint32_t ij = 0; ij < mij; ij++) {
+                const double pxij = px[ij];
+                const double pyij = py[ij];
+                const double pzij = pz[ij];
+                const double paxij = pax[ij];
+                const double payij = pay[ij];
+                const double pazij = paz[ij];
+                for (uint32_t kl = 0; kl < mkl; kl++) {
+                    const double pqx = pxij - qx[kl];
+                    const double pqy = pyij - qy[kl];
+                    const double pqz = pzij - qz[kl];           
+                    const double qscale = q[kl] * pqpinv[m];
+                    ++m;
+                    for (uint32_t ng = 0; ng < ngqp; ng++) {   
+                        const double qroot = qscale * rts[n];
+                        c00x[n] = paxij - qroot * pqx;
+                        c00y[n] = payij - qroot * pqy;
+                        c00z[n] = pazij - qroot * pqz;
+                        ++n;
+                    }
                 }
+            }
+            return;
+        }
+        case 3:
+        {
+            /* ...the case P > p-shell and Q = s-shell. (no B00,B01,D00) */
+            uint32_t m = 0;
+            uint32_t n = 0;
+            for (uint32_t ij = 0; ij < mij; ++ij) {
+                const double pij = p[ij];
+                const double pxij = px[ij];
+                const double pyij = py[ij];
+                const double pzij = pz[ij];
+                const double paxij = pax[ij];
+                const double payij = pay[ij];
+                const double pazij = paz[ij];
+                const double twop = pinvhf[ij];
+                for (uint32_t kl = 0; kl < mkl; ++kl) {
+                    const double pqx = pxij - qx[kl];
+                    const double pqy = pyij - qy[kl];
+                    const double pqz = pzij - qz[kl];
+                    const double qscale = 1.0 - pij * pqpinv[m];
+                    ++m;               
+                    for (uint32_t ng = 0; ng < ngqp; ++ng) {
+                        const double qroot = qscale * rts[n];
+                        b10[n] = (1.0 - qroot) * twop;
+                        c00x[n] = paxij - qroot * pqx;
+                        c00y[n] = payij - qroot * pqy;
+                        c00z[n] = pazij - qroot * pqz;
+                        ++n;
+                    }
+                }
+            }
+            return;
+        }
+        case 4:
+        {
+            /* ...the case P = s-shell and Q = p-shell. (no B00,B01,B10,C00) */
+            uint32_t m = 0;
+            uint32_t n = 0;
+            for (uint32_t ij = 0; ij < mij; ++ij) {
+                const double pij = p[ij];
+                const double pxij = px[ij];
+                const double pyij = py[ij];
+                const double pzij = pz[ij];
+                for (uint32_t kl = 0; kl < mkl; ++kl) {
+                    const double qcxkl = qcx[kl];
+                    const double qcykl = qcy[kl];
+                    const double qczkl = qcz[kl];
+                    const double pqx = pxij - qx[kl];
+                    const double pqy = pyij - qy[kl];
+                    const double pqz = pzij - qz[kl];
+                    const double pscale = pij * pqpinv[m];
+                    ++m;
+                    for (uint32_t ng = 0; ng < ngqp; ++ng) {
+                        const double proot = pscale * rts[n];
+                        d00x[n] = qcxkl + proot * pqx;
+                        d00y[n] = qcykl + proot * pqy;
+                        d00z[n] = qczkl + proot * pqz;
+                        ++n;
+                    }
+                }
+            }
+            return;
+        }
+        case 5:
+        {
+            /* ...the case P = p-shell and Q = p-shell. (no B01,B10) */
+            uint32_t m = 0;
+            uint32_t n = 0;
+            for (uint32_t ij = 0; ij < mij; ++ij) {
+                const double pij = p[ij];
+                const double pxij = px[ij];
+                const double pyij = py[ij];
+                const double pzij = pz[ij];
+                const double paxij = pax[ij];
+                const double payij = pay[ij];
+                const double pazij = paz[ij];
+                for (uint32_t kl = 0; kl < mkl; ++kl) {
+                    const double qcxkl = qcx[kl];
+                    const double qcykl = qcy[kl];
+                    const double qczkl = qcz[kl];
+                    const double pqx = pxij - qx[kl];
+                    const double pqy = pyij - qy[kl];
+                    const double pqz = pzij - qz[kl];
+                    const double twopq = pqpinv[m] * 0.5;
+                    const double pscale = pij * pqpinv[m];
+                    const double qscale = 1.0 - pscale;
+                    ++m;
+                    for (uint32_t ng = 0; ng < ngqp; ++ng) {
+                        const double root = rts[n];
+                        const double proot = pscale * root;
+                        const double qroot = qscale * root;
+                        b00[n] = root * twopq;
+                        c00x[n] = paxij - qroot * pqx;
+                        c00y[n] = payij - qroot * pqy;
+                        c00z[n] = pazij - qroot * pqz;
+                        d00x[n] = qcxkl + proot * pqx;
+                        d00y[n] = qcykl + proot * pqy;
+                        d00z[n] = qczkl + proot * pqz;
+                        ++n;
+                    }
+                }
+            }
+            return;
+        }
+        case 6:
+        {
+            /* ...the case P > p-shell and Q = p-shell. (no B01) */
+            uint32_t m = 0;
+            uint32_t n = 0;
+            for (uint32_t ij = 0; ij < mij; ++ij) {
+                const double pij = p[ij];
+                const double pxij = px[ij];
+                const double pyij = py[ij];
+                const double pzij = pz[ij];
+                const double paxij = pax[ij];
+                const double payij = pay[ij];
+                const double pazij = paz[ij];
+                const double twop = pinvhf[ij];
+                for (uint32_t kl = 0; kl < mkl; ++kl) {
+                    const double qcxkl = qcx[kl];
+                    const double qcykl = qcy[kl];
+                    const double qczkl = qcz[kl];
+                    const double pqx = pxij - qx[kl];
+                    const double pqy = pyij - qy[kl];
+                    const double pqz = pzij - qz[kl];
+                    const double twopq = pqpinv[m] * 0.5;
+                    const double pscale = pij * pqpinv[m];
+                    const double qscale = 1.0 - pscale;
+                    ++m;
+                    for (uint32_t ng = 0; ng < ngqp; ++ng) {
+                        const double root = rts[n];
+                        const double proot = pscale * root;
+                        const double qroot = qscale * root;
+                        b00[n] = root * twopq;
+                        b10[n] = (1.0 - qroot) * twop;
+                        c00x[n] = paxij - qroot * pqx;
+                        c00y[n] = payij - qroot * pqy;
+                        c00z[n] = pazij - qroot * pqz;
+                        d00x[n] = qcxkl + proot * pqx;
+                        d00y[n] = qcykl + proot * pqy;
+                        d00z[n] = qczkl + proot * pqz;
+                        ++n;
+                    }
+                }
+            }
+            return;
+        }
+        case 7:
+        {
+            /* ...the case P = s-shell and Q > p-shell. (no B00,B10,C00) */
+            uint32_t m = 0;
+            uint32_t n = 0;
+            for (uint32_t ij = 0; ij < mij; ++ij) {
+                const double pij = p[ij];
+                const double pxij = px[ij];
+                const double pyij = py[ij];
+                const double pzij = pz[ij];
+                for (uint32_t kl = 0; kl < mkl; ++kl) {
+                    const double qcxkl = qcx[kl];
+                    const double qcykl = qcy[kl];
+                    const double qczkl = qcz[kl];
+                    const double twoq = qinvhf[kl];
+                    const double pqx = pxij - qx[kl];
+                    const double pqy = pyij - qy[kl];
+                    const double pqz = pzij - qz[kl];
+                    const double pscale = pij * pqpinv[m];
+                    ++m;
+                    for (uint32_t ng = 0; ng < ngqp; ++ng) {
+                        const double proot = pscale * rts[n];
+                        b01[n] = (1.0 - proot) * twoq;
+                        d00x[n] = qcxkl + proot * pqx;
+                        d00y[n] = qcykl + proot * pqy;
+                        d00z[n] = qczkl + proot * pqz;
+                        ++n;
+                    }
+                }
+            }
+            return;
+        }
+        case 8:
+        {
+            /* ...the case P = p-shell and Q > p-shell. (no B10) */
+            uint32_t m = 0;
+            uint32_t n = 0;
+            for (uint32_t ij = 0; ij < mij; ++ij) {
+                const double pij = p[ij];
+                const double pxij = px[ij];
+                const double pyij = py[ij];
+                const double pzij = pz[ij];
+                const double paxij = pax[ij];
+                const double payij = pay[ij];
+                const double pazij = paz[ij];
+                for (uint32_t kl = 0; kl < mkl; ++kl) {
+                    const double qcxkl = qcx[kl];
+                    const double qcykl = qcy[kl];
+                    const double qczkl = qcz[kl];
+                    const double twoq = qinvhf[kl];
+                    const double pqx = pxij - qx[kl];
+                    const double pqy = pyij - qy[kl];
+                    const double pqz = pzij - qz[kl];
+                    const double twopq = pqpinv[m] * 0.5;
+                    const double pscale = pij * pqpinv[m];
+                    const double qscale = 1.0 - pscale;
+                    ++m;
+                    for (uint32_t ng = 0; ng < ngqp; ++ng) {
+                        const double root = rts[n];
+                        const double proot = pscale * root;
+                        const double qroot = qscale * root;
+                        b00[n] = root * twopq;
+                        b01[n] = (1.0 - proot) * twoq;
+                        c00x[n] = paxij - qroot * pqx;
+                        c00y[n] = payij - qroot * pqy;
+                        c00z[n] = pazij - qroot * pqz;
+                        d00x[n] = qcxkl + proot * pqx;
+                        d00y[n] = qcykl + proot * pqy;
+                        d00z[n] = qczkl + proot * pqz;
+                        ++n;
+                    }
+                }
+            }
+            return;
+        }
+        case 9:
+        {
+            /* ...the case P > p-shell and Q > p-shell. */
+            uint32_t m = 0;
+            uint32_t n = 0;
+            for (uint32_t ij = 0; ij < mij; ++ij) {
+                const double pij = p[ij];
+                const double pxij = px[ij];
+                const double pyij = py[ij];
+                const double pzij = pz[ij];
+                const double paxij = pax[ij];
+                const double payij = pay[ij];
+                const double pazij = paz[ij];
+                const double twop = pinvhf[ij];
+                for (uint32_t kl = 0; kl < mkl; ++kl) {
+                    const double qcxkl = qcx[kl];
+                    const double qcykl = qcy[kl];
+                    const double qczkl = qcz[kl];
+                    const double twoq = qinvhf[kl];
+                    const double pqx = pxij - qx[kl];
+                    const double pqy = pyij - qy[kl];
+                    const double pqz = pzij - qz[kl];
+                    const double twopq = pqpinv[m] * 0.5;
+                    const double pscale = pij * pqpinv[m];
+                    const double qscale = 1.0 - pscale;
+                    ++m;
+                    for (uint32_t ng = 0; ng < ngqp; ++ng) {
+                        const double root = rts[n];
+                        const double proot = pscale * root;
+                        const double qroot = qscale * root;
+                        b00[n] = root * twopq;
+                        b01[n] = (1.0 - proot) * twoq;
+                        b10[n] = (1.0 - qroot) * twop;
+                        c00x[n] = paxij - qroot * pqx;
+                        c00y[n] = payij - qroot * pqy;
+                        c00z[n] = pazij - qroot * pqz;
+                        d00x[n] = qcxkl + proot * pqx;
+                        d00y[n] = qcykl + proot * pqy;
+                        d00z[n] = qczkl + proot * pqz;
+                        ++n;
+                    }
+                }
+            }
+            return;
+        }
+    }
+#else
+    /* General case only */
+    uint32_t m = 0;
+    uint32_t n = 0;
+    for (uint32_t ij = 0; ij < mij; ++ij) {
+        const double pij = p[ij];
+        const double pxij = px[ij];
+        const double pyij = py[ij];
+        const double pzij = pz[ij];
+        const double paxij = pax[ij];
+        const double payij = pay[ij];
+        const double pazij = paz[ij];
+        const double twop = pinvhf[ij];
+        for (uint32_t kl = 0; kl < mkl; ++kl) {
+            const double qcxkl = qcx[kl];
+            const double qcykl = qcy[kl];
+            const double qczkl = qcz[kl];
+            const double twoq = qinvhf[kl];
+            const double pqx = pxij - qx[kl];
+            const double pqy = pyij - qy[kl];
+            const double pqz = pzij - qz[kl];
+            const double twopq = pqpinv[m] * 0.5;
+            const double pscale = pij * pqpinv[m];
+            const double qscale = 1.0 - pscale;
+            ++m;
+            for (uint32_t ng = 0; ng < ngqp; ++ng) {
+                const double root = rts[n];
+                const double proot = pscale * root;
+                const double qroot = qscale * root;
+                b00[n] = root * twopq;
+                b01[n] = (1.0 - proot) * twoq;
+                b10[n] = (1.0 - qroot) * twop;
+                c00x[n] = paxij - qroot * pqx;
+                c00y[n] = payij - qroot * pqy;
+                c00z[n] = pazij - qroot * pqz;
+                d00x[n] = qcxkl + proot * pqx;
+                d00y[n] = qcykl + proot * pqy;
+                d00z[n] = qczkl + proot * pqz;
+                ++n;
             }
         }
     }
-    return 0;
-
-
-/*             ...the case P = s-shell and Q = p-shell. */
-/*                (no B00,B01,B10,C00) */
-  L3:
-    {
-        m = 0;
-        n = 0;
-        for (ij = 0; ij < mij; ++ij)
-        {
-            pij = p[ij];
-            pxij = px[ij];
-            pyij = py[ij];
-            pzij = pz[ij];
-            for (kl = 0; kl < mkl; ++kl)
-            {
-                qcxkl = qcx[kl];
-                qcykl = qcy[kl];
-                qczkl = qcz[kl];
-                pqx = pxij - qx[kl];
-                pqy = pyij - qy[kl];
-                pqz = pzij - qz[kl];
-                pscale = pij * pqpinv[m];
-                ++m;
-                for (ng = 0; ng < ngqp; ++ng)
-                {
-                    proot = pscale * rts[n];
-                    d00x[n] = qcxkl + proot * pqx;
-                    d00y[n] = qcykl + proot * pqy;
-                    d00z[n] = qczkl + proot * pqz;
-                    ++n;
-                }
-            }
-        }
-    }
-    return 0;
-
-
-/*             ...the case P = p-shell and Q = p-shell. */
-/*                (no B01,B10) */
-  L4:
-    {
-        m = 0;
-        n = 0;
-        for (ij = 0; ij < mij; ++ij)
-        {
-            pij = p[ij];
-            pxij = px[ij];
-            pyij = py[ij];
-            pzij = pz[ij];
-            paxij = pax[ij];
-            payij = pay[ij];
-            pazij = paz[ij];
-            for (kl = 0; kl < mkl; ++kl)
-            {
-                qcxkl = qcx[kl];
-                qcykl = qcy[kl];
-                qczkl = qcz[kl];
-                pqx = pxij - qx[kl];
-                pqy = pyij - qy[kl];
-                pqz = pzij - qz[kl];
-                twopq = pqpinv[m] * .5;
-                pscale = pij * pqpinv[m];
-                qscale = 1. - pscale;
-                ++m;
-                for (ng = 0; ng < ngqp; ++ng)
-                {
-                    root = rts[n];
-                    proot = pscale * root;
-                    qroot = qscale * root;
-                    b00[n] = root * twopq;
-                    c00x[n] = paxij - qroot * pqx;
-                    c00y[n] = payij - qroot * pqy;
-                    c00z[n] = pazij - qroot * pqz;
-                    d00x[n] = qcxkl + proot * pqx;
-                    d00y[n] = qcykl + proot * pqy;
-                    d00z[n] = qczkl + proot * pqz;
-                    ++n;
-                }
-            }
-        }
-    }
-    return 0;
-
-
-/*             ...the case P > p-shell and Q = s-shell. */
-/*                (no B00,B01,D00) */
-  L5:
-    {
-        m = 0;
-        n = 0;
-        for (ij = 0; ij < mij; ++ij)
-        {
-            pij = p[ij];
-            pxij = px[ij];
-            pyij = py[ij];
-            pzij = pz[ij];
-            paxij = pax[ij];
-            payij = pay[ij];
-            pazij = paz[ij];
-            twop = pinvhf[ij];
-            for (kl = 0; kl < mkl; ++kl)
-            {
-                pqx = pxij - qx[kl];
-                pqy = pyij - qy[kl];
-                pqz = pzij - qz[kl];
-                qscale = 1. - pij * pqpinv[m];
-                ++m;               
-                for (ng = 0; ng < ngqp; ++ng)
-                {
-                    qroot = qscale * rts[n];
-                    b10[n] = (1. - qroot) * twop;
-                    c00x[n] = paxij - qroot * pqx;
-                    c00y[n] = payij - qroot * pqy;
-                    c00z[n] = pazij - qroot * pqz;
-                    ++n;
-                }
-            }
-        }
-    }
-    return 0;
-
-
-/*             ...the case P = s-shell and Q > p-shell. */
-/*                (no B00,B10,C00) */
-  L6:
-    {
-        m = 0;
-        n = 0;
-        for (ij = 0; ij < mij; ++ij)
-        {
-            pij = p[ij];
-            pxij = px[ij];
-            pyij = py[ij];
-            pzij = pz[ij];
-            for (kl = 0; kl < mkl; ++kl)
-            {
-                qcxkl = qcx[kl];
-                qcykl = qcy[kl];
-                qczkl = qcz[kl];
-                twoq = qinvhf[kl];
-                pqx = pxij - qx[kl];
-                pqy = pyij - qy[kl];
-                pqz = pzij - qz[kl];
-                pscale = pij * pqpinv[m];
-                ++m;
-                for (ng = 0; ng < ngqp; ++ng)
-                {
-                    proot = pscale * rts[n];
-                    b01[n] = (1. - proot) * twoq;
-                    d00x[n] = qcxkl + proot * pqx;
-                    d00y[n] = qcykl + proot * pqy;
-                    d00z[n] = qczkl + proot * pqz;
-                    ++n;
-                }
-            }
-        }
-    }
-    return 0;
-
-
-/*             ...the case P > p-shell and Q = p-shell. */
-/*                (no B01) */
-  L7:
-    {
-        m = 0;
-        n = 0;
-        for (ij = 0; ij < mij; ++ij)
-        {
-            pij = p[ij];
-            pxij = px[ij];
-            pyij = py[ij];
-            pzij = pz[ij];
-            paxij = pax[ij];
-            payij = pay[ij];
-            pazij = paz[ij];
-            twop = pinvhf[ij];
-            for (kl = 0; kl < mkl; ++kl)
-            {
-                qcxkl = qcx[kl];
-                qcykl = qcy[kl];
-                qczkl = qcz[kl];
-                pqx = pxij - qx[kl];
-                pqy = pyij - qy[kl];
-                pqz = pzij - qz[kl];
-                twopq = pqpinv[m] * .5;
-                pscale = pij * pqpinv[m];
-                qscale = 1. - pscale;
-                ++m;
-                for (ng = 0; ng < ngqp; ++ng)
-                {
-                    root = rts[n];
-                    proot = pscale * root;
-                    qroot = qscale * root;
-                    b00[n] = root * twopq;
-                    b10[n] = (1. - qroot) * twop;
-                    c00x[n] = paxij - qroot * pqx;
-                    c00y[n] = payij - qroot * pqy;
-                    c00z[n] = pazij - qroot * pqz;
-                    d00x[n] = qcxkl + proot * pqx;
-                    d00y[n] = qcykl + proot * pqy;
-                    d00z[n] = qczkl + proot * pqz;
-                    ++n;
-                }
-            }
-        }
-    }
-    return 0;
-
-
-/*             ...the case P = p-shell and Q > p-shell. */
-/*                (no B10) */
-  L8:
-    {
-        m = 0;
-        n = 0;
-        for (ij = 0; ij < mij; ++ij)
-        {
-            pij = p[ij];
-            pxij = px[ij];
-            pyij = py[ij];
-            pzij = pz[ij];
-            paxij = pax[ij];
-            payij = pay[ij];
-            pazij = paz[ij];
-            for (kl = 0; kl < mkl; ++kl)
-            {
-                qcxkl = qcx[kl];
-                qcykl = qcy[kl];
-                qczkl = qcz[kl];
-                twoq = qinvhf[kl];
-                pqx = pxij - qx[kl];
-                pqy = pyij - qy[kl];
-                pqz = pzij - qz[kl];
-                twopq = pqpinv[m] * .5;
-                pscale = pij * pqpinv[m];
-                qscale = 1. - pscale;
-                ++m;
-                for (ng = 0; ng < ngqp; ++ng)
-                {
-                    root = rts[n];
-                    proot = pscale * root;
-                    qroot = qscale * root;
-                    b00[n] = root * twopq;
-                    b01[n] = (1. - proot) * twoq;
-                    c00x[n] = paxij - qroot * pqx;
-                    c00y[n] = payij - qroot * pqy;
-                    c00z[n] = pazij - qroot * pqz;
-                    d00x[n] = qcxkl + proot * pqx;
-                    d00y[n] = qcykl + proot * pqy;
-                    d00z[n] = qczkl + proot * pqz;
-                    ++n;
-                }
-            }
-        }
-    }
-    return 0;
-
-
-/*             ...the case P > p-shell and Q > p-shell. */
-  L9:
-    {
-        m = 0;
-        n = 0;
-        for (ij = 0; ij < mij; ++ij)
-        {
-            pij = p[ij];
-            pxij = px[ij];
-            pyij = py[ij];
-            pzij = pz[ij];
-            paxij = pax[ij];
-            payij = pay[ij];
-            pazij = paz[ij];
-            twop = pinvhf[ij];
-            for (kl = 0; kl < mkl; ++kl)
-            {
-                qcxkl = qcx[kl];
-                qcykl = qcy[kl];
-                qczkl = qcz[kl];
-                twoq = qinvhf[kl];
-                pqx = pxij - qx[kl];
-                pqy = pyij - qy[kl];
-                pqz = pzij - qz[kl];
-                twopq = pqpinv[m] * .5;
-                pscale = pij * pqpinv[m];
-                qscale = 1. - pscale;
-                ++m;
-                for (ng = 0; ng < ngqp; ++ng)
-                {
-                    root = rts[n];
-                    proot = pscale * root;
-                    qroot = qscale * root;
-                    b00[n] = root * twopq;
-                    b01[n] = (1. - proot) * twoq;
-                    b10[n] = (1. - qroot) * twop;
-                    c00x[n] = paxij - qroot * pqx;
-                    c00y[n] = payij - qroot * pqy;
-                    c00z[n] = pazij - qroot * pqz;
-                    d00x[n] = qcxkl + proot * pqx;
-                    d00y[n] = qcykl + proot * pqy;
-                    d00z[n] = qczkl + proot * pqz;
-                    ++n;
-                }
-            }
-        }
-    }
-
-
-    return 0;
-}
-
-
-#ifdef __INTEL_OFFLOAD
-#pragma offload_attribute(pop)
 #endif
+}

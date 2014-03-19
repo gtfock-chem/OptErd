@@ -39,9 +39,7 @@
 /*                    RTS          =  all NTGQP quadrature roots */
 /*                    WTS          =  all NTGQP quadrature weights */
 /* ------------------------------------------------------------------------ */
-int erd__rys_5_roots_weights (int nt, double *tval, double *rts,
-                              double *wts)
-{
+void erd__rys_5_roots_weights(int nt, const double tval[restrict], double rts[restrict], double wts[restrict]) {
     int jump5[60] =
         { 1, 2, 2, 2, 2, 3, 3, 3, 3, 3, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 6, 6,
         6, 6, 6, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 8, 8, 8, 8, 8,
@@ -720,8 +718,6 @@ int erd__rys_5_roots_weights (int nt, double *tval, double *rts,
       L500:
         ;
     }
-
-    return 0;
 }
 
 #ifdef __INTEL_OFFLOAD

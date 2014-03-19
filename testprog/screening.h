@@ -1,4 +1,5 @@
 #pragma once
+#include <stdint.h>
 #include <CInt.h>
 
 #define TOLSRC 1e-10

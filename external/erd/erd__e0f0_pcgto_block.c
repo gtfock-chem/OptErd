@@ -8,10 +8,7 @@
 #endif
 
 #include "erd.h"
-
-#ifdef __INTEL_OFFLOAD
-#pragma offload_attribute(push, target(mic))
-#endif
+#include "erdutil.h"
 
 /* ------------------------------------------------------------------------ */
 /*  OPERATION   : ERD_E0F0_PCGTO_BLOCK */
@@ -172,57 +169,25 @@
 /*                    BATCH        =  current batch of primitive */
 /*                                    cartesian [E0|F0] integrals */
 /* ------------------------------------------------------------------------ */
-int erd__e0f0_pcgto_block (int nij, int nkl,
-                           int ngqp, int nmom,
-                           int nxyzet, int nxyzft,
-                           int nxyzp, int nxyzq,
-                           int shella, int shellp,
-                           int shellc, int shellq,
-                           double xa, double ya, double za,
-                           double xb, double yb, double zb,
-                           double xc, double yc, double zc,
-                           double xd, double yd, double zd,
-                           double *alphaa, double *alphab,
-                           double *alphac, double *alphad,
-                           double *cca, double *ccb,
-                           double *ccc, double *ccd,
-                           int **vrrtab, int ldvrrtab,
-                           int *prima, int *primb,
-                           int *primc, int *primd,
-                           double *norma, double *normb,
-                           double *normc, double *normd,
-                           double *rhoab, double *rhocd,
-                           double *p, double *px,
-                           double *py, double *pz,
-                           double *pax, double *pay, double *paz,
-                           double *pinvhf, double *scalep, double *q,
-                           double *qx, double *qy, double *qz,
-                           double *qcx, double *qcy, double *qcz,
-                           double *qinvhf, double *scaleq,
-                           double *rts, double *gqscr, double *tval,
-                           double *pqpinv, double *b00, double *b01, double *b10,
-                           double *c00x, double *c00y, double *c00z,
-                           double *d00x, double *d00y, double *d00z,
-                           double *int2dx, double *int2dy,
-                           double *int2dz, double *batch)
+ERD_OFFLOAD void erd__e0f0_pcgto_block(uint32_t nij, uint32_t nkl,
+    uint32_t ngqp, uint32_t nmom,
+    uint32_t nxyzet, uint32_t nxyzft,
+    uint32_t nxyzp, uint32_t nxyzq,
+    uint32_t shella, uint32_t shellp,
+    uint32_t shellc, uint32_t shellq,
+    double xa, double ya, double za,
+    double xb, double yb, double zb,
+    double xc, double yc, double zc,
+    double xd, double yd, double zd,
+    const double alphaa[restrict static nij], const double alphab[restrict static nij], const double alphac[restrict static nkl], const double alphad[restrict static nkl],
+    const double cca[restrict static nij], const double ccb[restrict static nij], const double ccc[restrict static nkl], const double ccd[restrict static nkl],
+    int **vrrtab, int ldvrrtab,
+    const uint32_t prima[restrict static nij], const uint32_t primb[restrict static nij], const uint32_t primc[restrict static nkl], const uint32_t primd[restrict static nkl],
+    const double norma[restrict static nij], const double normb[restrict static nij], const double normc[restrict static nkl], const double normd[restrict static nkl],
+    const double rhoab[restrict static nij], const double rhocd[restrict static nkl],
+    double batch[restrict])
 {
-    int i, j, k, l, m, n;
-    int ij, kl, g000, g010, g020, g030, g040, g050, g060;
-    double pqx, pqy, pqz;
-    double expa, expb, expc, expd, pval, qval;
-    double pinv, qinv, pxval, pyval, pzval;
-    int case2d;
-    double pscale, invers, pqmult, pqplus;
-    int nijkl;
-    double abx;
-    double aby;
-    double abz;
-    double cdx;
-    double cdy;
-    double cdz;
-    int mgqijkl;
 #ifdef __ERD_PROFILE__   
-    uint64_t start_clock, end_clock; 
     #ifdef _OPENMP
     const int tid = omp_get_thread_num();
     #else
@@ -255,26 +220,24 @@ int erd__e0f0_pcgto_block (int nij, int nkl,
 /*                            = 3  -->  3-center (AB|CC) integrals */
 /*                            = 4  -->  3-center (AA|CD) integrals */
 /*                            = 5  -->  4-center (AB|CD) integrals */
-    case2d = MIN(2, shellq) * 3 + MIN(2, shellp) + 1;
-    nijkl = nij * nkl;
-    mgqijkl = ngqp * nijkl;
-    abx = xa - xb;
-    aby = ya - yb;
-    abz = za - zb;
-    cdx = xc - xd;
-    cdy = yc - yd;
-    cdz = zc - zd;
+    const uint32_t case2d = min32u(2, shellq) * 3 + min32u(2, shellp) + 1;
+    const uint32_t nijkl = nij * nkl;
+    const uint32_t mgqijkl = ngqp * nijkl;
+    const double abx = xa - xb;
+    const double aby = ya - yb;
+    const double abz = za - zb;
+    const double cdx = xc - xd;
+    const double cdy = yc - yd;
+    const double cdz = zc - zd;
     
-    #pragma simd
-    #pragma vector aligned
-    for (ij = 0; ij < nij; ++ij)
-    {        
-        i = prima[ij];
-        j = primb[ij];
-        expa = alphaa[i];
-        expb = alphab[j];
-        pval = expa + expb;
-        pinv = 1. / pval;
+    double p[nij], px[nij], py[nij], pz[nij], pax[nij], pay[nij], paz[nij], pinvhf[nij], scalep[nij];
+    for (uint32_t ij = 0; ij < nij; ++ij) {        
+        const uint32_t i = prima[ij];
+        const uint32_t j = primb[ij];
+        const double expa = alphaa[i];
+        const double expb = alphab[j];
+        double pval = expa + expb;
+        const double pinv = 1. / pval;
         p[ij] = pval;
         pval = -expb * pinv;
         pax[ij] = pval * abx;
@@ -284,20 +247,17 @@ int erd__e0f0_pcgto_block (int nij, int nkl,
         py[ij] = pay[ij] + ya;
         pz[ij] = paz[ij] + za;
         pinvhf[ij] = pinv * 0.5;
-        scalep[ij] = norma[i] * normb[j] * rhoab[ij];
-        scalep[ij] *= cca[i] * ccb[j];
+        scalep[ij] = norma[i] * normb[j] * rhoab[ij] * cca[i] * ccb[j];
     }
 
-    #pragma simd
-    #pragma vector aligned
-    for (kl = 0; kl < nkl; ++kl)
-    {
-        k = primc[kl];
-        l = primd[kl];
-        expc = alphac[k];
-        expd = alphad[l];
-        qval = expc + expd;
-        qinv = 1.0 / qval;
+    double q[nkl], qx[nkl], qy[nkl], qz[nkl], qcx[nkl], qcy[nkl], qcz[nkl], qinvhf[nkl], scaleq[nkl];
+    for (uint32_t kl = 0; kl < nkl; ++kl) {
+        const uint32_t k = primc[kl];
+        const uint32_t l = primd[kl];
+        const double expc = alphac[k];
+        const double expd = alphad[l];
+        double qval = expc + expd;
+        const double qinv = 1.0 / qval;
         q[kl] = qval;
         qval = -expd * qinv;
         qcx[kl] = qval * cdx;
@@ -307,8 +267,7 @@ int erd__e0f0_pcgto_block (int nij, int nkl,
         qy[kl] = qcy[kl] + yc;
         qz[kl] = qcz[kl] + zc;
         qinvhf[kl] = qinv * 0.5;
-        scaleq[kl] = normc[k] * normd[l] * rhocd[kl];
-        scaleq[kl] *= ccc[k] * ccd[l];
+        scaleq[kl] = normc[k] * normd[l] * rhocd[kl] * ccc[k] * ccd[l];
     }
 
 /*             ...the 'K4' loop over all ij- and kl-exponent pairs */
@@ -321,82 +280,52 @@ int erd__e0f0_pcgto_block (int nij, int nkl,
 /*                            = 5  -->  4-center (AB|CD) integrals */
 /*                4-center (AB|CD) integrals are checked first */
 /*                (most common occurence in large systems). */
-    m = 0;
-    for (ij = 0; ij < nij; ++ij)
-    {
-        pval = p[ij];
-        pxval = px[ij];
-        pyval = py[ij];
-        pzval = pz[ij];
-        pscale = scalep[ij];
-        #pragma simd
-        for (kl = 0; kl < nkl; ++kl)
-        {
-            qval = q[kl];
-            pqmult = pval * qval;
-            pqplus = pval + qval;
-            invers = 1.0 / pqplus;
-            pqx = pxval - qx[kl];
-            pqy = pyval - qy[kl];
-            pqz = pzval - qz[kl];
+    const uint32_t nint2d = PAD_LEN(mgqijkl) * (shellp + 1) * (shellq + 1);
+    ERD_SIMD_ALIGN double tval[nijkl];
+    ERD_SIMD_ALIGN double pqpinv[nijkl];
+    ERD_SIMD_ALIGN double int2dx[nint2d];
+    uint32_t m = 0;
+    for (uint32_t ij = 0; ij < nij; ++ij) {
+        const double pval = p[ij];
+        const double pxval = px[ij];
+        const double pyval = py[ij];
+        const double pzval = pz[ij];
+        const double pscale = scalep[ij];
+        for (uint32_t kl = 0; kl < nkl; ++kl) {
+            const double qval = q[kl];
+            const double pqmult = pval * qval;
+            const double pqplus = pval + qval;
+            const double invers = 1.0 / pqplus;
+            const double pqx = pxval - qx[kl];
+            const double pqy = pyval - qy[kl];
+            const double pqz = pzval - qz[kl];
             tval[m] = (pqx * pqx + pqy * pqy + pqz * pqz) * pqmult * invers;
             pqpinv[m] = invers;
-            int2dx[m] = pscale * scaleq[kl] / (pqmult * sqrt (pqplus));
+            int2dx[m] = pscale * scaleq[kl] / (pqmult * sqrt(pqplus));
             m++;
         }
     }
 
 /*             ...if necessary, expand the scaling array size from */
 /*                MIJKL to MGQIJKL starting from the last elements. */
-    if (ngqp > 1)
-    {
-        n = mgqijkl;
-        for (m = nijkl; m >= 1; --m)
-        {
-            for (i = 1; i <= ngqp; ++i)
-            {
+    if (ngqp > 1) {
+        uint32_t n = mgqijkl;
+        for (uint32_t m = nijkl; m >= 1; m--) {
+            for (uint32_t i = 1; i <= ngqp; i++) {
                 int2dx[n - i] = int2dx[m - 1];
             }
             n -= ngqp;
         }
     }
-    int mgqijkl_aligned = ((mgqijkl + SIMDW - 1)/SIMDW) * SIMDW;
-    memset (&(int2dx[mgqijkl]), 0, sizeof(double) * (mgqijkl_aligned - mgqijkl));
+    uint32_t mgqijkl_aligned = ((mgqijkl + SIMDW - 1)/SIMDW) * SIMDW;
+    memset(&(int2dx[mgqijkl]), 0, sizeof(double) * (mgqijkl_aligned - mgqijkl));
 
-/*             ...determine memory allocation offsets for the scratch */
-/*                arrays used to calculate the quadrature roots + */
-/*                weights: */
-/*                   G000 = offset for A coefficients (Jacobi/Laguerre) */
-/*                   G010 = offset for B coefficients (Jacobi/Laguerre) */
-/*                   G020 = offset for moments (Jacobi/Laguerre) */
-/*                   G030 = offset for diagonals of symmetric termat */
-/*                   G040 = offset for offdiagonals of symmetric termat */
-/*                   G050 = offset for first row intermediates during */
-/*                          evaluation of symmetric termat */
-/*                   G060 = offset for second row intermediates during */
-/*                          evaluation of symmetric termat */
-    g000 = 0;
-    g010 = g000 + nmom;
-    g020 = g010 + nmom - 1;
-    g030 = g020 + nmom;
-    g040 = g030 + ngqp;
-    g050 = g040 + ngqp;
-    g060 = g050 + nmom;
 
-/*             ...calculate all roots and weights. Array B00 is passed */
-/*                as a scratch array. */
-#ifdef __ERD_PROFILE__
-    start_clock = __rdtsc();
-#endif
-    erd__rys_roots_weights (nijkl, ngqp, nmom,
-                            tval, b00,
-                            gqscr, &gqscr[g010],
-                            &gqscr[g020], &gqscr[g030], &gqscr[g040],
-                            &gqscr[g050], &gqscr[g060], rts, int2dx);
-#ifdef __ERD_PROFILE__
-    end_clock = __rdtsc();
-    erd_ticks[tid][erd__rys_roots_weights_ticks] += (end_clock - start_clock);
-#endif
+/*             ...calculate all roots and weights. */
+    ERD_SIMD_ALIGN double rts[PAD_LEN(mgqijkl)];
+    ERD_PROFILE_START(erd__rys_roots_weights)
+    erd__rys_roots_weights(nijkl, ngqp, nmom, tval, rts, int2dx);
+    ERD_PROFILE_END(erd__rys_roots_weights)
 /*             ...perform the following steps: */
 /*                1) generate all VRR coefficients. */
 /*                2) construct all 2D PQ x,y,z integrals using all the */
@@ -412,76 +341,38 @@ int erd__e0f0_pcgto_block (int nij, int nkl,
 /*                for the special s-shell cases. Note, that the case */
 /*                in which both P- and Q-shells are s-shells cannot */
 /*                arise, as this case is dealt with in separate routines. */
-#ifdef __ERD_PROFILE__
-    start_clock = __rdtsc();
-#endif
-    erd__2d_coefficients (nij, nkl, ngqp, p, q,
+    ERD_SIMD_ALIGN double b00[mgqijkl];
+    ERD_SIMD_ALIGN double b01[mgqijkl];
+    ERD_SIMD_ALIGN double b10[mgqijkl];
+    ERD_SIMD_ALIGN double c00x[mgqijkl];
+    ERD_SIMD_ALIGN double c00y[mgqijkl];
+    ERD_SIMD_ALIGN double c00z[mgqijkl];
+    ERD_SIMD_ALIGN double d00x[mgqijkl];
+    ERD_SIMD_ALIGN double d00y[mgqijkl];
+    ERD_SIMD_ALIGN double d00z[mgqijkl];
+    ERD_PROFILE_START(erd__2d_coefficients)
+    erd__2d_coefficients(nij, nkl, ngqp, p, q,
                           px, py, pz, qx, qy, qz,
                           pax, pay, paz, qcx, qcy, qcz,
                           pinvhf, qinvhf, pqpinv, rts,
                           case2d, b00, b01, b10,
                           c00x, c00y, c00z,
                           d00x, d00y, d00z);
-#ifdef __ERD_PROFILE__
-    end_clock = __rdtsc();
-    erd_ticks[tid][erd__2d_coefficients_ticks] += (end_clock - start_clock);
-#endif
+    ERD_PROFILE_END(erd__2d_coefficients)
 
-#ifdef __ERD_PROFILE__
-    start_clock = __rdtsc();
-#endif
-    /*erd__2d_pq_integrals (shellp, shellq, mgqijkl, &wts[1],
-                          &b00[1], &b01[1], &b10[1],
-                          &c00x[1], &c00y[1], &c00z[1], &d00x[1],
-                          &d00y[1], &d00z[1], case2d,
-                          &int2dx[1], &int2dy[1], &int2dz[1]);
-    */
-    erd__2d_pq_integrals (shellp, shellq, mgqijkl_aligned,
+    ERD_SIMD_ALIGN double int2dy[nint2d];
+    ERD_SIMD_ALIGN double int2dz[nint2d];
+    ERD_PROFILE_START(erd__2d_pq_integrals)
+    erd__2d_pq_integrals(shellp, shellq, mgqijkl_aligned,
                           b00, b01, b10, c00x, c00y, c00z, d00x,
                           d00y, d00z, case2d,
                           int2dx, int2dy, int2dz);
 
-#ifdef __ERD_PROFILE__
-    end_clock = __rdtsc();
-    erd_ticks[tid][erd__2d_pq_integrals_ticks] += (end_clock - start_clock);
-#endif
+    ERD_PROFILE_END(erd__2d_pq_integrals)
 
-#ifdef __ERD_PROFILE__
-    start_clock = __rdtsc();
-#endif
-    /*if (shellq == 0)
-    {
-        erd__int2d_to_e000 (shella, shellp, ngqp, nijkl, mgqijkl,
-                            nxyzet, nxyzp,
-                            &int2dx[1], &int2dy[1], &int2dz[1],
-                            &b00[1], &b01[1], &scalepq[1], &batch[1]);
-    }
-    else if (shellp == 0)
-    {
-        erd__int2d_to_e000 (shellc, shellq, ngqp, nijkl, mgqijkl,
-                            nxyzft, nxyzq,
-                            &int2dx[1], &int2dy[1], &int2dz[1],
-                            &b00[1], &b01[1], &scalepq[1], &batch[1]);
-    }
-    else
-    {
-        erd__int2d_to_e0f0 (shella, shellp, shellc, shellq, ngqp,
-                            nijkl, mgqijkl, nxyzet, nxyzft, nxyzp, nxyzq,
-                            &int2dx[1], &int2dy[1], &int2dz[1],
-                            &b00[1], &b01[1], &scalepq[1], &batch[1]);
-    }
-    */
-    erd__int2d_to_e0f0 (shella, shellp, shellc, shellq,
+    ERD_PROFILE_START(erd__int2d_to_e0f0)
+    erd__int2d_to_e0f0(shella, shellp, shellc, shellq,
                         mgqijkl_aligned, nxyzet, nxyzft,
                         int2dx, int2dy, int2dz, vrrtab, ldvrrtab, batch);
-#ifdef __ERD_PROFILE__
-    end_clock = __rdtsc();
-    erd_ticks[tid][erd__int2d_to_e0f0_ticks] += (end_clock - start_clock);
-#endif
-
-    return 0;
+    ERD_PROFILE_END(erd__int2d_to_e0f0)
 }
-
-#ifdef __INTEL_OFFLOAD
-#pragma offload_attribute(pop)
-#endif

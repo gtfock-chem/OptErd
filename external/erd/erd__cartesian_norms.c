@@ -4,11 +4,7 @@
 #include <math.h>
 
 #include "erd.h"
-
-#ifdef __INTEL_OFFLOAD
-#pragma offload_attribute(push, target(mic))
-#endif
-
+#include "erdutil.h"
 
 /* ------------------------------------------------------------------------ */
 /*  OPERATION   : ERD__CARTESIAN_NORMS */
@@ -43,24 +39,12 @@
 /*                  Output: */
 /*                       NORM (I)  =  cartesian norms from I=0,1,...,L */
 /* ------------------------------------------------------------------------ */
-int erd__cartesian_norms (int l, double *norm)
-{
-    int i;
-    double odd;
-
+ERD_OFFLOAD void erd__cartesian_norms(uint32_t length, double norm[restrict static length+1]) {
+    double odd = 1.0;
     norm[0] = 1.0;
     norm[1] = 2.0;
-    odd = 1.0;
-    for (i = 2; i <= l; ++i)
-    {
+    for (uint32_t i = 2; i <= length; i++) {
         odd += 2.0;
-        norm[i] = norm[i - 1] * 2.0 / sqrt (odd);
+        norm[i] = norm[i - 1] * 2.0 / sqrt(odd);
     }
-
-    return 0;
 }
-
-
-#ifdef __INTEL_OFFLOAD
-#pragma offload_attribute(pop)
-#endif

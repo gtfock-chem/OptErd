@@ -1,15 +1,9 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <assert.h>
+#include <stdint.h>
+#include <stdbool.h>
 #include <math.h>
 
 #include "erd.h"
-
-
-#ifdef __INTEL_OFFLOAD
-#pragma offload_attribute(push, target(mic))
-#endif
+#include "erdutil.h"
 
 /* ------------------------------------------------------------------------ */
 /*  OPERATION   : ERD__SET_ABCD */
@@ -121,64 +115,41 @@
 /*                                    empty batch of integrals is */
 /*                                    expected. */
 /* ------------------------------------------------------------------------ */
-int erd__set_abcd (int npgto1, int npgto2, int npgto3, int npgto4,
-                   int shell1, int shell2, int shell3, int shell4,
-                   double x1, double y1, double z1,
-                   double x2, double y2, double z2, 
-                   double x3, double y3, double z3,
-                   double x4, double y4, double z4, int spheric,
-                   int *npgtoa, int *npgtob, int *npgtoc, int *npgtod,
-                   int *shella, int *shellb, int *shellc, int *shelld,
-                   double *xa, double *ya, double *za,
-                   double *xb, double *yb, double *zb,
-                   double *xc, double *yc, double *zc,
-                   double *xd, double *yd, double *zd,
-                   int *nxyza, int *nxyzb, int *nxyzc, int *nxyzd,
-                   int *nxyzet, int *nxyzft,
-                   int *nrya, int *nryb, int *nryc, int *nryd,
-                   int *nabcoor, int *ncdcoor,
-                   int *ncolhrr, int *nrothrr,
-                   int *nxyzhrr, int *empty, int *tr1234)
+ERD_OFFLOAD void erd__set_abcd(
+    uint32_t npgto1, uint32_t npgto2, uint32_t npgto3, uint32_t npgto4,
+    uint32_t shell1, uint32_t shell2, uint32_t shell3, uint32_t shell4,
+    bool atomic,
+    double x1, double y1, double z1,
+    double x2, double y2, double z2, 
+    double x3, double y3, double z3,
+    double x4, double y4, double z4, bool spheric,
+    uint32_t *restrict npgtoa_ptr, uint32_t *restrict npgtob_ptr, uint32_t *restrict npgtoc_ptr, uint32_t *restrict npgtod_ptr,
+    uint32_t *restrict shella_ptr, uint32_t *restrict shellb_ptr, uint32_t *restrict shellc_ptr, uint32_t *restrict shelld_ptr,
+    double *restrict xa_ptr, double *restrict ya_ptr, double *restrict za_ptr,
+    double *restrict xb_ptr, double *restrict yb_ptr, double *restrict zb_ptr,
+    double *restrict xc_ptr, double *restrict yc_ptr, double *restrict zc_ptr,
+    double *restrict xd_ptr, double *restrict yd_ptr, double *restrict zd_ptr,
+    uint32_t *restrict nxyza_ptr, uint32_t *restrict nxyzb_ptr, uint32_t *restrict nxyzc_ptr, uint32_t *restrict nxyzd_ptr,
+    uint32_t *restrict nxyzet_ptr, uint32_t *restrict nxyzft_ptr,
+    uint32_t *restrict nrya_ptr, uint32_t *restrict nryb_ptr, uint32_t *restrict nryc_ptr, uint32_t *restrict nryd_ptr,
+    uint32_t *restrict nabcoor_ptr, uint32_t *restrict ncdcoor_ptr,
+    uint32_t *restrict ncolhrr, uint32_t *restrict nrothrr,
+    uint32_t *restrict nxyzhrr, bool *restrict empty, bool *restrict tr1234)
 {
-    int add[3] = { 0, 0, 1 };
-    int m, ngh, nry1, nry2, nry3, nry4,
-        ngho, ncol, nrot, nrow;
-    int case1, case2;
-    int nxyz1, nxyz2, nxyz3, nxyz4;
-    int atom12, atom23, atom34;
-    int nxyze, nxyzf, nxyzi;
-    int shellg, shellh, nxyzgo, nxyzho, nhrr2nd, nhrr1st;
-    int swap12;
-    int swap34;
-    int atomic;
-    double abx, aby, abz, cdx, cdy, cdz;
-    int shellp;
-    int shellq;
-    int shellt;
-    int mxshell;
-    int nxyzp;
-    int nxyzq;
-
 /*             ...generate all 1,2,3,4 data. Decide as early as */
 /*                possible, if a zero batch of integrals is expected. */
-    *empty = 0;
-    atom12 = x1 == x2 && y1 == y2 && z1 == z2;
-    atom23 = x2 == x3 && y2 == y3 && z2 == z3;
-    atom34 = x3 == x4 && y3 == y4 && z3 == z4;
-    atomic = atom12 && atom34 && atom23;
-    shellp = shell1 + shell2;
-    shellq = shell3 + shell4;
-    shellt = shellp + shellq;
+    *empty = false;
 
-    mxshell = MAX(shell1, shell2);
-    mxshell = MAX(mxshell, shell3);
-    mxshell = MAX(mxshell, shell4);
-    case1 = shellt % 2 == 1;
-    case2 = spheric && mxshell + mxshell > shellt;
-    if (atomic && (case1 || case2))
-    {
-        *empty = 1;
-        return 0;
+    const uint32_t preshellp = shell1 + shell2;
+    const uint32_t preshellq = shell3 + shell4;
+    const uint32_t shellt = preshellp + preshellq;
+
+    const uint32_t mxshell = max4x32u(shell1, shell2, shell3, shell4);
+    const bool case1 = (shellt % 2 == 1);
+    const bool case2 = spheric && (2 * mxshell > shellt);
+    if (atomic && (case1 || case2)) {
+        *empty = true;
+        return;
     }
 
 /*             ...determine csh equality between center pairs 1,2 */
@@ -187,16 +158,15 @@ int erd__set_abcd (int npgto1, int npgto2, int npgto3, int npgto4,
 /*             ...set the cartesian and spherical dimensions. In case */
 /*                no spherical transformations are wanted, set the */
 /*                corresponding dimensions equal to the cartesian ones. */
-    nxyz1 = (shell1 + 1) * (shell1 + 2) / 2;
-    nxyz2 = (shell2 + 1) * (shell2 + 2) / 2;
-    nxyz3 = (shell3 + 1) * (shell3 + 2) / 2;
-    nxyz4 = (shell4 + 1) * (shell4 + 2) / 2;
-    nry1 = shell1 + shell1 + 1;
-    nry2 = shell2 + shell2 + 1;
-    nry3 = shell3 + shell3 + 1;
-    nry4 = shell4 + shell4 + 1;
-    if (!spheric)
-    {
+    uint32_t nxyz1 = (shell1 + 1) * (shell1 + 2) / 2;
+    uint32_t nxyz2 = (shell2 + 1) * (shell2 + 2) / 2;
+    uint32_t nxyz3 = (shell3 + 1) * (shell3 + 2) / 2;
+    uint32_t nxyz4 = (shell4 + 1) * (shell4 + 2) / 2;
+    uint32_t nry1 = shell1 + shell1 + 1;
+    uint32_t nry2 = shell2 + shell2 + 1;
+    uint32_t nry3 = shell3 + shell3 + 1;
+    uint32_t nry4 = shell4 + shell4 + 1;
+    if (!spheric) {
         nry1 = nxyz1;
         nry2 = nxyz2;
         nry3 = nxyz3;
@@ -204,8 +174,6 @@ int erd__set_abcd (int npgto1, int npgto2, int npgto3, int npgto4,
     }
 
 /*             ...decide on the 1 <-> 2 and/or 3 <-> 4 swapping. */
-    swap12 = (shell1 < shell2);
-    swap34 = (shell3 < shell4);
 
 /*             ...calculate NXYZHRR for the two possible HRR */
 /*                and (if any) cartesian -> spherical transformation */
@@ -228,27 +196,20 @@ int erd__set_abcd (int npgto1, int npgto2, int npgto3, int npgto4,
 /*                labels is CD followed by AB, the overall minimum */
 /*                will decide if to perform a bra <-> ket transposition */
 /*                on the 12/34 labels. */
-    *shella = MAX(shell1, shell2);
-    *shellb = MIN(shell1, shell2);
-    *shellc = MAX(shell3, shell4);
-    *shelld = MIN(shell3, shell4);
-    nxyze =
-        (shellp + 1) * (shellp + 2) * (shellp + 3) / 6 -
-        *shella * (*shella + 1) * (*shella + 2) / 6;
-    nxyzf =
-        (shellq + 1) * (shellq + 2) * (shellq + 3) / 6 -
-        *shellc * (*shellc + 1) * (*shellc + 2) / 6;
+    const uint32_t preshella = max32u(shell1, shell2);
+    const uint32_t preshellb = min32u(shell1, shell2);
+    const uint32_t preshellc = max32u(shell3, shell4);
+    const uint32_t preshelld = min32u(shell3, shell4);
+    const uint32_t nxyze = (preshellp + 1) * (preshellp + 2) * (preshellp + 3) / 6 - preshella * (preshella + 1) * (preshella + 2) / 6;
+    const uint32_t nxyzf = (preshellq + 1) * (preshellq + 2) * (preshellq + 3) / 6 - preshellc * (preshellc + 1) * (preshellc + 2) / 6;
 
-    if (*shellb == 0 && *shelld == 0)
-    {
+    if ((preshellb | preshelld) == 0) {
         *nxyzhrr = nxyze * nxyzf;
-        *tr1234 = 0;
-    }
-    else
-    {
-        nhrr1st = MAX(nxyze * nxyz3 * nxyz4, nxyz1 * nxyz2 * nry3 * nry4);
-        nhrr2nd = MAX(nxyzf * nxyz1 * nxyz2, nxyz3 * nxyz4 * nry1 * nry2);
-        *nxyzhrr = MIN(nhrr1st, nhrr2nd);
+        *tr1234 = false;
+    } else {
+        const uint32_t nhrr1st = max32u(nxyze * nxyz3 * nxyz4, nxyz1 * nxyz2 * nry3 * nry4);
+        const uint32_t nhrr2nd = max32u(nxyzf * nxyz1 * nxyz2, nxyz3 * nxyz4 * nry1 * nry2);
+        *nxyzhrr = min32u(nhrr1st, nhrr2nd);
         *tr1234 = nhrr1st > nhrr2nd;
     }
 
@@ -258,222 +219,139 @@ int erd__set_abcd (int npgto1, int npgto2, int npgto3, int npgto4,
 /*                and contraction coefficients. Also set the info for */
 /*                evaluation of the [e0|f0] batches and for the HRR */
 /*                steps later on. */
-    if (!(*tr1234))
-    {
-        *nxyzet = nxyze;
-        *nxyzft = nxyzf;
-        if (!swap12)
-        {
-            *xa = x1;
-            *ya = y1;
-            *za = z1;
-            *xb = x2;
-            *yb = y2;
-            *zb = z2;
-            *shella = shell1;
-            *shellb = shell2;
-            *npgtoa = npgto1;
-            *npgtob = npgto2;
-            *nxyza = nxyz1;
-            *nxyzb = nxyz2;
-            *nrya = nry1;
-            *nryb = nry2;
-        }
-        else
-        {
-            *xa = x2;
-            *ya = y2;
-            *za = z2;
-            *xb = x1;
-            *yb = y1;
-            *zb = z1;
-            *shella = shell2;
-            *shellb = shell1;
-            *npgtoa = npgto2;
-            *npgtob = npgto1;
-            *nxyza = nxyz2;
-            *nxyzb = nxyz1;
-            *nrya = nry2;
-            *nryb = nry1;
-        }
-        if (!swap34)
-        {
-            *xc = x3;
-            *yc = y3;
-            *zc = z3;
-            *xd = x4;
-            *yd = y4;
-            *zd = z4;
-            *shellc = shell3;
-            *shelld = shell4;
-            *npgtoc = npgto3;
-            *npgtod = npgto4;
-            *nxyzc = nxyz3;
-            *nxyzd = nxyz4;
-            *nryc = nry3;
-            *nryd = nry4;
-        }
-        else
-        {
-            *xc = x4;
-            *yc = y4;
-            *zc = z4;
-            *xd = x3;
-            *yd = y3;
-            *zd = z3;
-            *shellc = shell4;
-            *shelld = shell3;
-            *npgtoc = npgto4;
-            *npgtod = npgto3;
-            *nxyzc = nxyz4;
-            *nxyzd = nxyz3;
-            *nryc = nry4;
-            *nryd = nry3;
-        }
+    uint32_t nxyzet = nxyze, nxyzft = nxyzf;
+    if (*tr1234) {
+        ERD_SWAP(nxyzet, nxyzft);
+
+        ERD_SWAP(x1, x3);
+        ERD_SWAP(y1, y3);
+        ERD_SWAP(z1, z3);
+        ERD_SWAP(shell1, shell3);
+        ERD_SWAP(npgto1, npgto3);
+        ERD_SWAP(nxyz1, nxyz3);
+        ERD_SWAP(nry1, nry3);
+
+        ERD_SWAP(x2, x4);
+        ERD_SWAP(y2, y4);
+        ERD_SWAP(z2, z4);
+        ERD_SWAP(shell2, shell4);
+        ERD_SWAP(npgto2, npgto4);
+        ERD_SWAP(nxyz2, nxyz4);
+        ERD_SWAP(nry2, nry4);
     }
-    else
-    {
-        *nxyzet = nxyzf;
-        *nxyzft = nxyze;
-        if (!swap12)
-        {
-            *xc = x1;
-            *yc = y1;
-            *zc = z1;
-            *xd = x2;
-            *yd = y2;
-            *zd = z2;
-            *shellc = shell1;
-            *shelld = shell2;
-            *npgtoc = npgto1;
-            *npgtod = npgto2;
-            *nxyzc = nxyz1;
-            *nxyzd = nxyz2;
-            *nryc = nry1;
-            *nryd = nry2;
-        }
-        else
-        {
-            *xc = x2;
-            *yc = y2;
-            *zc = z2;
-            *xd = x1;
-            *yd = y1;
-            *zd = z1;
-            *shellc = shell2;
-            *shelld = shell1;
-            *npgtoc = npgto2;
-            *npgtod = npgto1;
-            *nxyzc = nxyz2;
-            *nxyzd = nxyz1;
-            *nryc = nry2;
-            *nryd = nry1;
-        }
-        if (!swap34)
-        {
-            *xa = x3;
-            *ya = y3;
-            *za = z3;
-            *xb = x4;
-            *yb = y4;
-            *zb = z4;
-            *shella = shell3;
-            *shellb = shell4;
-            *npgtoa = npgto3;
-            *npgtob = npgto4;
-            *nxyza = nxyz3;
-            *nxyzb = nxyz4;
-            *nrya = nry3;
-            *nryb = nry4;
-        }
-        else
-        {
-            *xa = x4;
-            *ya = y4;
-            *za = z4;
-            *xb = x3;
-            *yb = y3;
-            *zb = z3;
-            *shella = shell4;
-            *shellb = shell3;
-            *npgtoa = npgto4;
-            *npgtob = npgto3;
-            *nxyza = nxyz4;
-            *nxyzb = nxyz3;
-            *nrya = nry4;
-            *nryb = nry3;
-        }
+    *nxyzet_ptr = nxyzet;
+    *nxyzft_ptr = nxyzft;
+    
+    double xa = x1, xb = x2, xc = x3, xd = x4;
+    double ya = y1, yb = y2, yc = y3, yd = y4;
+    double za = z1, zb = z2, zc = z3, zd = z4;
+    uint32_t shella = shell1, shellb = shell2, shellc = shell3, shelld = shell4;
+    uint32_t npgtoa = npgto1, npgtob = npgto2, npgtoc = npgto3, npgtod = npgto4;
+    uint32_t nxyza = nxyz1, nxyzb = nxyz2, nxyzc = nxyz3, nxyzd = nxyz4;
+    uint32_t nrya = nry1, nryb = nry2, nryc = nry3, nryd = nry4;
+
+    if (shell1 < shell2) {
+        ERD_SWAP(xa, xb);
+        ERD_SWAP(ya, yb);
+        ERD_SWAP(za, zb);
+        ERD_SWAP(shella, shellb);
+        ERD_SWAP(npgtoa, npgtob);
+        ERD_SWAP(nxyza, nxyzb);
+        ERD_SWAP(nrya, nryb);
     }
-    abx = *xa - *xb;
-    aby = *ya - *yb;
-    abz = *za - *zb;
-    cdx = *xc - *xd;
-    cdy = *yc - *yd;
-    cdz = *zc - *zd;
-    *nabcoor = 3;
-    if (fabs(abx) == 0.0)
-    {
-        --(*nabcoor);
+    if (shell3 < shell4) {
+        ERD_SWAP(xc, xd);
+        ERD_SWAP(yc, yd);
+        ERD_SWAP(zc, zd);
+        ERD_SWAP(shellc, shelld);
+        ERD_SWAP(npgtoc, npgtod);
+        ERD_SWAP(nxyzc, nxyzd);
+        ERD_SWAP(nryc, nryd);
     }
-    if (fabs(aby) == 0.0)
-    {
-        --(*nabcoor);
+    *shella_ptr = shella;
+    *shellb_ptr = shellb;
+    *shellc_ptr = shellc;
+    *shelld_ptr = shelld;
+    *npgtoa_ptr = npgtoa;
+    *npgtob_ptr = npgtob;
+    *npgtoc_ptr = npgtoc;
+    *npgtod_ptr = npgtod;
+    *nxyza_ptr = nxyza;
+    *nxyzb_ptr = nxyzb;
+    *nxyzc_ptr = nxyzc;
+    *nxyzd_ptr = nxyzd;
+    *nrya_ptr = nrya;
+    *nryb_ptr = nryb;
+    *nryc_ptr = nryc;
+    *nryd_ptr = nryd;
+    *xa_ptr = xa;
+    *xb_ptr = xb;
+    *xc_ptr = xc;
+    *xd_ptr = xd;
+    *ya_ptr = ya;
+    *yb_ptr = yb;
+    *yc_ptr = yc;
+    *yd_ptr = yd;
+    *za_ptr = za;
+    *zb_ptr = zb;
+    *zc_ptr = zc;
+    *zd_ptr = zd;
+    uint32_t nabcoor = 3;
+    if (xa == xb) {
+        nabcoor--;
     }
-    if (fabs(abz) == 0.0)
-    {
-        --(*nabcoor);
-    }   
-    *ncdcoor = 3;
-    if (fabs(cdx) == 0.0)
-    {
-        --(*ncdcoor);
+    if (ya == yb) {
+        nabcoor--;
     }
-    if (fabs(cdy) == 0.0)
-    {
-        --(*ncdcoor);
+    if (za == zb) {
+        nabcoor--;
     }
-    if (fabs(cdz) == 0.0)
-    {
-        --(*ncdcoor);
+    uint32_t ncdcoor = 3;
+    if (xc == xd) {
+        ncdcoor--;
     }
-    shellp = *shella + *shellb;
-    shellq = *shellc + *shelld;
-    nxyzp = (shellp + 1) * (shellp + 2) / 2;
-    nxyzq = (shellq + 1) * (shellq + 2) / 2;
+    if (yc == yd) {
+        ncdcoor--;
+    }
+    if (zc == zd) {
+        ncdcoor--;
+    }
+    const uint32_t shellp = shella + shellb;
+    const uint32_t shellq = shellc + shelld;
+    const uint32_t nxyzp = (shellp + 1) * (shellp + 2) / 2;
+    const uint32_t nxyzq = (shellq + 1) * (shellq + 2) / 2;
     
     *ncolhrr = 0;
     *nrothrr = 0;
-    if (shellb != 0)
-    {
-        ngh = *nxyzet;
-        nxyzgo = *nxyzet;
-        nxyzho = 1;
-        nxyzi = nxyzp;
-        shellg = shellp;
-        nrow = 1;
-        ncol = ngh;
-        nrot = ngh;
-        for (shellh = 1; shellh <= *shellb; ++shellh)
-        {
+    if (shellb != 0) {
+        const uint32_t ngh = nxyzet;
+        uint32_t nxyzgo = nxyzet;
+        uint32_t nxyzho = 1;
+        uint32_t nxyzi = nxyzp;
+        uint32_t shellg = shellp;
+        uint32_t nrow = 1;
+        uint32_t ncol = ngh;
+        uint32_t nrot = ngh;
+        for (uint32_t shellh = 1; shellh <= shellb; shellh++) {
             nxyzgo -= nxyzi;
-            nxyzho = nxyzho + shellh + 1;
-            ngho = nxyzgo * nxyzho;
-            if (*nabcoor == 3)
-            {
-                m = shellh / 3 + 1;
-                nrow += m * (m + add[shellh % 3]);
+            nxyzho += shellh + 1;
+            const uint32_t ngho = nxyzgo * nxyzho;
+            switch (nabcoor) {
+                case 3:
+                {
+                    const uint32_t m = shellh / 3 + 1;
+                    nrow += m * (m + ((shellh % 3) == 2));
+                    break;
+                }
+                case 2:
+                    nrow += shellh / 2 + 1;
+                    break;
+                case 1:
+                    ++nrow;
+                    break;
             }
-            else if (*nabcoor == 2)
-            {
-                nrow = nrow + shellh / 2 + 1;
-            }
-            else if (*nabcoor == 1)
-            {
-                ++nrow;
-            }
-            ncol = MAX(ngho, ncol);
-            nrot = MAX(nrow * ngho, nrot);
-            ngh = ngho;
+            ncol = max32u(ngho, ncol);
+            nrot = max32u(nrow * ngho, nrot);
             nxyzi = nxyzi - shellg - 1;
             --shellg;
         }
@@ -482,46 +360,41 @@ int erd__set_abcd (int npgto1, int npgto2, int npgto3, int npgto4,
     }
 /*             ...next find maximum values for the HRR on the CD-part */
 /*                and set overall maximum values. */
-    if (shelld != 0)
-    {
-        ngh = *nxyzft;
-        nxyzgo = *nxyzft;
-        nxyzho = 1;
-        nxyzi = nxyzq;
-        shellg = shellq;
-        nrow = 1;
-        ncol = ngh;
-        nrot = ngh;
-        for (shellh = 1; shellh <= *shelld; ++shellh)
-        {
+    if (shelld != 0) {
+        const uint32_t ngh = nxyzft;
+        uint32_t nxyzgo = nxyzft;
+        uint32_t nxyzho = 1;
+        uint32_t nxyzi = nxyzq;
+        uint32_t shellg = shellq;
+        uint32_t nrow = 1;
+        uint32_t ncol = ngh;
+        uint32_t nrot = ngh;
+        for (uint32_t shellh = 1; shellh <= shelld; shellh++) {
             nxyzgo -= nxyzi;
-            nxyzho = nxyzho + shellh + 1;
-            ngho = nxyzgo * nxyzho;
-            if (*ncdcoor == 3)
-            {
-                m = shellh / 3 + 1;
-                nrow += m * (m + add[shellh % 3]);
+            nxyzho += shellh + 1;
+            const uint32_t ngho = nxyzgo * nxyzho;
+            switch (ncdcoor) {
+                case 3:
+                {
+                    const uint32_t m = shellh / 3 + 1;
+                    nrow += m * (m + ((shellh % 3) == 2));
+                    break;
+                }
+                case 2:
+                    nrow += shellh / 2 + 1;
+                    break;
+                case 1:
+                    nrow += 1;
+                    break;
             }
-            else if (*ncdcoor == 2)
-            {
-                nrow = nrow + shellh / 2 + 1;
-            }
-            else if (*ncdcoor == 1)
-            {
-                ++nrow;
-            }
-            ncol = MAX(ngho, ncol);
-            nrot = MAX(nrow * ngho, nrot);
-            ngh = ngho;
-            nxyzi = nxyzi - shellg - 1;
+            ncol = max32u(ngho, ncol);
+            nrot = max32u(nrow * ngho, nrot);
+            nxyzi -= shellg + 1;
             --shellg;
         }
-        *ncolhrr = MAX(ncol, *ncolhrr);
-        *nrothrr = MAX(nrot, *nrothrr);
+        *ncolhrr = max32u(ncol, *ncolhrr);
+        *nrothrr = max32u(nrot, *nrothrr);
     }
-    return 0;
+    *nabcoor_ptr = nabcoor;
+    *ncdcoor_ptr = ncdcoor;
 }
-
-#ifdef __INTEL_OFFLOAD
-#pragma offload_attribute(pop)
-#endif

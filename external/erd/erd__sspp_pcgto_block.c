@@ -1,13 +1,10 @@
-#include <stdio.h>
-#include <stdlib.h>
+#include <stddef.h>
+#include <stdint.h>
 #include <assert.h>
 #include <math.h>
-#include <yepPredefines.h>
 #include "boys.h"
-
-#ifdef __INTEL_OFFLOAD
-#pragma offload_attribute(push, target(mic))
-#endif
+#include "erd.h"
+#include "erdutil.h"
 
 /* ------------------------------------------------------------------------ */
 /*  OPERATION   : ERD__SSPP_PCGTO_BLOCK */
@@ -112,26 +109,18 @@
 /*                                    cartesian sspp/spsp/pssp/spps/ */
 /*                                    psps/ppss integrals */
 /* ------------------------------------------------------------------------ */
-void erd__sspp_pcgto_block (int nij, int nkl,
-                           int shell1, int shell3, int shellp,
-                           double x1, double y1, double z1,
-                           double x2, double y2, double z2,
-                           double x3, double y3, double z3,
-                           double x4, double y4, double z4,
-                           double *YEP_RESTRICT alpha1, double *YEP_RESTRICT alpha2,
-                           double *YEP_RESTRICT alpha3, double *YEP_RESTRICT alpha4,
-                           double *YEP_RESTRICT cc1, double *YEP_RESTRICT cc2,
-                           double *YEP_RESTRICT cc3, double *YEP_RESTRICT cc4,
-                           int *YEP_RESTRICT prim1, int *YEP_RESTRICT prim2,
-                           int *YEP_RESTRICT prim3, int *YEP_RESTRICT prim4,
-                           double *YEP_RESTRICT norm1, double *YEP_RESTRICT norm2,
-                           double *YEP_RESTRICT norm3, double *YEP_RESTRICT norm4,
-                           double *YEP_RESTRICT rho12, double *YEP_RESTRICT rho34,
-                           double *YEP_RESTRICT p, double *YEP_RESTRICT px,
-                           double *YEP_RESTRICT py, double *YEP_RESTRICT pz, double *YEP_RESTRICT scalep,
-                           double *YEP_RESTRICT q, double *YEP_RESTRICT qx,
-                           double *YEP_RESTRICT qy, double *YEP_RESTRICT qz,
-                           double *YEP_RESTRICT scaleq, double *YEP_RESTRICT cbatch)
+ERD_OFFLOAD void erd__sspp_pcgto_block(uint32_t nij, uint32_t nkl,
+    uint32_t shell1, uint32_t shell3, uint32_t shellp,
+    double x1, double y1, double z1,
+    double x2, double y2, double z2,
+    double x3, double y3, double z3,
+    double x4, double y4, double z4,
+    const double *restrict alpha1, const double *restrict alpha2, const double *restrict alpha3, const double *restrict alpha4,
+    const double *restrict cc1, const double *restrict cc2, const double *restrict cc3, const double *restrict cc4,
+    const uint32_t *restrict prim1, const uint32_t *restrict prim2, const uint32_t *restrict prim3, const uint32_t *restrict prim4,
+    const double *restrict norm1, const double *restrict norm2, const double *restrict norm3, const double *restrict norm4,
+    const double *restrict rho12, const double *restrict rho34,
+    double *restrict cbatch)
 {
     const double x12 = x1 - x2;
     const double y12 = y1 - y2;
@@ -140,9 +129,10 @@ void erd__sspp_pcgto_block (int nij, int nkl,
     const double y34 = y3 - y4;
     const double z34 = z3 - z4;
 
-    for (int ij = 0; ij < nij; ij += 1) {
-        const int i = prim1[ij];
-        const int j = prim2[ij];
+    double p[nij], px[nij], py[nij], pz[nij], scalep[nij];
+    for (uint32_t ij = 0; ij < nij; ij += 1) {
+        const uint32_t i = prim1[ij];
+        const uint32_t j = prim2[ij];
         const double exp1 = alpha1[i];
         const double exp2 = alpha2[j];
         double pval = exp1 + exp2;
@@ -154,9 +144,10 @@ void erd__sspp_pcgto_block (int nij, int nkl,
         scalep[ij] = cc1[i] * cc2[j] * norm1[i] * norm2[j] * rho12[ij];
     }
 
-    for (int kl = 0; kl < nkl; kl += 1) {
-        const int k = prim3[kl];
-        const int l = prim4[kl];
+    double q[nkl], qx[nkl], qy[nkl], qz[nkl], scaleq[nkl];
+    for (uint32_t kl = 0; kl < nkl; kl += 1) {
+        const uint32_t k = prim3[kl];
+        const uint32_t l = prim4[kl];
         const double exp3 = alpha3[k];
         const double exp4 = alpha4[l];
         double qval = exp3 + exp4;
@@ -170,13 +161,13 @@ void erd__sspp_pcgto_block (int nij, int nkl,
 
     if (shellp == 0) {
         // 0     5   |  (AB|CD)  4-center   sspp
-        for (int ij = 0; ij < nij; ij += 1) {
+        for (uint32_t ij = 0; ij < nij; ij += 1) {
             const double pval = p[ij];
             const double pxval = px[ij];
             const double pyval = py[ij];
             const double pzval = pz[ij];
             const double pscale = scalep[ij];
-            for (int kl = 0; kl < nkl; kl += 1) {
+            for (uint32_t kl = 0; kl < nkl; kl += 1) {
                 const double qval = q[kl];
                 const double qxval = qx[kl];
                 const double qyval = qy[kl];
@@ -240,7 +231,7 @@ void erd__sspp_pcgto_block (int nij, int nkl,
             qysub = y4;
             qzsub = z4;
         }
-        for (int ij = 0; ij < nij; ij += 1) {
+        for (uint32_t ij = 0; ij < nij; ij += 1) {
             const double pval = p[ij];
             const double pxval = px[ij];
             const double pyval = py[ij];
@@ -249,7 +240,7 @@ void erd__sspp_pcgto_block (int nij, int nkl,
             const double xps1 = pxval - pxsub;
             const double yps1 = pyval - pysub;
             const double zps1 = pzval - pzsub;
-            for (int kl = 0; kl < nkl; kl += 1) {
+            for (uint32_t kl = 0; kl < nkl; kl += 1) {
                 const double qval = q[kl];
                 const double qxval = qx[kl];
                 const double qyval = qy[kl];
@@ -294,7 +285,7 @@ void erd__sspp_pcgto_block (int nij, int nkl,
         }
     } else if (shellp == 2) {
         // 2     5   |  (AB|CD)  4-center   ppss
-        for (int ij = 0; ij < nij; ij += 1) {
+        for (uint32_t ij = 0; ij < nij; ij += 1) {
             const double pval = p[ij];
             const double pxval = px[ij];
             const double pyval = py[ij];
@@ -307,7 +298,7 @@ void erd__sspp_pcgto_block (int nij, int nkl,
             const double ysp1 = pyval - y2;
             const double zsp1 = pzval - z2;
             const double u1 = 1. / (pval + pval);
-            for (int kl = 0; kl < nkl; kl += 1) {
+            for (uint32_t kl = 0; kl < nkl; kl += 1) {
                 const double qval = q[kl];
                 const double qxval = qx[kl];
                 const double qyval = qy[kl];
@@ -345,7 +336,3 @@ void erd__sspp_pcgto_block (int nij, int nkl,
         }
     }
 }
-
-#ifdef __INTEL_OFFLOAD
-#pragma offload_attribute(pop)
-#endif

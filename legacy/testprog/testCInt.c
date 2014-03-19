@@ -61,31 +61,23 @@ int main (int argc, char **argv)
     printf ("Computing integrals ...\n");
     ns = CInt_getNumShells (basis);
     timepass = 0.0;
-    int i;
-    int j;
-    int start1;
-    int end1;
     int start2;
     int end2;
     double value1;
     double value2;
 
-    for (M = 0; M < ns; M++)
-    {
-        start1 = shellptr[M];
-        end1 = shellptr[M + 1];       
-        for (i = start1; i < end1; i++)
-        {
-            N = shellid[i];
-            value1 = shellvalue[i];
-            for (P = 0; P < ns; P++)
-            {
-                start2 = shellptr[P];
-                end2 = shellptr[P + 1];              
-                for (j = start2; j < end2; j++)
-                {
-                    Q = shellid[j];
-                    value2 = shellvalue[j];
+    for (int M = 0; M < ns; M++) {
+        const int start1 = shellptr[M];
+        const int end1 = shellptr[M + 1];       
+        for (int P = 0; P < ns; P++) {
+            const int start2 = shellptr[P];
+            const int end2 = shellptr[P + 1];              
+            for (int i = start1; i < end1; i++) {
+                const int N = shellid[i];
+                const double value1 = shellvalue[i];
+                for (int j = start2; j < end2; j++) {
+                    const int Q = shellid[j];
+                    const double value2 = shellvalue[j];
                     if (M > N || P > Q || (M + N) > (P + Q))
                         continue;
                     if (fabs(value1 * value2) < TOLSRC * TOLSRC)
@@ -101,13 +93,11 @@ int main (int argc, char **argv)
                     totalintls = totalintls + nints;
                     
                     fwrite (&nints, sizeof(int), 1, ref_data_file);
-                    if (nints != 0)
-                    {
+                    if (nints != 0) {
                         fwrite (integrals, sizeof(double), nints, ref_data_file);
                     }
 
-                    if (errcount > 10)
-                    {
+                    if (errcount > 10) {
                         goto end;
                     }
                 } /* for (j = start2; j < end2; j++) */
