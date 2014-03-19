@@ -325,7 +325,7 @@ int erd__2d_pq_integrals (int shellp, int shellq,
 int erd__int2d_to_e0f0 (int shella, int shellp, int shellc, int shellq,
                         int ngqexq, int nxyzet, int nxyzft,
                         double *int2dx, double *int2dy, double *int2dz,
-                        int **vrrtab, int ldvrrtab, double *batch);
+                        int **vrrtab, double *batch);
 
 int erd__int2d_to_e000 (int shella, int shellp, int ngqp, int nexq, int ngqexq,
                         int nxyzet, int nxyzp,

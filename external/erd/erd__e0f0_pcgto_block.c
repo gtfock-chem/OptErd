@@ -451,7 +451,7 @@ int erd__e0f0_pcgto_block (int nij, int nkl,
     */
     erd__int2d_to_e0f0 (shella, shellp, shellc, shellq,
                         mgqijkl_aligned, nxyzet, nxyzft,
-                        int2dx, int2dy, int2dz, vrrtab, ldvrrtab, batch);
+                        int2dx, int2dy, int2dz, vrrtab, batch);
 #ifdef __ERD_PROFILE__
     end_clock = __rdtsc();
     erd_ticks[tid][erd__int2d_to_e0f0_ticks] += (end_clock - start_clock);
