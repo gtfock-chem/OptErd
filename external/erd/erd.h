@@ -56,20 +56,11 @@ void erd__set_ij_kl_pairs(
 
 int erd__transpose_batch(int nrow, int ncol, double *batch, double *obatch);
 
-void erd__1111_def_blocks(uint32_t zmax, uint32_t npgto1, uint32_t npgto2,
-                          uint32_t npgto3, uint32_t npgto4,
-                          uint32_t nij, uint32_t nkl, uint32_t nxyzt,
-                          bool memory, uint32_t *zcbatch, 
-                          uint32_t *znorm, uint32_t *zrho12, uint32_t *zrho34,
-                          uint32_t *zp, uint32_t *zpx, uint32_t *zpy, uint32_t *zpz,
-                          uint32_t *zscpk2, uint32_t *zq, uint32_t *zqx,
-                          uint32_t *zqy, uint32_t *zqz, uint32_t *zscqk2);
-
-void erd__e0f0_def_blocks(int zmax, int npgtoa, int npgtob,
-                          int npgtoc, int npgtod,
-                          int shellp, int shellq,
-                          int nij, int nkl, int ngqp, int ngqscr,
-                          int nxyzt, int memory, int *nint2d, int *zcbatch);
+void erd__e0f0_def_blocks(uint32_t zmax,
+    uint32_t npgtoa, uint32_t npgtob, uint32_t npgtoc, uint32_t npgtod,
+    uint32_t shellp, uint32_t shellq,
+    uint32_t nij, uint32_t nkl, uint32_t ngqp, uint32_t ngqscr, uint32_t nxyzt,
+    uint32_t memory, uint32_t nint2d[restrict static 1]);
 
 void erd__pppp_pcgto_block(uint32_t nij, uint32_t nkl,
     double x1, double y1, double z1,

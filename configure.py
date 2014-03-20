@@ -38,7 +38,7 @@ erd_ref_sources = [
 ]
 
 erd_opt_sources = [
-	'erd__memory_csgto.c', 'erd__e0f0_def_blocks.c',
+	'erd__memory_csgto.c',
 	"erd__1111_csgto.c", "erd__2d_coefficients.c", "erd__2d_pq_integrals.c",
 	"erd__boys_table.c", "erd__jacobi_table.c", "erd__cartesian_norms.c", "erd__csgto.c",
 	"erd__dsqmin_line_segments.c", "erd__e0f0_pcgto_block.c", "erd__hrr_matrix.c",
