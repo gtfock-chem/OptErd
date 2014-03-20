@@ -230,27 +230,27 @@ ERD_OFFLOAD void erd__e0f0_pcgto_block(uint32_t nij, uint32_t nkl,
     const double cdy = yc - yd;
     const double cdz = zc - zd;
     
-    double p[nij], px[nij], py[nij], pz[nij], pax[nij], pay[nij], paz[nij], pinvhf[nij], scalep[nij];
+    ERD_SIMD_ALIGN double p[nij], px[nij], py[nij], pz[nij], pinvhf[nij], scalep[nij];
+    #pragma simd
+    #pragma vector aligned
     for (uint32_t ij = 0; ij < nij; ++ij) {        
         const uint32_t i = prima[ij];
         const uint32_t j = primb[ij];
         const double expa = alphaa[i];
         const double expb = alphab[j];
-        double pval = expa + expb;
+        const double pval = expa + expb;
         const double pinv = 1. / pval;
         p[ij] = pval;
-        pval = -expb * pinv;
-        pax[ij] = pval * abx;
-        pay[ij] = pval * aby;
-        paz[ij] = pval * abz;
-        px[ij] = pax[ij] + xa;
-        py[ij] = pay[ij] + ya;
-        pz[ij] = paz[ij] + za;
+        px[ij] = (expa * xa + expb * xb) * pinv;
+        py[ij] = (expa * ya + expb * yb) * pinv;
+        pz[ij] = (expa * za + expb * zb) * pinv;
         pinvhf[ij] = pinv * 0.5;
         scalep[ij] = norma[i] * normb[j] * rhoab[ij] * cca[i] * ccb[j];
     }
 
-    double q[nkl], qx[nkl], qy[nkl], qz[nkl], qcx[nkl], qcy[nkl], qcz[nkl], qinvhf[nkl], scaleq[nkl];
+    ERD_SIMD_ALIGN double q[nkl], qx[nkl], qy[nkl], qz[nkl], qinvhf[nkl], scaleq[nkl];
+    #pragma simd
+    #pragma vector aligned
     for (uint32_t kl = 0; kl < nkl; ++kl) {
         const uint32_t k = primc[kl];
         const uint32_t l = primd[kl];
@@ -259,13 +259,9 @@ ERD_OFFLOAD void erd__e0f0_pcgto_block(uint32_t nij, uint32_t nkl,
         double qval = expc + expd;
         const double qinv = 1.0 / qval;
         q[kl] = qval;
-        qval = -expd * qinv;
-        qcx[kl] = qval * cdx;
-        qcy[kl] = qval * cdy;
-        qcz[kl] = qval * cdz;
-        qx[kl] = qcx[kl] + xc;
-        qy[kl] = qcy[kl] + yc;
-        qz[kl] = qcz[kl] + zc;
+        qx[kl] = (expc * xc + expd * xd) * qinv;
+        qy[kl] = (expc * yc + expd * yd) * qinv;
+        qz[kl] = (expc * zc + expd * zd) * qinv;
         qinvhf[kl] = qinv * 0.5;
         scaleq[kl] = normc[k] * normd[l] * rhocd[kl] * ccc[k] * ccd[l];
     }
@@ -353,7 +349,7 @@ ERD_OFFLOAD void erd__e0f0_pcgto_block(uint32_t nij, uint32_t nkl,
     ERD_PROFILE_START(erd__2d_coefficients)
     erd__2d_coefficients(nij, nkl, ngqp, p, q,
                           px, py, pz, qx, qy, qz,
-                          pax, pay, paz, qcx, qcy, qcz,
+                          xa, ya, za, xc, yc, zc,
                           pinvhf, qinvhf, pqpinv, rts,
                           case2d, b00, b01, b10,
                           c00x, c00y, c00z,
@@ -373,6 +369,6 @@ ERD_OFFLOAD void erd__e0f0_pcgto_block(uint32_t nij, uint32_t nkl,
     ERD_PROFILE_START(erd__int2d_to_e0f0)
     erd__int2d_to_e0f0(shella, shellp, shellc, shellq,
                         mgqijkl_aligned, nxyzet, nxyzft,
-                        int2dx, int2dy, int2dz, vrrtab, ldvrrtab, batch);
+                        int2dx, int2dy, int2dz, vrrtab, batch);
     ERD_PROFILE_END(erd__int2d_to_e0f0)
 }

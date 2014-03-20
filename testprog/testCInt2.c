@@ -89,8 +89,6 @@ int main (int argc, char **argv)
     /* In (fraction) cases rand() returns value not greater than computationThreshold */
     const int computationThreshold = lround(fraction * RAND_MAX);
 
-    const uint64_t start_clock = __rdtsc(); 
-
     int numShellPairs = 0;
     for (int i = 0; i < shellptr[ns]; i++) {
         const int M = shellrid[i];
@@ -111,6 +109,8 @@ int main (int argc, char **argv)
         }
     }
 
+    const uint64_t start_clock = __rdtsc();
+        
     #pragma omp parallel
     {
         #ifdef _OPENMP

@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <immintrin.h>
 
 #include "erd.h"
 
@@ -118,46 +119,82 @@
 /*                                   [E0|F0] integrals corresponding */
 /*                                   to all current exponent quadruplets */
 /* ------------------------------------------------------------------------ */
+
+#if 1
 int erd__int2d_to_e0f0 (int shella, int shellp, int shellc, int shellq,
                         int ngqexq, int nxyzet, int nxyzft,
                         double *int2dx, double *int2dy, double *int2dz,
-                        int **vrrtab, int ldvrrtab, double *batch)
+                        int **vrrtab, double *batch)
 {
-    int i, j, m, xe, ye, ze, xf, yf, zf;   
-    int m1;
+    uint64_t m;
     int *tabe;
     int *tabf;
     int ke;
     int kf;
-    int indx;
-    int indy;
-    int indz;
-    int indb;
-    double sum = 0;
-                
-    tabe = vrrtab[shella * ldvrrtab + shellp];
-    tabf = vrrtab[shellc * ldvrrtab + shellq];
-    for(ke = 0; ke < nxyzet; ke++)
+    uint64_t indx;
+    uint64_t indy;
+    uint64_t indz;
+    uint64_t indb;
+               
+    tabe = vrrtab[shella];
+    tabf = vrrtab[shellc];
+    indb = 0;
+#if defined (__MIC__)
+    __m512i zero512 = _mm512_setzero_epi32();
+    int indxyz[16] __attribute__((aligned(64)));
+    __m512i ngqexq512 = _mm512_set1_epi32(ngqexq);
+    __m512i shellp_plus_one512 = _mm512_set1_epi32(shellp + 1);
+    __m512i indxyz512;
+
+    for (kf = 0; kf < nxyzft; kf++)
     {
-        for (kf = 0; kf < nxyzft; kf++)
+        __m512i xyzf512 = _mm512_extloadunpacklo_epi32(zero512, &tabf[kf * 4], _MM_UPCONV_EPI32_NONE, _MM_HINT_NONE);
+        for(ke = 0; ke < nxyzet; ke++)
+        {
+            __m512i xyze512 = _mm512_extloadunpacklo_epi32(zero512, &tabe[ke * 4], _MM_UPCONV_EPI32_NONE, _MM_HINT_NONE);
+            indxyz512 = _mm512_fmadd_epi32(xyzf512, shellp_plus_one512, xyze512);
+            indxyz512 = _mm512_mullo_epi32(indxyz512, ngqexq512);
+            _mm512_store_epi32(indxyz, indxyz512);
+            indx = indxyz[0];
+            indy = indxyz[1];
+            indz = indxyz[2];
+            //indb = kf * nxyzet + ke;
+            __m512d sum512 = _mm512_setzero_pd();
+            for(m = 0; m < ngqexq; m+=SIMDW)
+            {
+                __m512d int2dx512 = _mm512_load_pd(&int2dx[indx + m]);
+                __m512d int2dy512 = _mm512_load_pd(&int2dy[indy + m]);
+                __m512d int2dz512 = _mm512_load_pd(&int2dz[indz + m]);
+
+                __m512d temp512 = _mm512_mul_pd(int2dx512, int2dy512);
+                sum512 = _mm512_fmadd_pd(temp512, int2dz512, sum512);
+            }
+            batch[indb++] = _mm512_reduce_add_pd(sum512);
+        }
+    }
+#else
+    int xe, ye, ze, xf, yf, zf;   
+    int m1;
+    double sum = 0;
+
+    for (kf = 0; kf < nxyzft; kf++)
+    {
+        xf = tabf[kf * 4 + 0];
+        yf = tabf[kf * 4 + 1];
+        zf = tabf[kf * 4 + 2];
+        for(ke = 0; ke < nxyzet; ke++)
         {
             xe = tabe[ke * 4 + 0];
-            xf = tabf[kf * 4 + 0];
             ye = tabe[ke * 4 + 1];
-            yf = tabf[kf * 4 + 1];
             ze = tabe[ke * 4 + 2];
-            zf = tabf[kf * 4 + 2];
-            i =  tabe[ke * 4 + 3];
-            j =  tabf[kf * 4 + 3];
             indx = (xe + xf * (shellp + 1)) * ngqexq;
             indy = (ye + yf * (shellp + 1)) * ngqexq;
             indz = (ze + zf * (shellp + 1)) * ngqexq;
-            indb = i + j * nxyzet;
-        
+            //indb = kf * nxyzet + ke;
             sum = 0.0;
             for(m = 0; m < ngqexq; m+=SIMDW)
             {
-                #pragma vector aligned
+#pragma vector aligned
                 for(m1 = 0; m1 < SIMDW; m1++)
                 {
                     sum += int2dx[m + m1 + indx]
@@ -165,12 +202,110 @@ int erd__int2d_to_e0f0 (int shella, int shellp, int shellc, int shellq,
                         * int2dz[m + m1 + indz];
                 }
             }
-            batch[indb] = sum;
+            batch[indb++] = sum;
         }
+    }
+#endif
+    return 0;
+}
+
+#else
+int erd__int2d_to_e0f0 (int shella, int shellp, int shellc, int shellq,
+                        int ngqexq, int nxyzet, int nxyzft,
+                        double *int2dx, double *int2dy, double *int2dz,
+                        int **vrrtab, double *batch)
+{
+    int i, j, m, xe, ye, ze, xf, yf, zf;   
+    int m1;
+    int *tabe;
+    int *tabf;
+    uint64_t ke;
+    uint64_t kf;
+    int nxyzet_x_3 = nxyzet * 3;
+    int nxyzet_x_3_aligned = ((nxyzet_x_3 + 15)/16) * 16;
+    int indxyz[nxyzet_x_3_aligned] __attribute__((aligned(64)));
+    uint64_t indx;
+    uint64_t indy;
+    uint64_t indz;
+    uint64_t indb;
+    double sum = 0;
+    int tablesize = 5;
+    int total_combinations = 35;
+
+    //printf("shella = %d, shellc = %d, shellp = %d\n", shella, shellc, shellp);
+    int *tab = vrrtab[shellc * tablesize + shella] + shellp * total_combinations * total_combinations * 3;               
+    indb = 0;
+#if defined (__MIC__)
+    __m512i ngqexq512 = _mm512_set1_epi32(ngqexq);
+    __m512i tab512, indxyz512;
+#endif
+    //printf("in\n");
+    for (kf = 0; kf < nxyzft; kf++)
+    {
+        uint64_t tab_ind = kf * total_combinations * 3;
+#if defined (__MIC__)
+        for(ke = 0; ke < nxyzet_x_3; ke+=16)
+        {
+            tab512 = _mm512_extloadunpacklo_epi32(tab512, &tab[tab_ind + ke], _MM_UPCONV_EPI32_NONE, _MM_HINT_NONE);
+            tab512 = _mm512_extloadunpackhi_epi32(tab512, &tab[tab_ind + ke] + 16, _MM_UPCONV_EPI32_NONE, _MM_HINT_NONE);
+            indxyz512 = _mm512_mullo_epi32(tab512, ngqexq512);
+            _mm512_store_epi32(&indxyz[ke], indxyz512);
+        }
+        tab_ind = 0;
+        for(ke = 0; ke < nxyzet; ke++)
+        {
+            indx = indxyz[tab_ind + 0];
+            indy = indxyz[tab_ind + 1];
+            indz = indxyz[tab_ind + 2];
+            tab_ind += 3;
+            sum = 0.0;
+            for(m = 0; m < ngqexq; m+=SIMDW)
+            {
+#pragma vector aligned
+                for(m1 = 0; m1 < SIMDW; m1++)
+                {
+                    sum += int2dx[m + m1 + indx]
+                        * int2dy[m + m1 + indy]
+                        * int2dz[m + m1 + indz];
+                }
+            }
+            batch[indb++] = sum;
+        }
+#else
+        for(ke = 0; ke < nxyzet_x_3; ke+=SIMDW)
+        {
+#pragma vector
+            for(uint64_t ke1 = 0; ke1 < SIMDW; ke1++)
+            {
+                indxyz[ke + ke1] = tab[tab_ind + ke + ke1] * ngqexq;
+            }
+        }
+        tab_ind = 0;
+        for(ke = 0; ke < nxyzet; ke++)
+        {
+            indx = indxyz[tab_ind + 0];
+            indy = indxyz[tab_ind + 1];
+            indz = indxyz[tab_ind + 2];
+            tab_ind += 3;
+            sum = 0.0;
+            for(m = 0; m < ngqexq; m+=SIMDW)
+            {
+#pragma vector aligned
+                for(m1 = 0; m1 < SIMDW; m1++)
+                {
+                    sum += int2dx[m + m1 + indx]
+                        * int2dy[m + m1 + indy]
+                        * int2dz[m + m1 + indz];
+                }
+            }
+            batch[indb++] = sum;
+        }
+#endif
     }
 
     return 0;
 }
+#endif
 
 #ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(pop)
