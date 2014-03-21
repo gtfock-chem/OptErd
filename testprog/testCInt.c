@@ -124,6 +124,14 @@ int main(int argc, char **argv) {
                 if (referenceIntegralsCount != 0) {
                     fread(referenceIntegrals, sizeof(double), referenceIntegralsCount, ref_data_file);
                 }
+                
+                for (int i = 0; i < integralsCount; i++) {
+                    if (isnan(integrals[i])) {
+                        printf("ERROR: NAN INTEGRAL: %"PRIu32" %"PRIu32" %"PRIu32" %"PRIu32"\n",
+                                shellIndexM, shellIndexN, shellIndexP, shellIndexQ);
+                        errcount++;
+                    }
+                }
 
                 if (integralsCount == 0 && referenceIntegralsCount == 0) {
                     continue;
