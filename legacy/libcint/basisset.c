@@ -156,6 +156,12 @@ static CIntStatus_t import_molecule (char *file, BasisSet_t basis)
         CINT_PRINTF (1, "memory allocation failed\n");
         return CINT_STATUS_ALLOC_FAILED;
     }
+    
+    if (fgets (line, 1024, fp) == NULL)
+    {
+        CINT_PRINTF (1, "file %s has a wrong format\n", file);
+        return CINT_STATUS_FILEIO_FAILED; 
+    }
 
     // read x, y and z
     natoms = 0;

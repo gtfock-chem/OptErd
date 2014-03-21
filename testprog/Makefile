@@ -8,7 +8,7 @@ INC = -I./  \
       -I../include/ \
       -I../external/Yeppp/include
 
-LDFLAGS = -L./ -lifcore
+LDFLAGS = -L./ -lifcore -lrt
 
 ifeq "${arch}" "mic"
 UNIT_TEST_EXE = Test.Opt.MIC
