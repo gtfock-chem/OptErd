@@ -2,10 +2,10 @@ alignlen = 64
 #offload = 0
 #arch = mic
 
-CC  = /opt/intel/bin/icc -std=gnu99
-CXX = /opt/intel/bin/icpc
-FC  = /opt/intel/bin/ifort
-AR  = /opt/intel/bin/xiar rcs
+CC  = icc -std=gnu99
+CXX = icpc
+FC  = ifort
+AR  = xiar rcs
 
 ifeq "${arch}" "mic"
 OPTFLAGS = -mmic -no-opt-prefetch

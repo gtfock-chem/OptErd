@@ -25,24 +25,7 @@ LEGACY_PERF_TEST_OBJS := testCInt2.o screening.o
 LIBS = ../lib/libcint.a ../lib/liboed.a ../lib/liberd.a
 endif
 
-ifeq "${offload}" "1"
-TEST_OFFLOAD_EXE := Test.Offload
-TEST_OFFLOAD_OBJS := testCIntOffload.o screening.o
-TEST_OFFLOAD_PERF_EXE := Test.Offload.Perf
-TEST_OFFLOAD_PERF_OBJS := testCIntOffload2.o screening.o
-all: ${TEST_OFFLOAD_EXE} ${TEST_OFFLOAD_PERF_EXE} ${UNIT_TEST_EXE} ${PERF_TEST_EXE}
-CFLAGS += -mkl
-else
 all: ${UNIT_TEST_EXE} ${PERF_TEST_EXE}
-endif
-
-${TEST_OFFLOAD_EXE}: $(TEST_OFFLOAD_OBJS) ${LIBS}
-	$(CC) ${CFLAGS} ${LDFLAGS} $(TEST_OFFLOAD_OBJS) -o $@ ${LIBS}
-	cp -r $@ ../bin/
-
-${TEST_OFFLOAD_PERF_EXE}: $(TEST_OFFLOAD_PERF_OBJS) ${LIBS}
-	$(CC) ${CFLAGS} ${LDFLAGS} $(TEST_OFFLOAD_PERF_OBJS) -o $@ ${LIBS}
-	cp -r $@ ../bin/
 
 ${UNIT_TEST_EXE}: $(UNIT_TEST_OBJS) ${LIBS}
 	$(CC) ${CFLAGS} ${LDFLAGS} $(UNIT_TEST_OBJS) -o $@ ${LIBS}
