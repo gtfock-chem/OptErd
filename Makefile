@@ -13,5 +13,6 @@ cleanall: clean
 install:
 ifneq "${prefix}" ""
 	mkdir -p ${prefix}
+	rm -rf ${prefix}/lib ${prefix}/include
 	cp -rf lib/ include/ ${prefix}
 endif
