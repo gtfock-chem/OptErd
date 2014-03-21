@@ -85,6 +85,8 @@ oed_sources = [
 
 cint_sources = ["basisset.c", "erd_integral.c", "oed_integral.c"]
 
+testfock_sources = ["fock_init.c", "fock_task.c", "main.c"]
+
 tab = '  '
 
 with open('build.ninja', 'w') as makefile:
@@ -109,8 +111,8 @@ with open('build.ninja', 'w') as makefile:
 	print('CC_SNB_OFFLOAD = icc -m64 -xAVX ' + offload_cflags, file = makefile)
 	print('CC_IVB_OFFLOAD = icc -m64 -xCORE-AVX-I ' + offload_cflags, file = makefile)
 	print('CC_HSW_OFFLOAD = icc -m64 -xCORE-AVX2 ' + offload_cflags, file = makefile)
-	print('CFLAGS = -O3 -g -std=gnu99 -no-intel-extensions -D__ALIGNLEN__=64 -Iexternal/Yeppp/include -Wall -Wextra -Werror -Wno-unused-variable -openmp', file = makefile)
-	print('LDFLAGS = -static-intel -no-intel-extensions -lifcore -openmp -lrt', file = makefile)
+	print('CFLAGS = -O3 -g -std=gnu99 -D__ALIGNLEN__=64 -Iexternal/Yeppp/include -Wall -Wextra -Werror -Wno-unused-variable -openmp', file = makefile)
+	print('LDFLAGS = -static-intel -lifcore -openmp -lrt', file = makefile)
 	print('AR = xiar', file = makefile)
 	print('AR_OFFLOAD = xiar -qoffload-build', file = makefile)
 
@@ -273,4 +275,21 @@ with open('build.ninja', 'w') as makefile:
 			print('build %s : LINK %s %s %s' % (binary_file, object_file, screening_object_file, libs), file = makefile)
 			print(tab + 'CC = $CC_%s' % suffix[arch], file = makefile)
 			print(tab + 'ARCH = %s' % arch.upper(), file = makefile)
+
+			if version == 'opt':
+				source_files = ['testfock/' + filename for filename in testfock_sources] 
+				object_files = ['testfock/%s/' % arch + filename + '.o' for filename in testfock_sources]
+				for src, obj in zip(source_files, object_files):
+					print('build %s : COMPILE_C %s include/CInt.h' % (obj, src), file = makefile)
+					print(tab + 'DEP_FILE = %s.d' % obj, file = makefile)
+					print(tab + 'SOURCE = %s' % src, file = makefile)
+					print(tab + 'CC = $CC_%s' % suffix[arch], file = makefile)
+					print(tab + 'CFLAGS = $CFLAGS -Iexternal/erd -Itestfock -Iinclude', file = makefile)
+					print(tab + 'ARCH = %s' % arch.upper(), file = makefile)
+
+				binary_file = 'testfock/%s/fock' % arch
+				libs = " ".join(['lib/' + arch + '/lib' + lib + '-' + version + '.a' for lib in ['cint', 'oed', 'erd']])
+				print('build %s : LINK %s %s' % (binary_file, " ".join(object_files), libs), file = makefile)
+				print(tab + 'CC = $CC_%s' % suffix[arch], file = makefile)
+				print(tab + 'ARCH = %s' % arch.upper(), file = makefile)
 

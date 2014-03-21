@@ -5,6 +5,9 @@
 #include <string.h>
 #include <assert.h>
 
+#include <stdint.h>
+#include <stdbool.h>
+#include <stddef.h>
 #include "CInt.h"
 #include "fock_init.h"
 
