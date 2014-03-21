@@ -1,24 +1,24 @@
-# Compiled Object files
-*.slo
-*.lo
 *.o
+*.d
 
-# Compiled Dynamic libraries
-*.so
-*.dylib
+# Binaries
+testprog/*/Test.Opt
+testprog/*/Test.Ref
+testprog/*/Bench.Opt
+testprog/*/Bench.Ref
+testfock/*/fock
+lib/*
 
-# Compiled Static libraries
-*.lai
-*.la
-*.a
+# Auto-generated includes
+include/CInt.h
+legacy/include/CInt.h
 
-# OS generated files #
-######################
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
+# Logs
+*.log
+ivalues.ref
+
+# Ninja files
+.ninja_deps
+.ninja_log
+build.ninja
 
