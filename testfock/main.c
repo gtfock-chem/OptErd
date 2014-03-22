@@ -8,8 +8,8 @@
 #include <math.h>
 #include <sys/time.h>
 
-#include "erd_profile.h"
 #include "fock_init.h"
+#include "fock_offload.h"
 
 
 int main (int argc, char **argv)
@@ -111,7 +111,7 @@ int main (int argc, char **argv)
             startM, startM + sizetask - 1, nshells - 1,
             startP, startP + sizetask - 1, nshells - 1);
 
-    // initialization
+    // fock initialization
     schwartz_screening (basis, &shellptr, &shellid,
                         &shellrid, &shellvalue, &nnz);
     create_buffers (nshells, nnz, shellptr, shellid,

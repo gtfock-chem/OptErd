@@ -23,17 +23,6 @@ double *F3;
 #pragma offload_attribute(pop)
 #endif
 
-void schwartz_screening (BasisSet_t basis, int **shellptrOut,
-                         int **shellidOut, int **shellridOut,
-                         double **shellvalueOut, int *nnzOut);
-
-void create_buffers (int nshells, int nnz,
-                     int *shellptr, int *shellid, int *f_startind,
-                     int startM, int endM, int startP, int endP,
-                     int **rowposOut, int **colposOut,
-                     int **rowptrOut, int **colptrOut,
-                     int *rowfuncs, int *colfuncs,
-                     int *rowsize, int *colsize);
 
 int MIC_init_devices ();
 
@@ -95,4 +84,6 @@ void wait_for_MIC_to_CPU_copy (int num_devices, int *finish_tag);
 void reduce_F_across_devices (int num_devices,
                               double *F1_mic, double *F2_mic, double *F3_mic,
                               int sizeD1, int sizeD2, int sizeD3);
+
+
 #endif /* __FOCK_INIT_H__ */
