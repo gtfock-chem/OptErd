@@ -6,14 +6,16 @@
 #include <omp.h>
 #include <unistd.h>
 #include <sys/time.h>
+#include <offload.h>
 
 #include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
-#include "CInt.h"
-#include "fock_init.h"
 
-#include <offload.h>
+#include "CInt.h"
+#include "fock_offload.h"
+
+
 #define CHUNK_SIZE 8
 #define MIC_MIN_WORK_SIZE 20
 #define PFD0 1
@@ -24,7 +26,9 @@
 #pragma offload_attribute(push, target(mic))
 #endif
 
-#include <immintrin.h>
+double *F1;
+double *F2;
+double *F3;
 
 static inline void update_F (double *integrals, int dimM, int dimN, int dimP, int dimQ,
                       int flag1, int flag2, int flag3,
@@ -325,6 +329,7 @@ static void compute_block_of_chunks (BasisSet_t basis, ERD_t erd,
 #ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(pop)
 #endif
+
 
 void MIC_reset_F1_matrix(int num_devices,
                          int sizeD1,

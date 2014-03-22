@@ -1,11 +1,9 @@
-#ifndef __FOCK_INIT_H__
-#define __FOCK_INIT_H__
+#ifndef __FOCK_OFFLOAD_H__
+#define __FOCK_OFFLOAD_H__
 
 
 #include "CInt.h"
 
-
-#define TOLSRC 1e-10
 #define ALLOC alloc_if(1) free_if(0)
 #define REUSE alloc_if(0) free_if(0)
 
@@ -16,9 +14,9 @@
 #ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(push, target(mic))
 #endif
-double *F1;
-double *F2;
-double *F3;
+extern double *F1;
+extern double *F2;
+extern double *F3;
 #ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(pop)
 #endif
@@ -86,4 +84,4 @@ void reduce_F_across_devices (int num_devices,
                               int sizeD1, int sizeD2, int sizeD3);
 
 
-#endif /* __FOCK_INIT_H__ */
+#endif /* __FOCK_OFFLOAD_H__ */

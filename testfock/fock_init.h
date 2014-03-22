@@ -2,6 +2,12 @@
 #define __FOCK_INIT_H__
 
 
+#include "CInt.h"
+
+
+#define TOLSRC 1e-10
+
+
 void schwartz_screening (BasisSet_t basis, int **shellptrOut,
                          int **shellidOut, int **shellridOut,
                          double **shellvalueOut, int *nnzOut);
