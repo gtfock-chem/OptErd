@@ -83,31 +83,11 @@ int main (int argc, char **argv)
     //printf ("max memory footprint per thread = %lf KB\n",
     //    CInt_getMaxMemory (erd[0])/1024.0);
 
-    const int ns = CInt_getNumShells(basis);
+    const uint32_t shellCount = CInt_getNumShells(basis);
 
     srand(1234);
     /* In (fraction) cases rand() returns value not greater than computationThreshold */
     const int computationThreshold = lround(fraction * RAND_MAX);
-
-    int numShellPairs = 0;
-    for (int i = 0; i < shellptr[ns]; i++) {
-        const int M = shellrid[i];
-        const int N = shellid[i];
-        if (M <= N)
-            numShellPairs += 1;
-    }
-    struct ShellPair* shellPairs = (struct ShellPair*)malloc(sizeof(struct ShellPair) * numShellPairs);
-    uint32_t shellIndex = 0;
-    for (int i = 0; i < shellptr[ns]; i++) {
-        const int M = shellrid[i];
-        const int N = shellid[i];
-        if (M <= N) {
-            shellPairs[shellIndex].MP = M;
-            shellPairs[shellIndex].NQ = N;
-            shellPairs[shellIndex].absValue = fabs(shellvalue[i]);
-            shellIndex++;
-        }
-    }
 
     const uint64_t start_clock = __rdtsc();
         
@@ -120,60 +100,27 @@ int main (int argc, char **argv)
         #endif
 
         #pragma omp for schedule(dynamic)
-        for (int i = 0; i < numShellPairs; i++) {
-            const int M = shellPairs[i].MP;
-            const int N = shellPairs[i].NQ;
-            const double absValueMN = shellPairs[i].absValue;
-            for (int j = 0; j < numShellPairs; j++) {
-                const int P = shellPairs[j].MP;
-                const int Q = shellPairs[j].NQ;
-                if ((M + N) > (P + Q))
-                    continue;
+        for (uint32_t shellIndexM = 0; shellIndexM < shellCount; shellIndexM++) {
+            const uint32_t shellIndexNStart = shellptr[shellIndexM];
+            const uint32_t shellIndexNEnd = shellptr[shellIndexM+1];
+            for (uint32_t shellIndexP = 0; shellIndexP != shellCount; shellIndexP++) {
+                const uint32_t shellIndexQStart = shellptr[shellIndexP];
+                const uint32_t shellIndexQEnd = shellptr[shellIndexP+1];
 
-                const double absValuePQ = shellPairs[j].absValue;
-                if (absValueMN * absValuePQ < TOLSRC * TOLSRC)
-                    continue;
 
-                /* Sample random integer. With probability (fraction) process the shell quartet. */
-                if (rand() <= computationThreshold) {
-                    double *integrals;
-                    int nints;
-                    CInt_computeShellQuartet(basis, erd, tid, M, N, P, Q, &integrals, &nints);
+                /* Prepare indices */
+                for (uint32_t shellIndexNOffset = shellIndexNStart; shellIndexNOffset != shellIndexNEnd; shellIndexNOffset++) {
+                    const uint32_t shellIndexN = shellid[shellIndexNOffset];
+                    if (shellIndexM > shellIndexN)
+                        continue;
 
-                    totalcalls[tid * 64] += 1;
-                    totalnintls[tid * 64] += nints;
-                }
-            }
-        }
-    }
-    const uint64_t end_clock = __rdtsc();
+                    const double shellValueMN = shellvalue[shellIndexNOffset];
+                    for (uint32_t shellIndexQOffset = shellIndexQStart; shellIndexQOffset != shellIndexQEnd; shellIndexQOffset++) {
+                        const uint32_t shellIndexQ = shellid[shellIndexQOffset];
+                        if (shellIndexP > shellIndexQ)
+                            continue;
 
-    for (int i = 1; i < nthreads; i++) {
-        totalcalls[0 * 64] = totalcalls[0 * 64] + totalcalls[i * 64];
-        totalnintls[0 * 64] = totalnintls[0 * 64] + totalnintls[i * 64];
-    } 
-    const uint64_t total_ticks = end_clock - start_clock;
-    const double timepass = ((double) total_ticks) / freq;
+                        if (shellIndexM + shellIndexN > shellIndexP + shellIndexQ)
+                            continue;
 
-    printf("Done\n");
-    printf("\n");
-    printf("Number of calls: %.6le, Number of integrals: %.6le\n", totalcalls[0], totalnintls[0]);
-    printf("Total GigaTicks: %.3lf, freq = %.3lf GHz\n", (double) (total_ticks) * 1.0e-9, (double)freq/1.0e9);
-    printf("Total time: %.4lf secs\n", timepass);
-    printf("Average time per call: %.3le us\n", 1000.0 * 1000.0 * timepass / totalcalls[0]);
-
-    // use 1 if thread timing is not required
-    erd_print_profile(1);
-
-    CInt_destroyERD(erd);
-    free(totalcalls);
-    free(totalnintls);
-    free(shellptr);
-    free(shellid);
-    free(shellvalue);
-    free(shellrid);
-
-    CInt_destroyBasisSet(basis);
-
-    return 0;
-}
+                   
