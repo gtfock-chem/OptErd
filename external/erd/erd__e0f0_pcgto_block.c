@@ -277,9 +277,9 @@ ERD_OFFLOAD void erd__e0f0_pcgto_block(uint32_t nij, uint32_t nkl,
 /*                4-center (AB|CD) integrals are checked first */
 /*                (most common occurence in large systems). */
     const uint32_t nint2d = PAD_LEN(mgqijkl) * (shellp + 1) * (shellq + 1);
-    ERD_SIMD_ALIGN double tval[nijkl];
-    ERD_SIMD_ALIGN double pqpinv[nijkl];
-    ERD_SIMD_ALIGN double int2dx[nint2d];
+    ERD_SIMD_ALIGN double tval[PAD_LEN(nijkl)];
+    ERD_SIMD_ALIGN double pqpinv[PAD_LEN(nijkl)];
+    ERD_SIMD_ALIGN double int2dx[PAD_LEN(nint2d)];
     uint32_t m = 0;
     for (uint32_t ij = 0; ij < nij; ++ij) {
         const double pval = p[ij];
@@ -337,15 +337,15 @@ ERD_OFFLOAD void erd__e0f0_pcgto_block(uint32_t nij, uint32_t nkl,
 /*                for the special s-shell cases. Note, that the case */
 /*                in which both P- and Q-shells are s-shells cannot */
 /*                arise, as this case is dealt with in separate routines. */
-    ERD_SIMD_ALIGN double b00[mgqijkl];
-    ERD_SIMD_ALIGN double b01[mgqijkl];
-    ERD_SIMD_ALIGN double b10[mgqijkl];
-    ERD_SIMD_ALIGN double c00x[mgqijkl];
-    ERD_SIMD_ALIGN double c00y[mgqijkl];
-    ERD_SIMD_ALIGN double c00z[mgqijkl];
-    ERD_SIMD_ALIGN double d00x[mgqijkl];
-    ERD_SIMD_ALIGN double d00y[mgqijkl];
-    ERD_SIMD_ALIGN double d00z[mgqijkl];
+    ERD_SIMD_ALIGN double b00[PAD_LEN(mgqijkl)];
+    ERD_SIMD_ALIGN double b01[PAD_LEN(mgqijkl)];
+    ERD_SIMD_ALIGN double b10[PAD_LEN(mgqijkl)];
+    ERD_SIMD_ALIGN double c00x[PAD_LEN(mgqijkl)];
+    ERD_SIMD_ALIGN double c00y[PAD_LEN(mgqijkl)];
+    ERD_SIMD_ALIGN double c00z[PAD_LEN(mgqijkl)];
+    ERD_SIMD_ALIGN double d00x[PAD_LEN(mgqijkl)];
+    ERD_SIMD_ALIGN double d00y[PAD_LEN(mgqijkl)];
+    ERD_SIMD_ALIGN double d00z[PAD_LEN(mgqijkl)];
     ERD_PROFILE_START(erd__2d_coefficients)
     erd__2d_coefficients(nij, nkl, ngqp, p, q,
                           px, py, pz, qx, qy, qz,
@@ -356,8 +356,8 @@ ERD_OFFLOAD void erd__e0f0_pcgto_block(uint32_t nij, uint32_t nkl,
                           d00x, d00y, d00z);
     ERD_PROFILE_END(erd__2d_coefficients)
 
-    ERD_SIMD_ALIGN double int2dy[nint2d];
-    ERD_SIMD_ALIGN double int2dz[nint2d];
+    ERD_SIMD_ALIGN double int2dy[PAD_LEN(nint2d)];
+    ERD_SIMD_ALIGN double int2dz[PAD_LEN(nint2d)];
     ERD_PROFILE_START(erd__2d_pq_integrals)
     erd__2d_pq_integrals(shellp, shellq, mgqijkl_aligned,
                           b00, b01, b10, c00x, c00y, c00z, d00x,
