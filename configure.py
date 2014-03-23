@@ -276,7 +276,7 @@ with open('build.ninja', 'w') as makefile:
 			print(tab + 'CC = $CC_%s' % suffix[arch], file = makefile)
 			print(tab + 'ARCH = %s' % arch.upper(), file = makefile)
 
-			if version == 'opt':
+			if version == 'opt' and arch.endswith("+mic"):
 				source_files = ['testfock/' + filename for filename in testfock_sources] 
 				object_files = ['testfock/%s/' % arch + filename + '.o' for filename in testfock_sources]
 				for src, obj in zip(source_files, object_files):
