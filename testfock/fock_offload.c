@@ -6,14 +6,16 @@
 #include <omp.h>
 #include <unistd.h>
 #include <sys/time.h>
+#include <offload.h>
 
 #include <stdint.h>
 #include <stdbool.h>
 #include <stddef.h>
-#include "CInt.h"
-#include "fock_init.h"
 
-#include <offload.h>
+#include "CInt.h"
+#include "fock_offload.h"
+
+
 #define CHUNK_SIZE 8
 #define MIC_MIN_WORK_SIZE 20
 #define PFD0 1
@@ -24,7 +26,9 @@
 #pragma offload_attribute(push, target(mic))
 #endif
 
-#include <immintrin.h>
+double *F1;
+double *F2;
+double *F3;
 
 static inline void update_F (double *integrals, int dimM, int dimN, int dimP, int dimQ,
                       int flag1, int flag2, int flag3,
@@ -171,18 +175,18 @@ static inline void update_F (double *integrals, int dimM, int dimN, int dimP, in
 }
 
 
-void compute_chunk (BasisSet_t basis,
-                   int *shellptr, double *shellvalue,
-                   int *shellid, int *shellrid, int *f_startind,
-                   int *rowpos, int *colpos, int *rowptr, int *colptr,
-                   double tolscr2, int startrow, int startcol,
-                   int startChunkMN, int endChunkMN, int startChunkPQ, int endChunkPQ,
-                   double *D1, double *D2, double *D3,
-                   double *J1, double *J2, double *K3,
-                   int ldX1, int ldX2, int ldX3,
-                   int sizeX1, int sizeX2, int sizeX3,
-                   double *totalcalls, double *totalnintls,
-                   int nt)
+static void compute_chunk (BasisSet_t basis, ERD_t erd,
+                    int *shellptr, double *shellvalue,
+                    int *shellid, int *shellrid, int *f_startind,
+                    int *rowpos, int *colpos, int *rowptr, int *colptr,
+                    double tolscr2, int startrow, int startcol,
+                    int startChunkMN, int endChunkMN, int startChunkPQ, int endChunkPQ,
+                    double *D1, double *D2, double *D3,
+                    double *J1, double *J2, double *K3,
+                    int ldX1, int ldX2, int ldX3,
+                    int sizeX1, int sizeX2, int sizeX3,
+                    double *totalcalls, double *totalnintls,
+                    int nt)
 {
     int i, j;
     double value1;
@@ -254,7 +258,7 @@ void compute_chunk (BasisSet_t basis,
             //totalcalls[nt * 64] += 1;
             if (fabs (value1 * value2) >= tolscr2)
             {
-                CInt_computeShellQuartet (basis, erd_, nt,
+                CInt_computeShellQuartet (basis, erd, nt,
                         M, N, P, Q, &integrals, &nints);
                 //totalnintls[nt * 64] += nints;
                 if (nints != 0)
@@ -271,7 +275,7 @@ void compute_chunk (BasisSet_t basis,
 
 
 
-void compute_block_of_chunks (BasisSet_t basis,
+static void compute_block_of_chunks (BasisSet_t basis, ERD_t erd,
                    int *shellptr, double *shellvalue,
                    int *shellid, int *shellrid, int *f_startind,
                    int *rowpos, int *colpos, int *rowptr, int *colptr,
@@ -285,7 +289,7 @@ void compute_block_of_chunks (BasisSet_t basis,
 {
     int k;
 
-#pragma omp parallel
+    #pragma omp parallel
     {
         int tid;
         
@@ -307,7 +311,7 @@ void compute_block_of_chunks (BasisSet_t basis,
             int endChunkPQ   = startChunkPQ + CHUNK_SIZE;
             if(endChunkPQ > endPQ) endChunkPQ = endPQ;
 
-            compute_chunk (basis,
+            compute_chunk (basis, erd,
                     shellptr, shellvalue,
                     shellid, shellrid, f_startind,
                     rowpos, colpos, rowptr, colptr,
@@ -325,6 +329,7 @@ void compute_block_of_chunks (BasisSet_t basis,
 #ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(pop)
 #endif
+
 
 void MIC_reset_F1_matrix(int num_devices,
                          int sizeD1,
@@ -455,7 +460,7 @@ void reset_F_matrices(int num_devices,
 
 
 void compute_task (int num_devices,
-                   BasisSet_t basis,
+                   BasisSet_t basis, ERD_t erd,
                    int *shellptr, double *shellvalue,
                    int *shellid, int *shellrid, int *f_startind,
                    int *rowpos, int *colpos, int *rowptr, int *colptr,
@@ -489,6 +494,7 @@ void compute_task (int num_devices,
         head = num_devices * initialChunksMIC;
     }
 #endif
+
     #pragma omp parallel
     {
         int my_chunk;
@@ -514,19 +520,19 @@ void compute_task (int num_devices,
             {
                 int endChunk = startChunk + initialChunksMIC;
                 start = __rdtsc();
-#pragma offload target(mic:mic_id) \
-                nocopy(basis_mic, erd_) \
-                in(shellptr, shellvalue, shellid, shellrid: length(0) REUSE) \
-                in(f_startind, rowpos, colpos, rowptr, colptr: length(0) REUSE) \
-                in(tolscr2, startrow, startcol) \
-                in(startMN, endMN, startPQ, endPQ) \
-                in(startChunk, endChunk, chunksMN) \
-                in(D1, D2, D3: length(0) REUSE) \
-                nocopy(F1, F2, F3) \
-                in(ldX1, ldX2, ldX3, sizeX1, sizeX2, sizeX3) \
-                nocopy(totalcalls, totalnintls) \
-                signal(finish_tag)
-                compute_block_of_chunks (basis_mic,
+                #pragma offload target(mic:mic_id) \
+                    nocopy(basis_mic, erd_mic) \
+                    in(shellptr, shellvalue, shellid, shellrid: length(0) REUSE) \
+                    in(f_startind, rowpos, colpos, rowptr, colptr: length(0) REUSE) \
+                    in(tolscr2, startrow, startcol) \
+                    in(startMN, endMN, startPQ, endPQ) \
+                    in(startChunk, endChunk, chunksMN) \
+                    in(D1, D2, D3: length(0) REUSE) \
+                    nocopy(F1, F2, F3) \
+                    in(ldX1, ldX2, ldX3, sizeX1, sizeX2, sizeX3) \
+                    nocopy(totalcalls, totalnintls) \
+                    signal(finish_tag)
+                compute_block_of_chunks (basis_mic, erd_mic,
                         shellptr, shellvalue,
                         shellid, shellrid, f_startind,
                         rowpos, colpos, rowptr, colptr,
@@ -539,7 +545,8 @@ void compute_task (int num_devices,
                         totalcalls, totalnintls);
                 end = __rdtsc();
                 signalled[mic_id] = 1;
-                printf("Launched %d tasks on mic:%d in %lld cycles\n", initialChunksMIC, mic_id, end - start);
+                printf("Launched %d tasks on mic:%d in %lld cycles\n",
+                    initialChunksMIC, mic_id, end - start);
                 startChunk += initialChunksMIC;
             }
 
@@ -557,7 +564,7 @@ void compute_task (int num_devices,
                         if (sig != 0)
                         {
                             signalled[mic_id] = 0;
-#pragma omp critical
+                            #pragma omp critical
                             {
                                 int remTasks = totalChunks - head;
                                 chunksMIC = remTasks * mic_fraction;
@@ -571,19 +578,19 @@ void compute_task (int num_devices,
                             {
                                 startChunk = my_chunk;
                                 endChunk = startChunk + chunksMIC;
-#pragma offload target(mic:mic_id) \
-                                nocopy(basis_mic, erd_) \
-                                in(shellptr, shellvalue, shellid, shellrid: length(0) REUSE) \
-                                in(f_startind, rowpos, colpos, rowptr, colptr: length(0) REUSE) \
-                                in(tolscr2, startrow, startcol) \
-                                in(startMN, endMN, startPQ, endPQ) \
-                                in(startChunk, endChunk, chunksMN) \
-                                in(D1, D2, D3: length(0) REUSE) \
-                                nocopy(F1, F2, F3) \
-                                in(ldX1, ldX2, ldX3, sizeX1, sizeX2, sizeX3) \
-                                nocopy(totalcalls, totalnintls) \
-                                signal(finish_tag)
-                                compute_block_of_chunks (basis_mic,
+                                #pragma offload target(mic:mic_id) \
+                                    nocopy(basis_mic, erd_mic) \
+                                    in(shellptr, shellvalue, shellid, shellrid: length(0) REUSE) \
+                                    in(f_startind, rowpos, colpos, rowptr, colptr: length(0) REUSE) \
+                                    in(tolscr2, startrow, startcol) \
+                                    in(startMN, endMN, startPQ, endPQ) \
+                                    in(startChunk, endChunk, chunksMN) \
+                                    in(D1, D2, D3: length(0) REUSE) \
+                                    nocopy(F1, F2, F3) \
+                                    in(ldX1, ldX2, ldX3, sizeX1, sizeX2, sizeX3) \
+                                    nocopy(totalcalls, totalnintls) \
+                                    signal(finish_tag)
+                                compute_block_of_chunks (basis_mic, erd_mic,
                                         shellptr, shellvalue,
                                         shellid, shellrid, f_startind,
                                         rowpos, colpos, rowptr, colptr,
@@ -612,7 +619,7 @@ void compute_task (int num_devices,
         {
             while(1)
             {
-#pragma omp critical
+                #pragma omp critical
                 {
                     my_chunk = head;
                     head++;
@@ -628,8 +635,7 @@ void compute_task (int num_devices,
                 int startChunkPQ =  startPQ + chunkIdPQ * CHUNK_SIZE;
                 int endChunkPQ   = startChunkPQ + CHUNK_SIZE;
                 if(endChunkPQ > endPQ) endChunkPQ = endPQ;
-
-                compute_chunk (basis,
+                compute_chunk (basis, erd,
                         shellptr, shellvalue,
                         shellid, shellrid, f_startind,
                         rowpos, colpos, rowptr, colptr,
@@ -815,3 +821,126 @@ void reduce_F_across_devices(int num_devices,
     end = __rdtsc();
     printf("Reduced F on CPU in %lld cycles\n", end - start);
 }
+
+
+int MIC_init_devices(int nthreads_mic)
+{
+    // Find the number of MIC cards available
+    int num_devices = 0;
+#ifdef __INTEL_OFFLOAD
+    num_devices = _Offload_number_of_devices();
+
+    if(num_devices == 0)
+    {
+        printf("No target devices available. Exiting\n");
+        exit(0);
+    }
+    else
+    {
+        int mic_id;
+        for(mic_id = 0; mic_id < num_devices; mic_id++)
+        {
+            printf("On CPU: nthreads_mic = %d\n", nthreads_mic);
+#pragma offload target(mic:mic_id) in(nthreads_mic)
+            {
+                //printf("On MIC: nthreads_mic = %d\n", nthreads_mic);
+                omp_set_num_threads (nthreads_mic);
+#pragma omp parallel num_threads(nthreads_mic)
+                {
+                    int tid = omp_get_thread_num();
+                    //if(tid == 0)
+                    //    printf("Initialized openmp threads\n");
+                }
+            }
+        }
+        printf("Number of Target devices installed: %d\n\n",num_devices);
+    }
+#endif
+    return num_devices;
+}
+
+void MIC_copy_buffers (int num_devices, int nshells, int nnz,
+                       int *shellptr, int *shellid, int *shellrid, double *shellvalue,
+                       int *f_startind,
+                       int *rowpos, int *colpos,
+                       int *rowptr, int *colptr)
+{
+#ifdef __INTEL_OFFLOAD
+    int mic_id;
+
+    for(mic_id = 0; mic_id < num_devices; mic_id++)
+    {
+#pragma offload_transfer target(mic:mic_id) \
+        in(shellptr: length(nshells + 1) ALLOC) \
+        in(shellid: length(nnz) ALLOC) \
+        in(shellrid: length(nnz) ALLOC) \
+        in(shellvalue: length(nnz) ALLOC) \
+        in(f_startind: length(nshells + 1) ALLOC) \
+        in(rowpos: length(nshells) ALLOC) \
+        in(colpos: length(nshells) ALLOC) \
+        in(rowptr: length(nnz) ALLOC) \
+        in(colptr: length(nnz) ALLOC)
+    }
+#endif
+}
+
+void MIC_create_matrices(int num_devices,
+                         double *D1, double *D2, double *D3,
+                         double *F1_hetero, double *F2_hetero,
+                         double *F3_hetero,
+                         int sizeD1, int sizeD2, int sizeD3,
+                         int nthreads_mic)
+{
+#ifdef __INTEL_OFFLOAD
+    int mic_id;
+
+    printf("num_f copies = %d\n", NUM_F_COPIES_MIC(nthreads_mic));
+    for(mic_id = 0; mic_id < num_devices; mic_id++)
+    {
+#pragma offload target(mic: mic_id) \
+        in(sizeD1, sizeD2, sizeD3, nthreads_mic) \
+        nocopy(D1: length(sizeD1) ALLOC) \
+        nocopy(D2: length(sizeD2) ALLOC) \
+        nocopy(D3: length(sizeD3) ALLOC) \
+        nocopy(F1_hetero: length(sizeD1) ALLOC) \
+        nocopy(F2_hetero: length(sizeD2) ALLOC) \
+        nocopy(F3_hetero: length(sizeD3) ALLOC) \
+        nocopy(F1: length(0) alloc_if(0) free_if(0)) \
+        nocopy(F2: length(0) alloc_if(0) free_if(0)) \
+        nocopy(F3: length(0) alloc_if(0) free_if(0))
+        {
+            F1 = (double *)_mm_malloc(sizeD1 * NUM_F_COPIES_MIC(nthreads_mic) * sizeof(double), 64);
+            F2 = (double *)_mm_malloc(sizeD2 * NUM_F_COPIES_MIC(nthreads_mic) * sizeof(double), 64);
+            F3 = (double *)_mm_malloc(sizeD3 * NUM_F_COPIES_MIC(nthreads_mic) * sizeof(double), 64);
+        }
+    }
+#endif
+}
+
+
+void copy_double_array_CPU_to_MIC(int num_devices,
+                                  double *A, int size)
+{
+#ifdef __INTEL_OFFLOAD
+    int mic_id;
+
+    for(mic_id = 0; mic_id < num_devices; mic_id++)
+    {
+#pragma offload_transfer target(mic:mic_id) \
+        in(A: length(size) REUSE)
+    }
+#endif
+}
+
+void MIC_copy_D_matrices(int num_devices,
+                         double *D1, double *D2, double *D3,
+                         int sizeD1, int sizeD2, int sizeD3)
+{
+    copy_double_array_CPU_to_MIC(num_devices, D1, sizeD1);
+    copy_double_array_CPU_to_MIC(num_devices, D2, sizeD2);
+    copy_double_array_CPU_to_MIC(num_devices, D3, sizeD3);
+
+    printf("Sent D1, D2, D3 to MIC cards\n");
+
+}
+

@@ -16,7 +16,7 @@ OBJS := $(addsuffix .o, $(basename $(SRC)))
 ifeq "${arch}" "mic"
 LIBS = -lcint_mic -lerd_mic -loed_mic
 else
-LIBS = -lcint -lerd -loed
+LIBS = ../lib/libcint.a ../lib/liberd.a ../lib/liboed.a
 endif
 
 all: ${EXEC}
