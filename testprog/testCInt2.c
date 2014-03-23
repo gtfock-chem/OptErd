@@ -123,4 +123,48 @@ int main (int argc, char **argv)
                         if (shellIndexM + shellIndexN > shellIndexP + shellIndexQ)
                             continue;
 
-                   
+                        /* Sample random integer. With probability (fraction) process the shell quartet. */
+                        if (rand() <= computationThreshold) {
+                            double *integrals;
+                            int nints;
+                            CInt_computeShellQuartet(basis, erd, tid, shellIndexM, shellIndexN, shellIndexP, shellIndexQ, &integrals, &nints);
+
+                            totalcalls[tid * 64] += 1;
+                            totalnintls[tid * 64] += nints;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    const uint64_t end_clock = __rdtsc();
+
+    for (int i = 1; i < nthreads; i++) {
+        totalcalls[0 * 64] = totalcalls[0 * 64] + totalcalls[i * 64];
+        totalnintls[0 * 64] = totalnintls[0 * 64] + totalnintls[i * 64];
+    } 
+    const uint64_t total_ticks = end_clock - start_clock;
+    const double timepass = ((double) total_ticks) / freq;
+
+    printf("Done\n");
+    printf("\n");
+    printf("Number of calls: %.6le, Number of integrals: %.6le\n", totalcalls[0], totalnintls[0]);
+    printf("Total GigaTicks: %.3lf, freq = %.3lf GHz\n", (double) (total_ticks) * 1.0e-9, (double)freq/1.0e9);
+    printf("Total time: %.4lf secs\n", timepass);
+    printf("Average time per call: %.3le us\n", 1000.0 * 1000.0 * timepass / totalcalls[0]);
+
+    // use 1 if thread timing is not required
+    erd_print_profile(1);
+
+    CInt_destroyERD(erd);
+    free(totalcalls);
+    free(totalnintls);
+    free(shellptr);
+    free(shellid);
+    free(shellvalue);
+    free(shellrid);
+
+    CInt_destroyBasisSet(basis);
+
+    return 0;
+}
