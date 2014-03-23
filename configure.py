@@ -85,7 +85,7 @@ oed_sources = [
 
 cint_sources = ["basisset.c", "erd_integral.c", "oed_integral.c"]
 
-testfock_sources = ["fock_init.c", "fock_task.c", "main.c"]
+testfock_sources = ["fock_init.c", "fock_offload.c", "main.c"]
 
 tab = '  '
 
