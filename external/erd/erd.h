@@ -198,7 +198,7 @@ void erd__set_abcd(
     uint32_t *restrict nrya_ptr, uint32_t *restrict nryb_ptr, uint32_t *restrict nryc_ptr, uint32_t *restrict nryd_ptr,
     uint32_t *restrict nabcoor_ptr, uint32_t *restrict ncdcoor_ptr,
     uint32_t *restrict ncolhrr, uint32_t *restrict nrothrr,
-    uint32_t *restrict nxyzhrr, bool *restrict empty, bool *restrict tr1234);  
+    uint32_t *restrict nxyzhrr, bool *restrict empty, bool *restrict tr1234);
 
 void erd__normalize_cartesian(uint32_t m, uint32_t l, const double norm[restrict static l+1], double batch[restrict]);
 
