@@ -4,6 +4,12 @@
 #include <stdint.h>
 #include <stdbool.h>
 
+#ifdef __x86_64__
+    #include <x86intrin.h>
+#elif defined(__MIC__)
+    #include <immintrin.h>
+#endif
+
 #ifdef __INTEL_OFFLOAD
     #define ERD_OFFLOAD __attribute__((target(mic)))
 #else
@@ -44,6 +50,16 @@
     #define ERD_ASSUME_ALIGNED(pointer, alignment) pointer = __builtin_assume_aligned(pointer, alignment);
 #endif
 
+#if defined(__MIC__) || defined(__AVX512F__)
+    #define ERD_SIMD_ZERO_TAIL_64f(array, simd_length) _mm512_store_pd(&array[simd_length - ERD_SIMD_WIDTH], _mm512_setzero_pd())
+#elif defined(__AVX__)
+    #define ERD_SIMD_ZERO_TAIL_64f(array, simd_length) _mm256_store_pd(&array[simd_length - ERD_SIMD_WIDTH], _mm256_setzero_pd())
+#elif defined(__SSE2__)
+    #define ERD_SIMD_ZERO_TAIL_64f(array, simd_length) _mm_store_pd(&array[simd_length - ERD_SIMD_WIDTH], _mm_setzero_pd())
+#else
+    #define ERD_SIMD_ZERO_TAIL_64f(array, simd_length)
+#endif
+
 #define ERD_SWAP(x, y) \
     ({ __typeof__(x) __temp = x; \
     x = y; \
@@ -62,7 +78,7 @@ ERD_OFFLOAD static inline uint32_t max4x32u(uint32_t a, uint32_t b, uint32_t c, 
 }
 
 ERD_OFFLOAD static inline uint32_t min32u(uint32_t a, uint32_t b) {
-    return a < b ? a : b;
+    return a <= b ? a : b;
 }
 
 ERD_OFFLOAD static inline uint32_t min3x32u(uint32_t a, uint32_t b, uint32_t c) {
