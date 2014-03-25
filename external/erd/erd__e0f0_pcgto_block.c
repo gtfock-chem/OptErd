@@ -230,7 +230,7 @@ ERD_OFFLOAD void erd__e0f0_pcgto_block(uint32_t nij, uint32_t nkl,
     const double cdy = yc - yd;
     const double cdz = zc - zd;
     
-    ERD_SIMD_ALIGN double p[nij], px[nij], py[nij], pz[nij], pinvhf[nij], scalep[nij];
+    ERD_SIMD_ALIGN double p[PAD_LEN(nij)], px[PAD_LEN(nij)], py[PAD_LEN(nij)], pz[PAD_LEN(nij)], pinvhf[PAD_LEN(nij)], scalep[PAD_LEN(nij)];
     #pragma simd
     #pragma vector aligned
     for (uint32_t ij = 0; ij < nij; ++ij) {        
@@ -248,7 +248,7 @@ ERD_OFFLOAD void erd__e0f0_pcgto_block(uint32_t nij, uint32_t nkl,
         scalep[ij] = norma[i] * normb[j] * rhoab[ij] * cca[i] * ccb[j];
     }
 
-    ERD_SIMD_ALIGN double q[nkl], qx[nkl], qy[nkl], qz[nkl], qinvhf[nkl], scaleq[nkl];
+    ERD_SIMD_ALIGN double q[PAD_LEN(nkl)], qx[PAD_LEN(nkl)], qy[PAD_LEN(nkl)], qz[PAD_LEN(nkl)], qinvhf[PAD_LEN(nkl)], scaleq[PAD_LEN(nkl)];
     #pragma simd
     #pragma vector aligned
     for (uint32_t kl = 0; kl < nkl; ++kl) {

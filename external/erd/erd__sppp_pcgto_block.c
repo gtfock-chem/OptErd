@@ -129,7 +129,7 @@ ERD_OFFLOAD void erd__sppp_pcgto_block(uint32_t nij, uint32_t nkl,
     const double y34 = y3 - y4;
     const double z34 = z3 - z4;
 
-    double p[nij], px[nij], py[nij], pz[nij], scalep[nij];
+    ERD_SIMD_ALIGN double p[PAD_LEN(nij)], px[PAD_LEN(nij)], py[PAD_LEN(nij)], pz[PAD_LEN(nij)], scalep[PAD_LEN(nij)];
     for (uint32_t ij = 0; ij < nij; ij += 1) {
         const uint32_t i = prim1[ij];
         const uint32_t j = prim2[ij];
@@ -144,7 +144,7 @@ ERD_OFFLOAD void erd__sppp_pcgto_block(uint32_t nij, uint32_t nkl,
         scalep[ij] = cc1[i] * cc2[j] * norm1[i] * norm2[j] * rho12[ij];
     }
 
-    double q[nkl], qx[nkl], qy[nkl], qz[nkl], scaleq[nkl];
+    ERD_SIMD_ALIGN double q[PAD_LEN(nkl)], qx[PAD_LEN(nkl)], qy[PAD_LEN(nkl)], qz[PAD_LEN(nkl)], scaleq[PAD_LEN(nkl)];
     for (uint32_t kl = 0; kl < nkl; kl += 1) {
         const uint32_t k = prim3[kl];
         const uint32_t l = prim4[kl];

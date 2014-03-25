@@ -285,7 +285,7 @@ ERD_OFFLOAD void erd__csgto(
     const uint32_t npgtocd = npgtoc * npgtod;
     const uint32_t nxyzt = nxyzet * nxyzft;
 
-    uint32_t prima[npgtoab], primb[npgtoab], primc[npgtocd], primd[npgtocd];
+    ERD_SIMD_ALIGN uint32_t prima[PAD_LEN(npgtoab)], primb[PAD_LEN(npgtoab)], primc[PAD_LEN(npgtocd)], primd[PAD_LEN(npgtocd)];
     ERD_SIMD_ALIGN double rhoab[PAD_LEN(npgtoab)];
     ERD_SIMD_ALIGN double rhocd[PAD_LEN(npgtocd)];
     uint32_t nij, nkl;
@@ -319,7 +319,7 @@ ERD_OFFLOAD void erd__csgto(
     ERD_PROFILE_START(erd__prepare_ctr)
     const double factor = PREFACT * spnorm;
     const uint32_t npmin = min4x32u(npgtoa, npgtob, npgtoc, npgtod);
-    double norm[npmin];
+    ERD_SIMD_ALIGN double norm[PAD_LEN(npmin)];
     if (npgtoa == npmin) {
         for (uint32_t i = 0; i < npgtoa; i++) {
             norm[i] = factor * norma[i];
@@ -452,10 +452,10 @@ ERD_OFFLOAD void erd__csgto(
 /*                prefactor during evaluation of the primitive integrals */
 /*                in order to save multiplications. */
     const uint32_t nrowmx = (mxshell / 2 + 1) * (mxshell / 2 + 2) / 2;
-    double fbuffer[spheric ? nrowmx * 4 : 0];
-    uint32_t ibuffer[spheric ? nrowmx * 4 + nrya + nryb + nryc + nryd : 0];
+    ERD_SIMD_ALIGN double fbuffer[spheric ? PAD_LEN(nrowmx * 4) : 0];
+    ERD_SIMD_ALIGN uint32_t ibuffer[spheric ? PAD_LEN(nrowmx * 4 + nrya + nryb + nryc + nryd) : 0];
 
-    double cartnorm[spheric ? 0 : mxshell + 1];
+    ERD_SIMD_ALIGN double cartnorm[spheric ? 0 : PAD_LEN(mxshell + 1)];
     uint32_t isrowa, isrowb, isrowc, isrowd;
     uint32_t nrota, nrotb, nrotc, nrotd, nrowa, nrowb, nrowc, nrowd;
     uint32_t zsrota, zsrotb, zsrotc, zsrotd;
@@ -487,9 +487,9 @@ ERD_OFFLOAD void erd__csgto(
     uint32_t ixoff[4] = { 1, 1, 1, 1 };
     if (shelld != 0) {
         uint32_t pos1, pos2, nrowhrr;
-        ERD_SIMD_ALIGN double t[nrothrr*2];
-        ERD_SIMD_ALIGN uint32_t row[nrothrr*2];
-        ERD_SIMD_ALIGN uint32_t nrow[ncolhrr*2];
+        ERD_SIMD_ALIGN double t[PAD_LEN(nrothrr*2)];
+        ERD_SIMD_ALIGN uint32_t row[PAD_LEN(nrothrr*2)];
+        ERD_SIMD_ALIGN uint32_t nrow[PAD_LEN(ncolhrr*2)];
         ERD_PROFILE_START(erd__hrr_matrix)
         erd__hrr_matrix(nrothrr, ncolhrr, nxyzft, nxyzc, nxyzq,
                          shellc, shelld, shellq,

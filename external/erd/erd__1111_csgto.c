@@ -143,7 +143,7 @@ ERD_OFFLOAD void erd__1111_csgto(
     const double rn34sq = x34 * x34 + y34 * y34 + z34 * z34;
     const uint32_t npgto12 = npgto1 * npgto2;
     const uint32_t npgto34 = npgto3 * npgto4;
-    uint32_t prim1[npgto12], prim2[npgto12], prim3[npgto34], prim4[npgto34];
+    ERD_SIMD_ALIGN uint32_t prim1[PAD_LEN(npgto12)], prim2[PAD_LEN(npgto12)], prim3[PAD_LEN(npgto34)], prim4[PAD_LEN(npgto34)];
     const double spnorm = (double)(1 << (shell1 + shell2 + shell3 + shell4));
 
     ERD_PROFILE_START(erd__1111_set_ij_kl_pairs)
@@ -172,7 +172,7 @@ ERD_OFFLOAD void erd__1111_csgto(
     ERD_PROFILE_START(erd__1111_prepare_ctr)
     const double factor = PREFACT * spnorm;
     const uint32_t npmin = min4x32u(npgto1, npgto2, npgto3, npgto4);
-    double norm[npmin];
+    ERD_SIMD_ALIGN double norm[PAD_LEN(npmin)];
     if (npgto1 == npmin) {
         for (uint32_t i = 0; i < npgto1; i++) {
             norm[i] = factor * norm1[i];
