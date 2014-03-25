@@ -158,14 +158,14 @@ ERD_OFFLOAD void erd__set_abcd(
 /*             ...set the cartesian and spherical dimensions. In case */
 /*                no spherical transformations are wanted, set the */
 /*                corresponding dimensions equal to the cartesian ones. */
-    uint32_t nxyz1 = (shell1 + 1) * (shell1 + 2) / 2;
-    uint32_t nxyz2 = (shell2 + 1) * (shell2 + 2) / 2;
-    uint32_t nxyz3 = (shell3 + 1) * (shell3 + 2) / 2;
-    uint32_t nxyz4 = (shell4 + 1) * (shell4 + 2) / 2;
-    uint32_t nry1 = shell1 + shell1 + 1;
-    uint32_t nry2 = shell2 + shell2 + 1;
-    uint32_t nry3 = shell3 + shell3 + 1;
-    uint32_t nry4 = shell4 + shell4 + 1;
+    uint32_t nxyz1 = ((shell1 + 1) * (shell1 + 2)) / 2;
+    uint32_t nxyz2 = ((shell2 + 1) * (shell2 + 2)) / 2;
+    uint32_t nxyz3 = ((shell3 + 1) * (shell3 + 2)) / 2;
+    uint32_t nxyz4 = ((shell4 + 1) * (shell4 + 2)) / 2;
+    uint32_t nry1 = 2 * shell1 + 1;
+    uint32_t nry2 = 2 * shell2 + 1;
+    uint32_t nry3 = 2 * shell3 + 1;
+    uint32_t nry4 = 2 * shell4 + 1;
     if (!spheric) {
         nry1 = nxyz1;
         nry2 = nxyz2;

@@ -76,7 +76,7 @@ ERD_OFFLOAD void erd__xyz_to_ry_abcd(uint32_t nxyza, uint32_t nxyzb, uint32_t nx
 {
     /* ...shell D data. */
     if (shelld > 1) {
-        *nrowd = (shelld / 2 + 1) * (shelld / 2 + 2) / 2;
+        *nrowd = ((shelld / 2 + 1) * (shelld / 2 + 2)) / 2;
         *nrotd = *nrowd * nryd;
         *z00d = 0;
         const uint32_t z0dt = *z00d + *nrotd;
@@ -100,7 +100,7 @@ ERD_OFFLOAD void erd__xyz_to_ry_abcd(uint32_t nxyza, uint32_t nxyzb, uint32_t nx
             *nrowc = *nrowd;
             *nrotc = *nrotd;
         } else {
-            *nrowc = (shellc / 2 + 1) * (shellc / 2 + 2) / 2;
+            *nrowc = ((shellc / 2 + 1) * (shellc / 2 + 2)) / 2;
             *nrotc = *nrowc * nryc;
             *z00c = *z00d + *nrotd;
             const uint32_t z0ct = *z00c + *nrotc;
@@ -132,7 +132,7 @@ ERD_OFFLOAD void erd__xyz_to_ry_abcd(uint32_t nxyza, uint32_t nxyzb, uint32_t nx
             *nrowb = *nrowd;
             *nrotb = *nrotd;
         } else {
-            *nrowb = (shellb / 2 + 1) * (shellb / 2 + 2) / 2;
+            *nrowb = ((shellb / 2 + 1) * (shellb / 2 + 2)) / 2;
             *nrotb = *nrowb * nryb;
             if (cdata) {
                 *z00b = *z00c + *nrotc;
@@ -152,7 +152,6 @@ ERD_OFFLOAD void erd__xyz_to_ry_abcd(uint32_t nxyza, uint32_t nxyzb, uint32_t nx
         *z00b = *z00c;
         *i0b2 = *i0c2;
     }
-
 
     /* ...shell A data (being careful, using SHELLC data if SHELLB data is not present or using SHELLD data if also SHELLC data is not present!). */
     if (shella > 1) {
@@ -175,7 +174,7 @@ ERD_OFFLOAD void erd__xyz_to_ry_abcd(uint32_t nxyza, uint32_t nxyzb, uint32_t nx
             *nrowa = *nrowd;
             *nrota = *nrotd;
         } else {
-            *nrowa = (shella / 2 + 1) * (shella / 2 + 2) / 2;
+            *nrowa = ((shella / 2 + 1) * (shella / 2 + 2)) / 2;
             *nrota = *nrowa * nrya;
             if (bdata) {
                 *z00a = *z00b + *nrotb;
