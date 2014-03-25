@@ -118,7 +118,13 @@
 /*                evaluation routine. */
 
 /* ------------------------------------------------------------------------ */
-ERD_OFFLOAD void erd__xyz_to_ry_matrix(uint32_t nxyz, uint32_t nrowmx, uint32_t l, uint32_t nrow[restrict], uint32_t row[restrict], double tmat[restrict])
+ERD_OFFLOAD void erd__xyz_to_ry_matrix(
+    uint32_t nxyz,
+    uint32_t nrowmx,
+    uint32_t l,
+    uint32_t nrow[restrict static 2*l+1],
+    uint32_t row[restrict static nrowmx*(2*l+1)],
+    double tmat[restrict static nrowmx*(2*l+1)])
 {
     double a, b, c, d;
     ERD_SIMD_ALIGN double temp[PAD_LEN(nxyz)];

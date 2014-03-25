@@ -147,7 +147,13 @@ void erd__xyz_to_ry_abcd(uint32_t nxyza, uint32_t nxyzb, uint32_t nxyzc, uint32_
     uint32_t i0a2[restrict static 1], uint32_t i0b2[restrict static 1], uint32_t i0c2[restrict static 1], uint32_t i0d2[restrict static 1],
     uint32_t icore[restrict static 1], double zcore[restrict static 1]);
 
-void erd__xyz_to_ry_matrix(uint32_t nxyz, uint32_t nrowmx, uint32_t l, uint32_t nrow[restrict], uint32_t row[restrict], double tmat[restrict]);
+void erd__xyz_to_ry_matrix(
+    uint32_t nxyz,
+    uint32_t nrowmx,
+    uint32_t l,
+    uint32_t nrow[restrict static 2*l+1],
+    uint32_t row[restrict static nrowmx*(2*l+1)],
+    double tmat[restrict static nrowmx*(2*l+1)]);
 
 void erd__spherical_transform(uint32_t m, uint32_t nrow, uint32_t nry, uint32_t lrow[restrict static nry], uint32_t row[restrict], const double rot[restrict], const double x[restrict], double y[restrict]);
 
