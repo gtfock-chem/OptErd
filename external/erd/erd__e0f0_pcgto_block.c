@@ -364,17 +364,6 @@ ERD_OFFLOAD void erd__e0f0_pcgto_block(uint32_t nij, uint32_t nkl,
                           c00x, c00y, c00z,
                           d00x, d00y, d00z);
     ERD_PROFILE_END(erd__2d_coefficients)
-    for (uint32_t i = mgqijkl; i < simd_mgqijkl; i++) {
-/*        b00[i] = 0.0;
-        b10[i] = 0.0;
-        b01[i] = 0.0;
-        c00x[i] = 0.0;
-        c00y[i] = 0.0;
-        c00z[i] = 0.0;
-        d00x[i] = 0.0;
-        d00y[i] = 0.0;
-        d00z[i] = 0.0;*/
-    }
 
     ERD_SIMD_ALIGN double int2dy[nint2d];
     ERD_SIMD_ALIGN double int2dz[nint2d];
