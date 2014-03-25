@@ -82,7 +82,7 @@ ERD_OFFLOAD void erd__xyz_to_ry_abcd(uint32_t nxyza, uint32_t nxyzb, uint32_t nx
         const uint32_t z0dt = *z00d + *nrotd;
         *i0d1 = 0;
         *i0d2 = *i0d1 + nryd;
-        erd__xyz_to_ry_matrix(nxyzd, *nrowd, shelld, &zcore[z0dt], &icore[*i0d1], &icore[*i0d2], &zcore[*z00d]);
+        erd__xyz_to_ry_matrix(nxyzd, *nrowd, shelld, &icore[*i0d1], &icore[*i0d2], &zcore[*z00d]);
     } else {
         *nrowd = 0;
         *nrotd = 0;
@@ -106,7 +106,7 @@ ERD_OFFLOAD void erd__xyz_to_ry_abcd(uint32_t nxyza, uint32_t nxyzb, uint32_t nx
             const uint32_t z0ct = *z00c + *nrotc;
             *i0c1 = *i0d2 + *nrotd;
             *i0c2 = *i0c1 + nryc;
-            erd__xyz_to_ry_matrix(nxyzc, *nrowc, shellc, &zcore[z0ct], &icore[*i0c1], &icore[*i0c2], &zcore[*z00c]);
+            erd__xyz_to_ry_matrix(nxyzc, *nrowc, shellc, &icore[*i0c1], &icore[*i0c2], &zcore[*z00c]);
             cdata = true;
         }
     } else {
@@ -146,7 +146,7 @@ ERD_OFFLOAD void erd__xyz_to_ry_abcd(uint32_t nxyza, uint32_t nxyzb, uint32_t nx
                 *i0b1 = *i0d2 + *nrotd;
                 *i0b2 = *i0b1 + nryb;
             }
-            erd__xyz_to_ry_matrix(nxyzb, *nrowb, shellb, &zcore[z0bt], &icore[*i0b1], &icore[*i0b2], &zcore[*z00b]);
+            erd__xyz_to_ry_matrix(nxyzb, *nrowb, shellb, &icore[*i0b1], &icore[*i0b2], &zcore[*z00b]);
             bdata = true;
         }
     } else {
@@ -197,7 +197,7 @@ ERD_OFFLOAD void erd__xyz_to_ry_abcd(uint32_t nxyza, uint32_t nxyzb, uint32_t nx
                 *i0a1 = *i0d2 + *nrotd;
                 *i0a2 = *i0a1 + nrya;
             }
-            erd__xyz_to_ry_matrix(nxyza, *nrowa, shella, &zcore[z0at], &icore[*i0a1], &icore[*i0a2], &zcore[*z00a]);
+            erd__xyz_to_ry_matrix(nxyza, *nrowa, shella, &icore[*i0a1], &icore[*i0a2], &zcore[*z00a]);
         }
     }
 }

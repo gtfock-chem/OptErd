@@ -118,13 +118,13 @@
 /*                evaluation routine. */
 
 /* ------------------------------------------------------------------------ */
-ERD_OFFLOAD void erd__xyz_to_ry_matrix(uint32_t nxyz, uint32_t nrowmx, uint32_t l, double *temp, uint32_t *nrow, uint32_t *row, double *tmat)
+ERD_OFFLOAD void erd__xyz_to_ry_matrix(uint32_t nxyz, uint32_t nrowmx, uint32_t l, uint32_t nrow[restrict], uint32_t row[restrict], double tmat[restrict])
 {
     double a, b, c, d;
+    ERD_SIMD_ALIGN double temp[PAD_LEN(nxyz)];
 
 /*             ...calculate the RNORM and the initial value of */
 /*                YNORM at M = -L. Form initial combined norm RYNORM. */
-
     const double two_log10 = 0x1.34413509F79FFp-2; /* log10(2.0) */
     double rnorm = (double)(l * 2 + 2) * two_log10;
     for (uint32_t i = 0; i < l; i++) {
