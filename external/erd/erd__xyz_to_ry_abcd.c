@@ -134,15 +134,12 @@ ERD_OFFLOAD void erd__xyz_to_ry_abcd(uint32_t nxyza, uint32_t nxyzb, uint32_t nx
         } else {
             *nrowb = (shellb / 2 + 1) * (shellb / 2 + 2) / 2;
             *nrotb = *nrowb * nryb;
-            uint32_t z0bt;
             if (cdata) {
                 *z00b = *z00c + *nrotc;
-                z0bt = *z00b + *nrotb;
                 *i0b1 = *i0c2 + *nrotc;
                 *i0b2 = *i0b1 + nryb;
             } else {
                 *z00b = *z00d + *nrotd;
-                z0bt = *z00b + *nrotb;
                 *i0b1 = *i0d2 + *nrotd;
                 *i0b2 = *i0b1 + nryb;
             }
@@ -180,20 +177,16 @@ ERD_OFFLOAD void erd__xyz_to_ry_abcd(uint32_t nxyza, uint32_t nxyzb, uint32_t nx
         } else {
             *nrowa = (shella / 2 + 1) * (shella / 2 + 2) / 2;
             *nrota = *nrowa * nrya;
-            uint32_t z0at;
             if (bdata) {
                 *z00a = *z00b + *nrotb;
-                z0at = *z00a + *nrota;
                 *i0a1 = *i0b2 + *nrotb;
                 *i0a2 = *i0a1 + nrya;
             } else if (cdata) {
                 *z00a = *z00c + *nrotc;
-                z0at = *z00a + *nrota;
                 *i0a1 = *i0c2 + *nrotc;
                 *i0a2 = *i0a1 + nrya;
             } else {
                 *z00a = *z00d + *nrotd;
-                z0at = *z00a + *nrota;
                 *i0a1 = *i0d2 + *nrotd;
                 *i0a2 = *i0a1 + nrya;
             }
