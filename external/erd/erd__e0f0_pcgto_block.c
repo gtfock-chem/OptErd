@@ -185,7 +185,7 @@ ERD_OFFLOAD void erd__e0f0_pcgto_block(uint32_t nij, uint32_t nkl,
     const uint32_t prima[restrict static nij], const uint32_t primb[restrict static nij], const uint32_t primc[restrict static nkl], const uint32_t primd[restrict static nkl],
     const double norma[restrict static nij], const double normb[restrict static nij], const double normc[restrict static nkl], const double normd[restrict static nkl],
     const double rhoab[restrict static nij], const double rhocd[restrict static nkl],
-    double batch[restrict])
+    double output_buffer[restrict])
 {
 #ifdef __ERD_PROFILE__   
     #ifdef _OPENMP
@@ -313,8 +313,8 @@ ERD_OFFLOAD void erd__e0f0_pcgto_block(uint32_t nij, uint32_t nkl,
             n -= ngqp;
         }
     }
-    uint32_t mgqijkl_aligned = ((mgqijkl + SIMDW - 1)/SIMDW) * SIMDW;
-    memset(&(int2dx[mgqijkl]), 0, sizeof(double) * (mgqijkl_aligned - mgqijkl));
+    uint32_t mgqijkl_aligned = PAD_LEN(mgqijkl);
+    memset(&int2dx[mgqijkl], 0, sizeof(double) * (mgqijkl_aligned - mgqijkl));
 
 
 /*             ...calculate all roots and weights. */
@@ -355,6 +355,17 @@ ERD_OFFLOAD void erd__e0f0_pcgto_block(uint32_t nij, uint32_t nkl,
                           c00x, c00y, c00z,
                           d00x, d00y, d00z);
     ERD_PROFILE_END(erd__2d_coefficients)
+    for (uint32_t i = mgqijkl; i < mgqijkl_aligned; i++) {
+        b00[i] = 0.0;
+        b10[i] = 0.0;
+        b01[i] = 0.0;
+        c00x[i] = 0.0;
+        c00y[i] = 0.0;
+        c00z[i] = 0.0;
+        d00x[i] = 0.0;
+        d00y[i] = 0.0;
+        d00z[i] = 0.0;
+    }
 
     ERD_SIMD_ALIGN double int2dy[PAD_LEN(nint2d)];
     ERD_SIMD_ALIGN double int2dz[PAD_LEN(nint2d)];
@@ -363,12 +374,11 @@ ERD_OFFLOAD void erd__e0f0_pcgto_block(uint32_t nij, uint32_t nkl,
                           b00, b01, b10, c00x, c00y, c00z, d00x,
                           d00y, d00z, case2d,
                           int2dx, int2dy, int2dz);
-
     ERD_PROFILE_END(erd__2d_pq_integrals)
-
+    
     ERD_PROFILE_START(erd__int2d_to_e0f0)
     erd__int2d_to_e0f0(shella, shellp, shellc, shellq,
                         mgqijkl_aligned, nxyzet, nxyzft,
-                        int2dx, int2dy, int2dz, vrrtab, batch);
+                        int2dx, int2dy, int2dz, vrrtab, output_buffer);
     ERD_PROFILE_END(erd__int2d_to_e0f0)
 }
