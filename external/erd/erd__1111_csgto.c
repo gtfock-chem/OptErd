@@ -85,18 +85,16 @@
 /*                                    starting at ZCORE (NFIRST) */
 /* ------------------------------------------------------------------------ */
 ERD_OFFLOAD void erd__1111_csgto(
-    uint32_t npgto1, uint32_t npgto2, uint32_t npgto3, uint32_t npgto4,
-    uint32_t shell1, uint32_t shell2, uint32_t shell3, uint32_t shell4,
-    bool atomic,
-    double x1, double y1, double z1,
-    double x2, double y2, double z2,
-    double x3, double y3, double z3,
-    double x4, double y4, double z4,
-    const double alpha1[restrict static npgto1], const double alpha2[restrict static npgto2], const double alpha3[restrict static npgto3], const double alpha4[restrict static npgto4],
-    const double cc1[restrict static npgto1], const double cc2[restrict static npgto2], const double cc3[restrict static npgto3], const double cc4[restrict static npgto4],
-    const double norm1[restrict static npgto1], const double norm2[restrict static npgto2], const double norm3[restrict static npgto3], const double norm4[restrict static npgto4],
-    uint32_t integrals_count[restrict static 1], double integrals_ptr[restrict static 81])
+    uint32_t A, uint32_t B, uint32_t C, uint32_t D,
+    const uint32_t npgto[restrict static 1],
+    const uint32_t shell[restrict static 1],
+    const double xyz0[restrict static 1],
+    const double *restrict alpha[restrict static 1],
+    const double *restrict cc[restrict static 1],
+    const double *restrict norm[restrict static 1],
+    uint32_t buffer_capacity, uint32_t integrals_count[restrict static 1], double integrals_ptr[restrict static 81])
 {
+    uint32_t shell1 = shell[A], shell2 = shell[B], shell3 = shell[C], shell4 = shell[D];
 
 #ifdef __ERD_PROFILE__
     #ifdef _OPENMP
@@ -107,6 +105,7 @@ ERD_OFFLOAD void erd__1111_csgto(
 #endif
     ERD_PROFILE_START(erd__1111_csgto)
 
+    const bool atomic = ((A ^ B) | (B ^ C) | (C ^ D)) == 0;
     const uint32_t shellp = shell1 + shell2;
     const uint32_t shellt = shellp + shell3 + shell4;
     if (atomic && ((shellt % 2) == 1)) {
@@ -128,6 +127,15 @@ ERD_OFFLOAD void erd__1111_csgto(
      *    to SPNORM is very simple: each s-type shell -> * 1.0,
      *    each p-type shell -> * 2.0.
      */
+    uint32_t npgto1 = npgto[A], npgto2 = npgto[B], npgto3 = npgto[C], npgto4 = npgto[D];
+    double x1 = xyz0[A*4], y1 = xyz0[A*4+1], z1 = xyz0[A*4+2];
+    double x2 = xyz0[B*4], y2 = xyz0[B*4+1], z2 = xyz0[B*4+2];
+    double x3 = xyz0[C*4], y3 = xyz0[C*4+1], z3 = xyz0[C*4+2];
+    double x4 = xyz0[D*4], y4 = xyz0[D*4+1], z4 = xyz0[D*4+2];
+    const double *restrict alpha1 = alpha[A], *restrict alpha2 = alpha[B], *restrict alpha3 = alpha[C], *restrict alpha4 = alpha[D];
+    const double *restrict cc1 = cc[A], *restrict cc2 = cc[B], *restrict cc3 = cc[C], *restrict cc4 = cc[D];
+    const double *restrict norm1 = norm[A], *restrict norm2 = norm[B], *restrict norm3 = norm[C], *restrict norm4 = norm[D];
+
     const uint32_t nxyz1 = 2 * shell1 + 1;
     const uint32_t nxyz2 = 2 * shell2 + 1;
     const uint32_t nxyz3 = 2 * shell3 + 1;
@@ -172,27 +180,27 @@ ERD_OFFLOAD void erd__1111_csgto(
     ERD_PROFILE_START(erd__1111_prepare_ctr)
     const double factor = PREFACT * spnorm;
     const uint32_t npmin = min4x32u(npgto1, npgto2, npgto3, npgto4);
-    ERD_SIMD_ALIGN double norm[PAD_LEN(npmin)];
+    ERD_SIMD_ALIGN double scaled_norm[PAD_LEN(npmin)];
     if (npgto1 == npmin) {
         for (uint32_t i = 0; i < npgto1; i++) {
-            norm[i] = factor * norm1[i];
+            scaled_norm[i] = factor * norm1[i];
         }
-        norm1 = &norm[0];
+        norm1 = &scaled_norm[0];
     } else if (npgto2 == npmin) {
         for (uint32_t i = 0; i < npgto2; i++) {
-            norm[i] = factor * norm2[i];
+            scaled_norm[i] = factor * norm2[i];
         }
-        norm2 = &norm[0];
+        norm2 = &scaled_norm[0];
     } else if (npgto3 == npmin) {
         for (uint32_t i = 0; i < npgto3; i++) {
-            norm[i] = factor * norm3[i];
+            scaled_norm[i] = factor * norm3[i];
         }
-        norm3 = &norm[0];
+        norm3 = &scaled_norm[0];
     } else {
         for (uint32_t i = 0; i < npgto4; i++) {
-            norm[i] = factor * norm4[i];
+            scaled_norm[i] = factor * norm4[i];
         }
-        norm4 = &norm[0];
+        norm4 = &scaled_norm[0];
     }
     ERD_PROFILE_END(erd__1111_prepare_ctr)
 

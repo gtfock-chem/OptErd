@@ -116,35 +116,29 @@
 /*                                    expected. */
 /* ------------------------------------------------------------------------ */
 ERD_OFFLOAD void erd__set_abcd(
-    uint32_t npgto1, uint32_t npgto2, uint32_t npgto3, uint32_t npgto4,
-    uint32_t shell1, uint32_t shell2, uint32_t shell3, uint32_t shell4,
-    bool atomic,
-    double x1, double y1, double z1,
-    double x2, double y2, double z2, 
-    double x3, double y3, double z3,
-    double x4, double y4, double z4, bool spheric,
-    uint32_t *restrict npgtoa_ptr, uint32_t *restrict npgtob_ptr, uint32_t *restrict npgtoc_ptr, uint32_t *restrict npgtod_ptr,
-    uint32_t *restrict shella_ptr, uint32_t *restrict shellb_ptr, uint32_t *restrict shellc_ptr, uint32_t *restrict shelld_ptr,
-    double *restrict xa_ptr, double *restrict ya_ptr, double *restrict za_ptr,
-    double *restrict xb_ptr, double *restrict yb_ptr, double *restrict zb_ptr,
-    double *restrict xc_ptr, double *restrict yc_ptr, double *restrict zc_ptr,
-    double *restrict xd_ptr, double *restrict yd_ptr, double *restrict zd_ptr,
+    uint32_t A_ptr[restrict static 1], uint32_t B_ptr[restrict static 1], uint32_t C_ptr[restrict static 1], uint32_t D_ptr[restrict static 1],
+    const uint32_t shell[restrict static 1], const double xyz0[restrict static 1],
+    bool spheric,
+    uint32_t indexa_ptr[restrict static 1], uint32_t indexb_ptr[restrict static 1], uint32_t indexc_ptr[restrict static 1], uint32_t indexd_ptr[restrict static 1],
     uint32_t *restrict nxyza_ptr, uint32_t *restrict nxyzb_ptr, uint32_t *restrict nxyzc_ptr, uint32_t *restrict nxyzd_ptr,
     uint32_t *restrict nxyzet_ptr, uint32_t *restrict nxyzft_ptr,
-    uint32_t *restrict nrya_ptr, uint32_t *restrict nryb_ptr, uint32_t *restrict nryc_ptr, uint32_t *restrict nryd_ptr,
-    uint32_t *restrict nabcoor_ptr, uint32_t *restrict ncdcoor_ptr,
-    uint32_t *restrict ncolhrr, uint32_t *restrict nrothrr,
-    uint32_t *restrict nxyzhrr, bool *restrict empty, bool *restrict tr1234)
+    uint32_t nrya_ptr[restrict static 1], uint32_t nryb_ptr[restrict static 1], uint32_t nryc_ptr[restrict static 1], uint32_t nryd_ptr[restrict static 1],
+    uint32_t nabcoor_ptr[restrict static 1], uint32_t ncdcoor_ptr[restrict static 1],
+    uint32_t ncolhrr[restrict static 1], uint32_t nrothrr[restrict static 1],
+    uint32_t nxyzhrr[restrict static 1], bool empty[restrict static 1])
 {
 /*             ...generate all 1,2,3,4 data. Decide as early as */
 /*                possible, if a zero batch of integrals is expected. */
     *empty = false;
+    uint32_t A = *A_ptr, B = *B_ptr, C = *C_ptr, D = *D_ptr;
+    uint32_t shell1 = shell[A], shell2 = shell[B], shell3 = shell[C], shell4 = shell[D];
 
     const uint32_t preshellp = shell1 + shell2;
     const uint32_t preshellq = shell3 + shell4;
     const uint32_t shellt = preshellp + preshellq;
 
     const uint32_t mxshell = max4x32u(shell1, shell2, shell3, shell4);
+    const bool atomic = ((A ^ B) | (B ^ C) | (C ^ D)) == 0;
     const bool case1 = (shellt % 2 == 1);
     const bool case2 = spheric && (2 * mxshell > shellt);
     if (atomic && (case1 || case2)) {
@@ -158,19 +152,23 @@ ERD_OFFLOAD void erd__set_abcd(
 /*             ...set the cartesian and spherical dimensions. In case */
 /*                no spherical transformations are wanted, set the */
 /*                corresponding dimensions equal to the cartesian ones. */
-    uint32_t nxyz1 = ((shell1 + 1) * (shell1 + 2)) / 2;
-    uint32_t nxyz2 = ((shell2 + 1) * (shell2 + 2)) / 2;
-    uint32_t nxyz3 = ((shell3 + 1) * (shell3 + 2)) / 2;
-    uint32_t nxyz4 = ((shell4 + 1) * (shell4 + 2)) / 2;
-    uint32_t nry1 = 2 * shell1 + 1;
-    uint32_t nry2 = 2 * shell2 + 1;
-    uint32_t nry3 = 2 * shell3 + 1;
-    uint32_t nry4 = 2 * shell4 + 1;
+    uint32_t nxyz[4] = {
+        ((shell1 + 1) * (shell1 + 2)) / 2,
+        ((shell2 + 1) * (shell2 + 2)) / 2,
+        ((shell3 + 1) * (shell3 + 2)) / 2,
+        ((shell4 + 1) * (shell4 + 2)) / 2
+    };
+    uint32_t nry[4] = {
+        2 * shell1 + 1,
+        2 * shell2 + 1,
+        2 * shell3 + 1,
+        2 * shell4 + 1
+    };
     if (!spheric) {
-        nry1 = nxyz1;
-        nry2 = nxyz2;
-        nry3 = nxyz3;
-        nry4 = nxyz4;
+        nry[0] = nxyz[0];
+        nry[1] = nxyz[1];
+        nry[2] = nxyz[2];
+        nry[3] = nxyz[3];
     }
 
 /*             ...decide on the 1 <-> 2 and/or 3 <-> 4 swapping. */
@@ -203,14 +201,14 @@ ERD_OFFLOAD void erd__set_abcd(
     const uint32_t nxyze = (preshellp + 1) * (preshellp + 2) * (preshellp + 3) / 6 - preshella * (preshella + 1) * (preshella + 2) / 6;
     const uint32_t nxyzf = (preshellq + 1) * (preshellq + 2) * (preshellq + 3) / 6 - preshellc * (preshellc + 1) * (preshellc + 2) / 6;
 
+    bool transpose = false;
     if ((preshellb | preshelld) == 0) {
         *nxyzhrr = nxyze * nxyzf;
-        *tr1234 = false;
     } else {
-        const uint32_t nhrr1st = max32u(nxyze * nxyz3 * nxyz4, nxyz1 * nxyz2 * nry3 * nry4);
-        const uint32_t nhrr2nd = max32u(nxyzf * nxyz1 * nxyz2, nxyz3 * nxyz4 * nry1 * nry2);
+        const uint32_t nhrr1st = max32u(nxyze * nxyz[2] * nxyz[3], nxyz[0] * nxyz[1] * nry[2] * nry[3]);
+        const uint32_t nhrr2nd = max32u(nxyzf * nxyz[0] * nxyz[1], nxyz[2] * nxyz[3] * nry[0] * nry[1]);
         *nxyzhrr = min32u(nhrr1st, nhrr2nd);
-        *tr1234 = nhrr1st > nhrr2nd;
+        transpose = nhrr1st > nhrr2nd;
     }
 
 /*             ...according to the previously gathered info, set the */
@@ -219,103 +217,52 @@ ERD_OFFLOAD void erd__set_abcd(
 /*                and contraction coefficients. Also set the info for */
 /*                evaluation of the [e0|f0] batches and for the HRR */
 /*                steps later on. */
+    uint32_t indexa = 0, indexb = 1, indexc = 2, indexd = 3;
     uint32_t nxyzet = nxyze, nxyzft = nxyzf;
-    if (*tr1234) {
+    if (transpose) {
         ERD_SWAP(nxyzet, nxyzft);
 
-        ERD_SWAP(x1, x3);
-        ERD_SWAP(y1, y3);
-        ERD_SWAP(z1, z3);
-        ERD_SWAP(shell1, shell3);
-        ERD_SWAP(npgto1, npgto3);
-        ERD_SWAP(nxyz1, nxyz3);
-        ERD_SWAP(nry1, nry3);
-
-        ERD_SWAP(x2, x4);
-        ERD_SWAP(y2, y4);
-        ERD_SWAP(z2, z4);
-        ERD_SWAP(shell2, shell4);
-        ERD_SWAP(npgto2, npgto4);
-        ERD_SWAP(nxyz2, nxyz4);
-        ERD_SWAP(nry2, nry4);
+        ERD_SWAP(A, C);
+        ERD_SWAP(B, D);
+        
+        indexa = 2;
+        indexb = 3;
+        indexc = 0;
+        indexd = 1;
     }
     *nxyzet_ptr = nxyzet;
     *nxyzft_ptr = nxyzft;
     
-    double xa = x1, xb = x2, xc = x3, xd = x4;
-    double ya = y1, yb = y2, yc = y3, yd = y4;
-    double za = z1, zb = z2, zc = z3, zd = z4;
-    uint32_t shella = shell1, shellb = shell2, shellc = shell3, shelld = shell4;
-    uint32_t npgtoa = npgto1, npgtob = npgto2, npgtoc = npgto3, npgtod = npgto4;
-    uint32_t nxyza = nxyz1, nxyzb = nxyz2, nxyzc = nxyz3, nxyzd = nxyz4;
-    uint32_t nrya = nry1, nryb = nry2, nryc = nry3, nryd = nry4;
-
-    if (shell1 < shell2) {
-        ERD_SWAP(xa, xb);
-        ERD_SWAP(ya, yb);
-        ERD_SWAP(za, zb);
-        ERD_SWAP(shella, shellb);
-        ERD_SWAP(npgtoa, npgtob);
-        ERD_SWAP(nxyza, nxyzb);
-        ERD_SWAP(nrya, nryb);
+    if (shell[A] < shell[B]) {
+        ERD_SWAP(A, B);
+        ERD_SWAP(indexa, indexb);
     }
-    if (shell3 < shell4) {
-        ERD_SWAP(xc, xd);
-        ERD_SWAP(yc, yd);
-        ERD_SWAP(zc, zd);
-        ERD_SWAP(shellc, shelld);
-        ERD_SWAP(npgtoc, npgtod);
-        ERD_SWAP(nxyzc, nxyzd);
-        ERD_SWAP(nryc, nryd);
+    if (shell[C] < shell[D]) {
+        ERD_SWAP(C, D);
+        ERD_SWAP(indexc, indexd);
     }
-    *shella_ptr = shella;
-    *shellb_ptr = shellb;
-    *shellc_ptr = shellc;
-    *shelld_ptr = shelld;
-    *npgtoa_ptr = npgtoa;
-    *npgtob_ptr = npgtob;
-    *npgtoc_ptr = npgtoc;
-    *npgtod_ptr = npgtod;
-    *nxyza_ptr = nxyza;
-    *nxyzb_ptr = nxyzb;
-    *nxyzc_ptr = nxyzc;
-    *nxyzd_ptr = nxyzd;
-    *nrya_ptr = nrya;
-    *nryb_ptr = nryb;
-    *nryc_ptr = nryc;
-    *nryd_ptr = nryd;
-    *xa_ptr = xa;
-    *xb_ptr = xb;
-    *xc_ptr = xc;
-    *xd_ptr = xd;
-    *ya_ptr = ya;
-    *yb_ptr = yb;
-    *yc_ptr = yc;
-    *yd_ptr = yd;
-    *za_ptr = za;
-    *zb_ptr = zb;
-    *zc_ptr = zc;
-    *zd_ptr = zd;
-    uint32_t nabcoor = 3;
-    if (xa == xb) {
-        nabcoor--;
-    }
-    if (ya == yb) {
-        nabcoor--;
-    }
-    if (za == zb) {
-        nabcoor--;
-    }
-    uint32_t ncdcoor = 3;
-    if (xc == xd) {
-        ncdcoor--;
-    }
-    if (yc == yd) {
-        ncdcoor--;
-    }
-    if (zc == zd) {
-        ncdcoor--;
-    }
+    const double xa = xyz0[A*4], xb = xyz0[B*4], xc = xyz0[C*4], xd = xyz0[D*4];
+    const double ya = xyz0[A*4+1], yb = xyz0[B*4+1], yc = xyz0[C*4+1], yd = xyz0[D*4+1];
+    const double za = xyz0[A*4+2], zb = xyz0[B*4+2], zc = xyz0[C*4+2], zd = xyz0[D*4+2];
+    *A_ptr = A;
+    *B_ptr = B;
+    *C_ptr = C;
+    *D_ptr = D;
+    *indexa_ptr = indexa;
+    *indexb_ptr = indexb;
+    *indexc_ptr = indexc;
+    *indexd_ptr = indexd;
+    *nxyza_ptr = nxyz[indexa];
+    *nxyzb_ptr = nxyz[indexb];
+    *nxyzc_ptr = nxyz[indexc];
+    *nxyzd_ptr = nxyz[indexd];
+    *nrya_ptr = nry[indexa];
+    *nryb_ptr = nry[indexb];
+    *nryc_ptr = nry[indexc];
+    *nryd_ptr = nry[indexd];
+    const uint8_t nabcoor = (uint8_t)(xa != xb) + (uint8_t)(ya != yb) + (uint8_t)(za != zb);
+    const uint8_t ncdcoor = (uint8_t)(xc != xd) + (uint8_t)(yc != yd) + (uint8_t)(zc != zd);
+    const uint32_t shella = shell[A], shellb = shell[B], shellc = shell[C], shelld = shell[D];
     const uint32_t shellp = shella + shellb;
     const uint32_t shellq = shellc + shelld;
     const uint32_t nxyzp = (shellp + 1) * (shellp + 2) / 2;
@@ -340,7 +287,9 @@ ERD_OFFLOAD void erd__set_abcd(
                 case 3:
                 {
                     const uint32_t m = shellh / 3 + 1;
-                    nrow += m * (m + ((shellh % 3) == 2));
+                    nrow += m * m;
+                    if (shellh % 3 == 2)
+                        nrow += m;
                     break;
                 }
                 case 2:
@@ -377,7 +326,9 @@ ERD_OFFLOAD void erd__set_abcd(
                 case 3:
                 {
                     const uint32_t m = shellh / 3 + 1;
-                    nrow += m * (m + ((shellh % 3) == 2));
+                    nrow += m * m;
+                    if (shellh % 3 == 2)
+                        nrow += m;
                     break;
                 }
                 case 2:

@@ -50,45 +50,39 @@ ERD_OFFLOAD size_t erd__memory_csgto(uint32_t npgto1, uint32_t npgto2, uint32_t 
     double x4, double y4, double z4,
     bool spheric)
 {
-    uint32_t nxyzhrr;
-    uint32_t nrya, nryb, nryc, nryd;
-    uint32_t nxyza, nxyzb, nxyzc, nxyzd, shella, shellb, shellc, shelld, npgtoa, npgtob,
-        npgtoc, npgtod, mnprim, dummyi[15];
-    double dummyr[12];
-    uint32_t mxsize, nxyzet, nxyzft;
-    uint32_t ncolhrr, nrothrr;
-
-    /*
-     * ...fix the A,B,C,D labels from the 1,2,3,4 ones.
-     *    Calculate the relevant data for the A,B,C,D batch of integrals.
-     *    Most of this data is not needed to evaluate the memory requirements and is dumped into 
-     *    the DUMMYx arrays with x=I,R,L standing for int, real and int, respectively.
-     */ 
-    const bool atomic = false;
-    bool empty, tr1234;
-    erd__set_abcd(npgto1, npgto2, npgto3, npgto4,
-        shell1, shell2, shell3, shell4,
-        atomic,
-        x1, y1, z1, x2, y2, z2,
-        x3, y3, z3, x4, y4, z4, spheric,
-        &npgtoa, &npgtob, &npgtoc, &npgtod,
-        &shella, &shellb, &shellc, &shelld,
-        &dummyr[0], &dummyr[1], &dummyr[2],
-        &dummyr[3], &dummyr[4], &dummyr[5],
-        &dummyr[6], &dummyr[7], &dummyr[8],
-        &dummyr[9], &dummyr[10], &dummyr[11],
-        &nxyza, &nxyzb,
-        &nxyzc, &nxyzd,
-        &nxyzet, &nxyzft,
-        &nrya, &nryb, &nryc, &nryd,
-        &dummyi[0], &dummyi[1],
-        &ncolhrr, &nrothrr,
-        &nxyzhrr, &empty, &tr1234);
-    if (empty) {
-        return 0;
+    const uint32_t nxyz1 = ((shell1 + 1) * (shell1 + 2)) / 2;
+    const uint32_t nxyz2 = ((shell2 + 1) * (shell2 + 2)) / 2;
+    const uint32_t nxyz3 = ((shell3 + 1) * (shell3 + 2)) / 2;
+    const uint32_t nxyz4 = ((shell4 + 1) * (shell4 + 2)) / 2;
+    uint32_t nry1 = 2 * shell1 + 1;
+    uint32_t nry2 = 2 * shell2 + 1;
+    uint32_t nry3 = 2 * shell3 + 1;
+    uint32_t nry4 = 2 * shell4 + 1;
+    if (!spheric) {
+        nry1 = nxyz1;
+        nry2 = nxyz2;
+        nry3 = nxyz3;
+        nry4 = nxyz4;
     }
 
-    const uint32_t nxyzt = nxyzet * nxyzft;
+    const uint32_t shellp = shell1 + shell2;
+    const uint32_t shellq = shell3 + shell4;
+    const uint32_t shella = max32u(shell1, shell2);
+    const uint32_t shellb = min32u(shell1, shell2);
+    const uint32_t shellc = max32u(shell3, shell4);
+    const uint32_t shelld = min32u(shell3, shell4);
+    const uint32_t nxyze = (shellp + 1) * (shellp + 2) * (shellp + 3) / 6 - shella * (shella + 1) * (shella + 2) / 6;
+    const uint32_t nxyzf = (shellq + 1) * (shellq + 2) * (shellq + 3) / 6 - shellc * (shellc + 1) * (shellc + 2) / 6;
+    const uint32_t nxyzt = nxyze * nxyzf;
+
+    uint32_t nxyzhrr;
+    if ((shellb | shelld) == 0) {
+        nxyzhrr = nxyze * nxyzf;
+    } else {
+        const uint32_t nhrr1st = max32u(nxyze * nxyz3 * nxyz4, nxyz1 * nxyz2 * nry3 * nry4);
+        const uint32_t nhrr2nd = max32u(nxyzf * nxyz1 * nxyz2, nxyz3 * nxyz4 * nry1 * nry2);
+        nxyzhrr = min32u(nhrr1st, nhrr2nd);
+    }
 
     return PAD_LEN(nxyzt) + 2 * nxyzhrr;
 }

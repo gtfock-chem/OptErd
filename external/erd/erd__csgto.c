@@ -150,16 +150,9 @@
 /*                stability during contraction. */
 /* ------------------------------------------------------------------------ */
 ERD_OFFLOAD void erd__csgto(
-    bool atomic,
-    uint32_t npgto1, uint32_t npgto2, uint32_t npgto3, uint32_t npgto4,
-    uint32_t shell1, uint32_t shell2, uint32_t shell3, uint32_t shell4,
-    double x1, double y1, double z1,
-    double x2, double y2, double z2,
-    double x3, double y3, double z3,
-    double x4, double y4, double z4,
-    const double alpha1[restrict static npgto1], const double alpha2[restrict static npgto2], const double alpha3[restrict static npgto3], const double alpha4[restrict static npgto4],
-    const double cc1[restrict static npgto1], const double cc2[restrict static npgto2], const double cc3[restrict static npgto3], const double cc4[restrict static npgto4],
-    const double norm1[restrict static npgto1], const double norm2[restrict static npgto2], const double norm3[restrict static npgto3], const double norm4[restrict static npgto4],
+    uint32_t A, uint32_t B, uint32_t C, uint32_t D,
+    const uint32_t npgto[restrict static 1], const uint32_t shell[restrict static 1], const double xyz0[restrict static 1],
+    const double *restrict alpha[restrict static 1], const double *restrict cc[restrict static 1], const double *restrict norm[restrict static 1],
     int **vrrtab, int ldvrrtab,
     bool spheric,
     uint32_t buffer_capacity, uint32_t output_length[restrict static 1], double output_buffer[restrict static 1])
@@ -176,65 +169,38 @@ ERD_OFFLOAD void erd__csgto(
 /*             ...fix the A,B,C,D labels from the 1,2,3,4 ones. */
 /*                Calculate the relevant data for the A,B,C,D batch of */
 /*                integrals. */
-    bool empty, tr1234;
-    double xa, ya, za, xb, yb, zb, xc, yc, zc, xd, yd, zd;
-    uint32_t npgtoa, npgtob, npgtoc, npgtod;
-    uint32_t shella, shellb, shellc, shelld;
+    bool empty;
+    uint32_t indexa, indexb, indexc, indexd;
     uint32_t nxyza, nxyzb, nxyzc, nxyzd;
     uint32_t nxyzet, nxyzft;
     uint32_t nrya, nryb, nryc, nryd;
     uint32_t nabcoor, ncdcoor;
     uint32_t ncolhrr, nrothrr, nxyzhrr;
 
-    erd__set_abcd(npgto1, npgto2, npgto3, npgto4,
-        shell1, shell2, shell3, shell4,
-        atomic,
-        x1, y1, z1, x2, y2, z2,
-        x3, y3, z3, x4, y4, z4, spheric,
-        &npgtoa, &npgtob, &npgtoc, &npgtod,
-        &shella, &shellb, &shellc, &shelld,
-        &xa, &ya, &za, &xb, &yb, &zb,
-        &xc, &yc, &zc, &xd, &yd, &zd,
+    erd__set_abcd(
+        &A, &B, &C, &D,
+        shell, xyz0, spheric,
+        &indexa, &indexb, &indexc, &indexd,
         &nxyza, &nxyzb, &nxyzc, &nxyzd,
         &nxyzet, &nxyzft,
         &nrya, &nryb, &nryc, &nryd,
         &nabcoor, &ncdcoor,
-        &ncolhrr, &nrothrr, &nxyzhrr, &empty, &tr1234);
+        &ncolhrr, &nrothrr, &nxyzhrr, &empty);
     if (empty) {
         *output_length = 0;
         ERD_PROFILE_END(erd__csgto)
         return;
     }
 
-    uint32_t indexa = 0, indexb = 1, indexc = 2, indexd = 3;
-    if (tr1234) {
-        ERD_SWAP(alpha1, alpha3);
-        ERD_SWAP(alpha2, alpha4);
-        ERD_SWAP(cc1, cc3);
-        ERD_SWAP(cc2, cc4);
-        ERD_SWAP(norm1, norm3);
-        ERD_SWAP(norm2, norm4);
-        ERD_SWAP(indexa, indexc);
-        ERD_SWAP(indexb, indexd);
-        ERD_SWAP(shell1, shell3);
-        ERD_SWAP(shell2, shell4);
-    }
-    
-    const double *restrict alphaa = alpha1, *restrict alphab = alpha2, *restrict alphac = alpha3, *restrict alphad = alpha4;
-    const double *restrict cca = cc1, *restrict ccb = cc2, *restrict ccc = cc3, *restrict ccd = cc4;
-    const double *restrict norma = norm1, *restrict normb = norm2, *restrict normc = norm3, *restrict normd = norm4;
-    if (shell1 < shell2) {
-        ERD_SWAP(alphaa, alphab);
-        ERD_SWAP(cca, ccb);
-        ERD_SWAP(norma, normb);
-        ERD_SWAP(indexa, indexb);
-    }
-    if (shell3 < shell4) {
-        ERD_SWAP(alphac, alphad);
-        ERD_SWAP(ccc, ccd);
-        ERD_SWAP(normc, normd);
-        ERD_SWAP(indexc, indexd);
-    }
+    double xa = xyz0[A*4], ya = xyz0[A*4+1], za = xyz0[A*4+2];
+    double xb = xyz0[B*4], yb = xyz0[B*4+1], zb = xyz0[B*4+2];
+    double xc = xyz0[C*4], yc = xyz0[C*4+1], zc = xyz0[C*4+2];
+    double xd = xyz0[D*4], yd = xyz0[D*4+1], zd = xyz0[D*4+2];
+    const uint32_t shella = shell[A], shellb = shell[B], shellc = shell[C], shelld = shell[D];
+    const uint32_t npgtoa = npgto[A], npgtob = npgto[B], npgtoc = npgto[C], npgtod = npgto[D];
+    const double *restrict alphaa = alpha[A], *restrict alphab = alpha[B], *restrict alphac = alpha[C], *restrict alphad = alpha[D];
+    const double *restrict cca = cc[A], *restrict ccb = cc[B], *restrict ccc = cc[C], *restrict ccd = cc[D];
+    const double *restrict norma = norm[A], *restrict normb = norm[B], *restrict normc = norm[C], *restrict normd = norm[D];
     
     // initialize values
     const double abx = xa - xb;
@@ -319,27 +285,27 @@ ERD_OFFLOAD void erd__csgto(
     ERD_PROFILE_START(erd__prepare_ctr)
     const double factor = PREFACT * spnorm;
     const uint32_t npmin = min4x32u(npgtoa, npgtob, npgtoc, npgtod);
-    ERD_SIMD_ALIGN double norm[PAD_LEN(npmin)];
+    ERD_SIMD_ALIGN double scaled_norm[PAD_LEN(npmin)];
     if (npgtoa == npmin) {
         for (uint32_t i = 0; i < npgtoa; i++) {
-            norm[i] = factor * norma[i];
+            scaled_norm[i] = factor * norma[i];
         }
-        norma = &norm[0];
+        norma = &scaled_norm[0];
     } else if (npgtob == npmin) {
         for (uint32_t i = 0; i < npgtob; i++) {
-            norm[i] = factor * normb[i];
+            scaled_norm[i] = factor * normb[i];
         }
-        normb = &norm[0];
+        normb = &scaled_norm[0];
     } else if (npgtoc == npmin) {
         for (uint32_t i = 0; i < npgtoc; i++) {
-            norm[i] = factor * normc[i];
+            scaled_norm[i] = factor * normc[i];
         }
-        normc = &norm[0];
+        normc = &scaled_norm[0];
     } else {
         for (uint32_t i = 0; i < npgtod; i++) {
-            norm[i] = factor * normd[i];
+            scaled_norm[i] = factor * normd[i];
         }
-        normd = &norm[0];
+        normd = &scaled_norm[0];
     }
     ERD_PROFILE_END(erd__prepare_ctr)
 

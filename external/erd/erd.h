@@ -186,25 +186,16 @@ double erd__dsqmin_line_segments(double xp0, double yp0,
     double yq1, double zq1);
 
 void erd__set_abcd(
-    uint32_t npgto1, uint32_t npgto2, uint32_t npgto3, uint32_t npgto4,
-    uint32_t shell1, uint32_t shell2, uint32_t shell3, uint32_t shell4,
-    bool atomic,
-    double x1, double y1, double z1,
-    double x2, double y2, double z2, 
-    double x3, double y3, double z3,
-    double x4, double y4, double z4, bool spheric,
-    uint32_t *restrict npgtoa_ptr, uint32_t *restrict npgtob_ptr, uint32_t *restrict npgtoc_ptr, uint32_t *restrict npgtod_ptr,
-    uint32_t *restrict shella_ptr, uint32_t *restrict shellb_ptr, uint32_t *restrict shellc_ptr, uint32_t *restrict shelld_ptr,
-    double *restrict xa_ptr, double *restrict ya_ptr, double *restrict za_ptr,
-    double *restrict xb_ptr, double *restrict yb_ptr, double *restrict zb_ptr,
-    double *restrict xc_ptr, double *restrict yc_ptr, double *restrict zc_ptr,
-    double *restrict xd_ptr, double *restrict yd_ptr, double *restrict zd_ptr,
+    uint32_t A_ptr[restrict static 1], uint32_t B_ptr[restrict static 1], uint32_t C_ptr[restrict static 1], uint32_t D_ptr[restrict static 1],
+    const uint32_t shell[restrict static 1], const double xyz0[restrict static 1],
+    bool spheric,
+    uint32_t indexa_ptr[restrict static 1], uint32_t indexb_ptr[restrict static 1], uint32_t indexc_ptr[restrict static 1], uint32_t indexd_ptr[restrict static 1],
     uint32_t *restrict nxyza_ptr, uint32_t *restrict nxyzb_ptr, uint32_t *restrict nxyzc_ptr, uint32_t *restrict nxyzd_ptr,
     uint32_t *restrict nxyzet_ptr, uint32_t *restrict nxyzft_ptr,
     uint32_t *restrict nrya_ptr, uint32_t *restrict nryb_ptr, uint32_t *restrict nryc_ptr, uint32_t *restrict nryd_ptr,
     uint32_t *restrict nabcoor_ptr, uint32_t *restrict ncdcoor_ptr,
     uint32_t *restrict ncolhrr, uint32_t *restrict nrothrr,
-    uint32_t *restrict nxyzhrr, bool *restrict empty, bool *restrict tr1234);
+    uint32_t *restrict nxyzhrr, bool *restrict empty);
 
 void erd__normalize_cartesian(uint32_t m, uint32_t l, const double norm[restrict static l+1], double batch[restrict]);
 
