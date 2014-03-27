@@ -230,7 +230,14 @@ ERD_OFFLOAD void erd__e0f0_pcgto_block(uint32_t nij, uint32_t nkl,
     const double cdy = yc - yd;
     const double cdz = zc - zd;
     
-    ERD_SIMD_ALIGN double p[PAD_LEN(nij)], px[PAD_LEN(nij)], py[PAD_LEN(nij)], pz[PAD_LEN(nij)], pinvhf[PAD_LEN(nij)], scalep[PAD_LEN(nij)];
+    const size_t simd_nij = PAD_LEN(nij);
+    ERD_SIMD_ALIGN double p[simd_nij], px[simd_nij], py[simd_nij], pz[simd_nij], pinvhf[simd_nij], scalep[simd_nij];
+    ERD_SIMD_ZERO_TAIL_64f(p, simd_nij);
+    ERD_SIMD_ZERO_TAIL_64f(px, simd_nij);
+    ERD_SIMD_ZERO_TAIL_64f(py, simd_nij);
+    ERD_SIMD_ZERO_TAIL_64f(pz, simd_nij);
+    ERD_SIMD_ZERO_TAIL_64f(pinvhf, simd_nij);
+    ERD_SIMD_ZERO_TAIL_64f(scalep, simd_nij);
     #pragma simd
     #pragma vector aligned
     for (uint32_t ij = 0; ij < nij; ++ij) {        
@@ -239,7 +246,7 @@ ERD_OFFLOAD void erd__e0f0_pcgto_block(uint32_t nij, uint32_t nkl,
         const double expa = alphaa[i];
         const double expb = alphab[j];
         const double pval = expa + expb;
-        const double pinv = 1. / pval;
+        const double pinv = 1.0 / pval;
         p[ij] = pval;
         px[ij] = (expa * xa + expb * xb) * pinv;
         py[ij] = (expa * ya + expb * yb) * pinv;
@@ -248,7 +255,14 @@ ERD_OFFLOAD void erd__e0f0_pcgto_block(uint32_t nij, uint32_t nkl,
         scalep[ij] = norma[i] * normb[j] * rhoab[ij] * cca[i] * ccb[j];
     }
 
-    ERD_SIMD_ALIGN double q[PAD_LEN(nkl)], qx[PAD_LEN(nkl)], qy[PAD_LEN(nkl)], qz[PAD_LEN(nkl)], qinvhf[PAD_LEN(nkl)], scaleq[PAD_LEN(nkl)];
+    const size_t simd_nkl = PAD_LEN(nkl);
+    ERD_SIMD_ALIGN double q[simd_nkl], qx[simd_nkl], qy[simd_nkl], qz[simd_nkl], qinvhf[simd_nkl], scaleq[simd_nkl];
+    ERD_SIMD_ZERO_TAIL_64f(q, simd_nkl);
+    ERD_SIMD_ZERO_TAIL_64f(qx, simd_nkl);
+    ERD_SIMD_ZERO_TAIL_64f(qy, simd_nkl);
+    ERD_SIMD_ZERO_TAIL_64f(qz, simd_nkl);
+    ERD_SIMD_ZERO_TAIL_64f(qinvhf, simd_nkl);
+    ERD_SIMD_ZERO_TAIL_64f(scaleq, simd_nkl);
     #pragma simd
     #pragma vector aligned
     for (uint32_t kl = 0; kl < nkl; ++kl) {
@@ -276,10 +290,13 @@ ERD_OFFLOAD void erd__e0f0_pcgto_block(uint32_t nij, uint32_t nkl,
 /*                            = 5  -->  4-center (AB|CD) integrals */
 /*                4-center (AB|CD) integrals are checked first */
 /*                (most common occurence in large systems). */
-    const uint32_t nint2d = PAD_LEN(mgqijkl) * (shellp + 1) * (shellq + 1);
-    ERD_SIMD_ALIGN double tval[PAD_LEN(nijkl)];
-    ERD_SIMD_ALIGN double pqpinv[PAD_LEN(nijkl)];
+    const size_t simd_mgqijkl = PAD_LEN(mgqijkl);
+    const size_t simd_nijkl = PAD_LEN(nijkl);
+    const uint32_t nint2d = simd_mgqijkl * (shellp + 1) * (shellq + 1);
     ERD_SIMD_ALIGN double int2dx[nint2d];
+    ERD_SIMD_ALIGN double tval[simd_nijkl], pqpinv[simd_nijkl];
+    ERD_SIMD_ZERO_TAIL_64f(tval, simd_nijkl);
+    ERD_SIMD_ZERO_TAIL_64f(pqpinv, simd_nijkl);
     uint32_t m = 0;
     for (uint32_t ij = 0; ij < nij; ++ij) {
         const double pval = p[ij];
@@ -313,12 +330,11 @@ ERD_OFFLOAD void erd__e0f0_pcgto_block(uint32_t nij, uint32_t nkl,
             n -= ngqp;
         }
     }
-    uint32_t simd_mgqijkl = PAD_LEN(mgqijkl);
     memset(&int2dx[mgqijkl], 0, sizeof(double) * (simd_mgqijkl - mgqijkl));
 
 
 /*             ...calculate all roots and weights. */
-    ERD_SIMD_ALIGN double rts[PAD_LEN(mgqijkl)];
+    ERD_SIMD_ALIGN double rts[simd_mgqijkl];
     ERD_PROFILE_START(erd__rys_roots_weights)
     erd__rys_roots_weights(nijkl, ngqp, nmom, tval, rts, int2dx);
     ERD_PROFILE_END(erd__rys_roots_weights)
@@ -337,23 +353,15 @@ ERD_OFFLOAD void erd__e0f0_pcgto_block(uint32_t nij, uint32_t nkl,
 /*                for the special s-shell cases. Note, that the case */
 /*                in which both P- and Q-shells are s-shells cannot */
 /*                arise, as this case is dealt with in separate routines. */
-    ERD_SIMD_ALIGN double b00[simd_mgqijkl];
+    ERD_SIMD_ALIGN double b00[simd_mgqijkl], b01[simd_mgqijkl], b10[simd_mgqijkl], c00x[simd_mgqijkl], c00y[simd_mgqijkl], c00z[simd_mgqijkl], d00x[simd_mgqijkl], d00y[simd_mgqijkl], d00z[simd_mgqijkl];
     ERD_SIMD_ZERO_TAIL_64f(b00, simd_mgqijkl);
-    ERD_SIMD_ALIGN double b01[simd_mgqijkl];
     ERD_SIMD_ZERO_TAIL_64f(b01, simd_mgqijkl);
-    ERD_SIMD_ALIGN double b10[simd_mgqijkl];
     ERD_SIMD_ZERO_TAIL_64f(b10, simd_mgqijkl);
-    ERD_SIMD_ALIGN double c00x[simd_mgqijkl];
     ERD_SIMD_ZERO_TAIL_64f(c00x, simd_mgqijkl);
-    ERD_SIMD_ALIGN double c00y[simd_mgqijkl];
     ERD_SIMD_ZERO_TAIL_64f(c00y, simd_mgqijkl);
-    ERD_SIMD_ALIGN double c00z[simd_mgqijkl];
     ERD_SIMD_ZERO_TAIL_64f(c00z, simd_mgqijkl);
-    ERD_SIMD_ALIGN double d00x[simd_mgqijkl];
     ERD_SIMD_ZERO_TAIL_64f(d00x, simd_mgqijkl);
-    ERD_SIMD_ALIGN double d00y[simd_mgqijkl];
     ERD_SIMD_ZERO_TAIL_64f(d00y, simd_mgqijkl);
-    ERD_SIMD_ALIGN double d00z[simd_mgqijkl];
     ERD_SIMD_ZERO_TAIL_64f(d00z, simd_mgqijkl);
     ERD_PROFILE_START(erd__2d_coefficients)
     erd__2d_coefficients(nij, nkl, ngqp, p, q,
@@ -365,8 +373,7 @@ ERD_OFFLOAD void erd__e0f0_pcgto_block(uint32_t nij, uint32_t nkl,
                           d00x, d00y, d00z);
     ERD_PROFILE_END(erd__2d_coefficients)
 
-    ERD_SIMD_ALIGN double int2dy[nint2d];
-    ERD_SIMD_ALIGN double int2dz[nint2d];
+    ERD_SIMD_ALIGN double int2dy[nint2d], int2dz[nint2d];
     ERD_PROFILE_START(erd__2d_pq_integrals)
     erd__2d_pq_integrals(shellp, shellq, simd_mgqijkl,
                           b00, b01, b10, c00x, c00y, c00z, d00x,
