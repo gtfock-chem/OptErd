@@ -40,6 +40,7 @@ void erd__move_ry(uint32_t nindex, uint32_t notmove, uint32_t move, uint32_t nry
 
 void erd__set_ij_kl_pairs(
     uint32_t npgtoa, uint32_t npgtob, uint32_t npgtoc, uint32_t npgtod,
+    double minalphaa, double minalphab, double minalphac, double minalphad,
     double xa, double ya, double za,
     double xb, double yb, double zb,
     double xc, double yc, double zc,

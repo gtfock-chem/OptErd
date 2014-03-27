@@ -152,7 +152,7 @@
 ERD_OFFLOAD void erd__csgto(
     uint32_t A, uint32_t B, uint32_t C, uint32_t D,
     const uint32_t npgto[restrict static 1], const uint32_t shell[restrict static 1], const double xyz0[restrict static 1],
-    const double *restrict alpha[restrict static 1], const double *restrict cc[restrict static 1], const double *restrict norm[restrict static 1],
+    const double *restrict alpha[restrict static 1], const double minalpha[restrict static 1], const double *restrict cc[restrict static 1], const double *restrict norm[restrict static 1],
     int **vrrtab, int ldvrrtab,
     bool spheric,
     uint32_t buffer_capacity, uint32_t output_length[restrict static 1], double output_buffer[restrict static 1])
@@ -257,6 +257,7 @@ ERD_OFFLOAD void erd__csgto(
     uint32_t nij, nkl;
     ERD_PROFILE_START(erd__set_ij_kl_pairs)
     erd__set_ij_kl_pairs(npgtoa, npgtob, npgtoc, npgtod,
+        minalpha[A], minalpha[B], minalpha[C], minalpha[D],
         xa, ya, za,
         xb, yb, zb,
         xc, yc, zc,

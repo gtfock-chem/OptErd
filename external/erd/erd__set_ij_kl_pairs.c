@@ -20,19 +20,6 @@ ERD_OFFLOAD static YEP_INLINE double square(double x) {
     return x * x;
 }
 
-ERD_OFFLOAD static YEP_INLINE double pow4(double x) {
-    return square(square(x));
-}
-
-ERD_OFFLOAD static YEP_INLINE double vector_min(size_t length, const double vector[restrict static length]) {
-    double result = vector[0];
-    for (size_t i = 1; i < length; i++) {
-        const double element = vector[i];
-        result = (element < result) ? element : result;
-    }
-    return result;
-}
-
 ERD_OFFLOAD static const double TOL = 1.0e-14;
 
 ERD_OFFLOAD static const double c0 = 0x1.0B1A240FD5AF4p-8;
@@ -96,10 +83,9 @@ ERD_OFFLOAD static const double x0 = 0x1.628C5E7D820BFp-5;
     ERD_OFFLOAD static const __m512i zmm_init_j = { 0, 1, 2, 3, 4, 5, 6, 7, 0, 0, 0, 0, 0, 0, 0, 0 };
 #endif
 
-ERD_OFFLOAD static YEP_NOINLINE void set_pairs(
+ERD_OFFLOAD YEP_NOINLINE uint32_t set_pairs(
     uint32_t npgtoa, uint32_t npgtob, double rnabsq,
     const double alphaa[restrict static npgtoa], const double alphab[restrict static npgtoa],
-    uint32_t *restrict nij_ptr,
     uint32_t prima[restrict static npgtoa*npgtob], uint32_t primb[restrict static npgtoa*npgtob],
     double rho[restrict static npgtoa*npgtob],
     double qmin, double smaxcd, double rminsq)
@@ -781,11 +767,12 @@ ERD_OFFLOAD static YEP_NOINLINE void set_pairs(
         }
     }
 #endif
-    *nij_ptr = nij;
+    return nij;
 }
 
 ERD_OFFLOAD void erd__set_ij_kl_pairs(
     uint32_t npgtoa, uint32_t npgtob, uint32_t npgtoc, uint32_t npgtod,
+    double minalphaa, double minalphab, double minalphac, double minalphad,
     double xa, double ya, double za,
     double xb, double yb, double zb,
     double xc, double yc, double zc,
@@ -803,31 +790,25 @@ ERD_OFFLOAD void erd__set_ij_kl_pairs(
     // compute min
     const double rminsq = erd__dsqmin_line_segments(xa, ya, za, xb, yb, zb, xc, yc, zc, xd, yd, zd);
 
-    const double a = vector_min(npgtoa, alphaa);
-    const double b = vector_min(npgtob, alphab);
-    const double c = vector_min(npgtoc, alphac);
-    const double d = vector_min(npgtod, alphad);
-
-    const double pmin = a + b;
-    const double qmin = c + d;
-    const double abmin = a * b;
-    const double cdmin = c * d;
+    const double pmin = minalphaa + minalphab;
+    const double abmin = minalphaa * minalphab;
     const double pinv = 1.0 / pmin;
-    const double qinv = 1.0 / qmin;
     const double smaxab = prefact * pow3o4(abmin) * __builtin_exp(-abmin * rnabsq * pinv) * pinv;
+
+    const double qmin = minalphac + minalphad;
+    const double cdmin = minalphac * minalphad;
+    const double qinv = 1.0 / qmin;
     const double smaxcd = prefact * pow3o4(cdmin) * __builtin_exp(-cdmin * rncdsq * qinv) * qinv;
 
     /* ...perform K2 primitive screening on A,B part. */
-    uint32_t nij = 0;
-    set_pairs(npgtoa, npgtob, rnabsq, alphaa, alphab, &nij, prima, primb, rhoab, qmin, smaxcd, rminsq);
+    uint32_t nij = set_pairs(npgtoa, npgtob, rnabsq, alphaa, alphab, prima, primb, rhoab, qmin, smaxcd, rminsq);
     if (nij == 0) {
         *nij_ptr = 0;
         *nkl_ptr = 0;
         return;
     }
 
-    uint32_t nkl = 0;
-    set_pairs(npgtoc, npgtod, rncdsq, alphac, alphad, &nkl, primc, primd, rhocd, pmin, smaxab, rminsq);
+    uint32_t nkl = set_pairs(npgtoc, npgtod, rncdsq, alphac, alphad, primc, primd, rhocd, pmin, smaxab, rminsq);
     if (nkl == 0) {
         *nij_ptr = 0;
         *nkl_ptr = 0;

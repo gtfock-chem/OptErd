@@ -90,6 +90,7 @@ ERD_OFFLOAD void erd__1111_csgto(
     const uint32_t shell[restrict static 1],
     const double xyz0[restrict static 1],
     const double *restrict alpha[restrict static 1],
+    const double minalpha[restrict static 1],
     const double *restrict cc[restrict static 1],
     const double *restrict norm[restrict static 1],
     uint32_t buffer_capacity, uint32_t integrals_count[restrict static 1], double integrals_ptr[restrict static 81])
@@ -159,6 +160,7 @@ ERD_OFFLOAD void erd__1111_csgto(
     ERD_SIMD_ALIGN double rhocd[PAD_LEN(npgto34)];
     uint32_t nij, nkl;
     erd__set_ij_kl_pairs(npgto1, npgto2, npgto3, npgto4,
+                         minalpha[A], minalpha[B], minalpha[C], minalpha[D],
                          x1, y1, z1, x2, y2, z2,
                          x3, y3, z3, x4, y4, z4,
                          rn12sq, rn34sq, PREFACT,
