@@ -394,12 +394,11 @@ void offload_fock_task (int num_devices,
     startPQ = shellptr[startP];
     endPQ = shellptr[endP + 1];
 
-    int chunksMN = (endMN - startMN) / CHUNK_SIZE;
-    int chunksPQ = (endPQ - startPQ) / CHUNK_SIZE;
+    int chunksMN = ((endMN - startMN) + CHUNK_SIZE -1) / CHUNK_SIZE;
+    int chunksPQ = ((endPQ - startPQ) + CHUNK_SIZE -1) / CHUNK_SIZE;
     int totalChunks = chunksMN * chunksPQ;
     int head = 0;
     int initialChunksMIC = totalChunks * mic_fraction;
-    
     head = num_devices * initialChunksMIC;    
     #pragma omp parallel
     {
