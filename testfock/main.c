@@ -38,8 +38,6 @@ int main (int argc, char **argv)
     int endP;
     int sizetask;
     int nfuncs;
-    int i;
-    int j;
     int toOffload = 0;
     int num_devices = 0;
     struct timeval tv1, tv2;
@@ -92,7 +90,7 @@ int main (int argc, char **argv)
     // functions starting positions of shells
     f_startind = (int *) malloc (sizeof (int) * (nshells + 1));
     assert (NULL != f_startind);
-    for (i = 0; i < nshells; i++)
+    for (int i = 0; i < nshells; i++)
     {
         f_startind[i] = CInt_getFuncStartInd (basis, i);
     }
@@ -127,77 +125,96 @@ int main (int argc, char **argv)
     int sizeD2_aligned = ALIGNED_8 (sizeD2);
     sizeD3 = rowsize * colsize;
     int sizeD3_aligned = ALIGNED_8 (sizeD3);
-    double *D1 = (double *) malloc (sizeof (double) * sizeD1_aligned);
-    double *D2 = (double *) malloc (sizeof (double) * sizeD2_aligned);
-    double *D3 = (double *) malloc (sizeof (double) * sizeD3_aligned);
+    double *D1 = (double *) _mm_malloc (sizeof (double) * sizeD1_aligned, 64);
+    double *D2 = (double *) _mm_malloc (sizeof (double) * sizeD2_aligned, 64);
+    double *D3 = (double *) _mm_malloc (sizeof (double) * sizeD3_aligned, 64);
+    double *F1 = (double *) _mm_malloc (sizeof (double) * sizeD1_aligned * nthreads, 64);
+    double *F2 = (double *) _mm_malloc (sizeof (double) * sizeD2_aligned * nthreads, 64);
+    double *F3 = (double *) _mm_malloc (sizeof (double) * sizeD3_aligned * nthreads, 64);   
     totalFDsize += 1.0 * sizeof (double) *
         (sizeD1_aligned + sizeD2_aligned + sizeD3_aligned);
-    F1 = (double *) malloc (sizeof (double) * sizeD1_aligned * nthreads);
-    F2 = (double *) malloc (sizeof (double) * sizeD2_aligned * nthreads);
-    F3 = (double *) malloc (sizeof (double) * sizeD3_aligned * nthreads);
     totalFDsize += 1.0 * sizeof (double) *
         (sizeD1_aligned + sizeD2_aligned + sizeD3_aligned) * nthreads;
     assert (D1 != NULL &&
             D2 != NULL &&
-            D3 != NULL && F1 != NULL && F2 != NULL && F3 != NULL);
+            D3 != NULL &&
+            F1 != NULL &&
+            F2 != NULL &&
+            F3 != NULL);
     printf ("use %.3lf MB\n", totalFDsize / 1024.0 / 1024.0);
 
-    double *F1_mic = NULL;
-    double *F2_mic = NULL;
-    double *F3_mic = NULL;
+    double *F1_offload = NULL;
+    double *F2_offload = NULL;
+    double *F3_offload = NULL;
     if (toOffload == 1)
     {
-        num_devices = MIC_init_devices (nthreads_mic);
+        num_devices = _Offload_number_of_devices();
+        if(num_devices == 0)
+        {
+            printf("No target devices available. Exiting\n");
+            exit(0);
+        }
+        else
+        {
+            for(int mic_id = 0; mic_id < num_devices; mic_id++)
+            {
+                #pragma offload target(mic:mic_id) in(nthreads_mic)
+                {
+                    omp_set_num_threads (nthreads_mic);
+                    #pragma omp parallel num_threads(nthreads_mic)
+                    {
+                        int tid = omp_get_thread_num();
+                    }  
+                }
+            }
+        }
+        printf("Number of Target devices installed: %d\n\n",num_devices);
+        
         if (mic_fraction * num_devices >= 1)
         {
             printf ("Invalid mic_fraction value. It should be < %.3lf\n",
                     ((double) 1) / num_devices);
             exit (0);
         }
-        
-        F1_mic =
+        F1_offload =
             (double *) _mm_malloc (sizeof (double) * sizeD1_aligned * num_devices, 64);
-        F2_mic =
+        F2_offload =
             (double *) _mm_malloc (sizeof (double) * sizeD2_aligned * num_devices, 64);
-        F3_mic =
+        F3_offload =
             (double *) _mm_malloc (sizeof (double) * sizeD3_aligned * num_devices, 64);
-        assert (F1_mic != NULL);
-        assert (F2_mic != NULL);
-        assert (F3_mic != NULL);
-        memset (F1_mic, 0, sizeof (double) * sizeD1_aligned * num_devices);
-        memset (F2_mic, 0, sizeof (double) * sizeD2_aligned * num_devices);
-        memset (F3_mic, 0, sizeof (double) * sizeD3_aligned * num_devices);
-    
-        MIC_copy_buffers (num_devices, nshells, nnz, shellptr, shellid, shellrid,
-                          shellvalue, f_startind, rowpos, colpos, rowptr, colptr);
-        MIC_create_matrices (num_devices, D1, D2, D3,
-                             F1_mic, F2_mic, F3_mic,
-                             sizeD1_aligned, sizeD2_aligned,
-                             sizeD3_aligned, nthreads_mic);
+        assert (F1_offload != NULL);
+        assert (F2_offload != NULL);
+        assert (F3_offload != NULL);
+        offload_init (num_devices, nshells, nnz, shellptr, shellid, shellrid,
+                      shellvalue, f_startind, rowpos, colpos, rowptr, colptr,
+                      D1, D2, D3,
+                      F1_offload, F2_offload, F3_offload,
+                      sizeD1_aligned, sizeD2_aligned,
+                      sizeD3_aligned, nthreads_mic);      
     }
-    
+
     // init D
     #pragma omp parallel for
-    for (j = 0; j < sizeD1_aligned; j++)
+    for (int j = 0; j < sizeD1_aligned; j++)
     {
         D1[j] = 1.0;
     }
     #pragma omp parallel for
-    for (j = 0; j < sizeD2_aligned; j++)
+    for (int j = 0; j < sizeD2_aligned; j++)
     {
         D2[j] = 1.0;
     }
     #pragma omp parallel for
-    for (j = 0; j < sizeD3_aligned; j++)
+    for (int j = 0; j < sizeD3_aligned; j++)
     {
         D3[j] = 1.0;
     }
 
-    if (toOffload)
+    if (toOffload == 1)
     {
-        copy_double_array_CPU_to_MIC (num_devices, D1, sizeD1_aligned);
-        copy_double_array_CPU_to_MIC (num_devices, D2, sizeD2_aligned);
-        copy_double_array_CPU_to_MIC (num_devices, D3, sizeD3_aligned);
+        offload_copy_D (num_devices, D1, sizeD1_aligned);
+        offload_copy_D (num_devices, D2, sizeD2_aligned);
+        offload_copy_D (num_devices, D3, sizeD3_aligned);
     }
     double tolscr = TOLSRC;
     double tolscr2 = tolscr * tolscr;
@@ -213,16 +230,32 @@ int main (int argc, char **argv)
         totalnintls[i * 64] = 0.0;
     }
 
-    gettimeofday (&tv1, NULL);
+    
     /************************************************************/
     // init F
-    reset_F_matrices (num_devices,
-                      sizeD1_aligned, sizeD2_aligned, sizeD3_aligned,
-                      nthreads, nthreads_mic, toOffload);
+    #pragma omp parallel for
+    for (int j = 0; j < sizeD1_aligned * nthreads; j++)
+    {
+        F1[j] = 0.0;
+    }
+    #pragma omp parallel for
+    for (int j = 0; j < sizeD2_aligned * nthreads; j++)
+    {
+        F2[j] = 0.0;
+    }
+    #pragma omp parallel for 
+    for (int j = 0; j < sizeD3_aligned * nthreads; j++)
+    {
+        F3[j] = 0.0;
+    }
+    if (toOffload)
+    {
+        offload_reset_F (num_devices);
+    }
 
+    
     printf ("Compute tasks\n");
-    long start, end;
-    start = __rdtsc ();
+    gettimeofday (&tv1, NULL);
     // main computation
     compute_task (num_devices, basis, erd, shellptr,
                   shellvalue, shellid, shellrid,
@@ -230,58 +263,62 @@ int main (int argc, char **argv)
                   tolscr2, startM, startP,
                   startM, startM + sizetask - 1,
                   startP, startP + sizetask - 1,
-                  D1, D2, D3,
+                  D1, D2, D3, F1, F2, F3,
                   rowsize, colsize, colsize,
                   sizeD1_aligned, sizeD2_aligned, sizeD3_aligned,
                   mic_fraction, totalcalls, totalnintls, toOffload);
-    end = __rdtsc ();
-    printf ("Compute cycles = %lld\n", end - start);
-
-    start = __rdtsc ();
-    reduce_F_on_individual_devices (num_devices, sizeD1_aligned,
-                                    sizeD2_aligned, sizeD3_aligned, nthreads,
-                                    nthreads_mic, toOffload);
-    end = __rdtsc ();
-    printf ("Reduce cycles = %lld\n", end - start);
-
-    if (toOffload)
-    {
-        start = __rdtsc ();
-        int finish_tag = 0;
-        copy_F_MIC_to_CPU (num_devices,
-                           F1_mic, F2_mic, F3_mic,
-                           sizeD1_aligned, sizeD2_aligned, sizeD3_aligned,
-                           &finish_tag);
-        wait_for_MIC_to_CPU_copy (num_devices, &finish_tag);
-        reduce_F_across_devices (num_devices,
-                                 F1_mic, F2_mic, F3_mic,
-                                 sizeD1_aligned, sizeD2_aligned,
-                                 sizeD3_aligned);
-        end = __rdtsc ();
-        printf ("CPU-MIC Reduce cycles = %lld\n", end - start);
-    }
-    /***********************************************************/
     gettimeofday (&tv2, NULL);
-    timepass = (tv2.tv_sec - tv1.tv_sec) + (tv2.tv_usec - tv1.tv_usec) / 1e6;
-    printf ("takes %.3lf secs\n", timepass);
-
+    if (toOffload == 1)
+    {
+        offload_reduce_mic (num_devices, F1_offload, F2_offload, F3_offload,
+                            sizeD1_aligned, sizeD2_aligned, sizeD3_aligned);
+    }
+    // reduction on CPU
     for (int i = 1; i < nthreads; i++)
     {
-        totalcalls[0 * 64] = totalcalls[0 * 64] + totalcalls[i * 64];
-        totalnintls[0 * 64] = totalnintls[0 * 64] + totalnintls[i * 64];
+        #pragma omp parallel
+        {
+            #pragma omp for
+            for (int j = 0; j < sizeD1_aligned; j++)
+            {
+                F1[j + 0 * sizeD1_aligned] += F1[j + i * sizeD1_aligned];
+            }
+            #pragma omp for
+            for (int j = 0; j < sizeD2_aligned; j++)
+            {
+                F2[j + 0 * sizeD2_aligned] += F2[j + i * sizeD2_aligned];
+            }
+            #pragma omp for 
+            for (int j = 0; j < sizeD3_aligned; j++)
+            {
+                F3[j + 0 * sizeD3_aligned] += F3[j + i * sizeD3_aligned];
+            }
+        }
     }
-    printf ("%.4le usq, %.4le uints\n", totalcalls[0], totalnintls[0]);
+    
+    if (toOffload == 1)
+    {
+        offload_wait_mic (num_devices);
+        offload_reduce (num_devices,
+                        F1, F2, F3,
+                        F1_offload, F2_offload, F3_offload,
+                        sizeD1_aligned, sizeD2_aligned, sizeD3_aligned);
+    }
+    /***********************************************************/
+
+    timepass = (tv2.tv_sec - tv1.tv_sec) + (tv2.tv_usec - tv1.tv_usec) / 1e6;
+    printf ("takes %.3lf secs\n", timepass);
 
 #if 1
     FILE *fp;
     fp = fopen ("F.dat", "w+");
     assert (fp != NULL);
 
-    for (j = 0; j < sizeD1; j++)
+    for (int j = 0; j < sizeD1; j++)
         fprintf (fp, "%le\n", F1[j]);
-    for (j = 0; j < sizeD2; j++)
+    for (int j = 0; j < sizeD2; j++)
         fprintf (fp, "%le\n", F2[j]);
-    for (j = 0; j < sizeD3; j++)
+    for (int j = 0; j < sizeD3; j++)
         fprintf (fp, "%le\n", F3[j]);
 
     fclose (fp);
@@ -296,6 +333,18 @@ int main (int argc, char **argv)
     {
         CInt_destroyERD (erd);
         CInt_destroyBasisSet (basis);
+    }
+    _mm_free (F1);
+    _mm_free (F2);
+    _mm_free (F3);
+    _mm_free (D1);
+    _mm_free (D2);
+    _mm_free (D3);
+    if (toOffload == 1)
+    {
+        _mm_free (F1_offload);
+        _mm_free (F2_offload);
+        _mm_free (F3_offload);
     }
     free (rowpos);
     free (colpos);
