@@ -16,47 +16,54 @@ void schwartz_screening (BasisSet_t basis, int **shellptrOut,
                          int **shellidOut, int **shellridOut,
                          double **shellvalueOut, int *nnzOut)
 {
+    int nthreads;
+
+    nthreads = omp_get_max_threads ();
     ERD_t erd;
-    CInt_createERD (basis, &erd, 1);
+    CInt_createERD (basis, &erd, nthreads);
     const int nshells = CInt_getNumShells (basis);
 
     double *vpairs = (double *) malloc (sizeof (double) * nshells * nshells);
     assert (vpairs != NULL);
 
     double allmax = 0.0;
-    for (int M = 0; M < nshells; M++)
+    #pragma omp parallel
     {
-        const int dimM = CInt_getShellDim (basis, M);
-        for (int N = 0; N < nshells; N++)
+        int tid = omp_get_thread_num ();
+        #pragma omp for reduction(max:allmax)
+        for (int M = 0; M < nshells; M++)
         {
-            const int dimN = CInt_getShellDim (basis, N);
-
-            int nints;
-            double *integrals;
-            CInt_computeShellQuartet (basis, erd, 0, M, N, M, N, &integrals,
-                                      &nints);
-
-            double mvalue = 0.0;
-            if (nints != 0)
+            const int dimM = CInt_getShellDim (basis, M);
+            for (int N = 0; N < nshells; N++)
             {
-                for (int iM = 0; iM < dimM; iM++)
+                const int dimN = CInt_getShellDim (basis, N);
+                int nints;
+                double *integrals;
+
+                CInt_computeShellQuartet (basis, erd, tid, M, N, M, N, &integrals,
+                                          &nints);
+                double mvalue = 0.0;
+                if (nints != 0)
                 {
-                    for (int iN = 0; iN < dimN; iN++)
+                    for (int iM = 0; iM < dimM; iM++)
                     {
-                        const int index =
-                            iM * (dimN * dimM * dimN + dimN) +
-                            iN * (dimM * dimN + 1);
-                        if (mvalue < fabs (integrals[index]))
+                        for (int iN = 0; iN < dimN; iN++)
                         {
-                            mvalue = fabs (integrals[index]);
+                            const int index =
+                                iM * (dimN * dimM * dimN + dimN) +
+                                iN * (dimM * dimN + 1);
+                            if (mvalue < fabs (integrals[index]))
+                            {
+                                mvalue = fabs (integrals[index]);
+                            }
                         }
                     }
                 }
-            }
-            vpairs[M * nshells + N] = mvalue;
-            if (mvalue > allmax)
-            {
-                allmax = mvalue;
+                vpairs[M * nshells + N] = mvalue;
+                if (mvalue > allmax)
+                {
+                    allmax = mvalue;
+                }
             }
         }
     }
