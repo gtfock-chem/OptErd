@@ -365,19 +365,6 @@ ERD_OFFLOAD void erd__e0f0_pcgto_block(uint32_t nij, uint32_t nkl,
     ERD_SIMD_ZERO_TAIL_64f(d00x, simd_mgqijkl);
     ERD_SIMD_ZERO_TAIL_64f(d00y, simd_mgqijkl);
     ERD_SIMD_ZERO_TAIL_64f(d00z, simd_mgqijkl);
-    for (size_t i = mgqijkl; i < simd_mgqijkl; i++) {
-        if (isnan(b00[i]))
-            printf("%zu\t%zu\n", i, (size_t)mgqijkl);
-        assert(b00[i] == 0);
-        assert(b01[i] == 0);
-        assert(b10[i] == 0);
-        assert(c00x[i] == 0);
-        assert(c00y[i] == 0);
-        assert(c00z[i] == 0);
-        assert(d00x[i] == 0);
-        assert(d00y[i] == 0);
-        assert(d00z[i] == 0);
-    }
     ERD_PROFILE_START(erd__2d_coefficients)
     erd__2d_coefficients(nij, nkl, ngqp, p, q,
                           px, py, pz, qx, qy, qz,
@@ -387,19 +374,6 @@ ERD_OFFLOAD void erd__e0f0_pcgto_block(uint32_t nij, uint32_t nkl,
                           c00x, c00y, c00z,
                           d00x, d00y, d00z);
     ERD_PROFILE_END(erd__2d_coefficients)
-    for (size_t i = 0; i < simd_mgqijkl; i++) {
-        if (isnan(b00[i]))
-            printf("%zu\t%zu\n", i, (size_t)mgqijkl);
-        assert(!isnan(b00[i]));
-        assert(!isnan(b01[i]));
-        assert(!isnan(b10[i]));
-        assert(!isnan(c00x[i]));
-        assert(!isnan(c00y[i]));
-        assert(!isnan(c00z[i]));
-        assert(!isnan(d00x[i]));
-        assert(!isnan(d00y[i]));
-        assert(!isnan(d00z[i]));
-    }
 
     ERD_SIMD_ALIGN double int2dy[nint2d], int2dz[nint2d];
     memset(int2dy, 0, nint2d * sizeof(double));
@@ -410,24 +384,10 @@ ERD_OFFLOAD void erd__e0f0_pcgto_block(uint32_t nij, uint32_t nkl,
                           d00y, d00z, case2d,
                           int2dx, int2dy, int2dz);
     ERD_PROFILE_END(erd__2d_pq_integrals)
-    for (size_t i = 0; i < simd_mgqijkl; i++) {
-        if (isnan(b00[i]))
-            printf("%zu\t%zu\n", i, (size_t)mgqijkl);
-        assert(!isnan(b00[i]));
-        assert(!isnan(b01[i]));
-        assert(!isnan(b10[i]));
-        assert(!isnan(c00x[i]));
-        assert(!isnan(c00y[i]));
-        assert(!isnan(c00z[i]));
-        assert(!isnan(d00x[i]));
-        assert(!isnan(d00y[i]));
-        assert(!isnan(d00z[i]));
-    }
     
     ERD_PROFILE_START(erd__int2d_to_e0f0)
     erd__int2d_to_e0f0(shella, shellp, shellc, shellq,
                         simd_mgqijkl, nxyzet, nxyzft,
                         int2dx, int2dy, int2dz, vrrtab, output_buffer);
     ERD_PROFILE_END(erd__int2d_to_e0f0)
-    assert(!isnan(*output_buffer));
 }
