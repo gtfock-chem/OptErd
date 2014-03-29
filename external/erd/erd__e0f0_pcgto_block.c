@@ -297,7 +297,6 @@ ERD_OFFLOAD void erd__e0f0_pcgto_block(uint32_t nij, uint32_t nkl,
     ERD_SIMD_ALIGN double tval[simd_nijkl], pqpinv[simd_nijkl];
     ERD_SIMD_ZERO_TAIL_64f(tval, simd_nijkl);
     ERD_SIMD_ZERO_TAIL_64f(pqpinv, simd_nijkl);
-    memset(int2dx, 0, nint2d * sizeof(double));
     uint32_t m = 0;
     for (uint32_t ij = 0; ij < nij; ++ij) {
         const double pval = p[ij];
@@ -376,8 +375,6 @@ ERD_OFFLOAD void erd__e0f0_pcgto_block(uint32_t nij, uint32_t nkl,
     ERD_PROFILE_END(erd__2d_coefficients)
 
     ERD_SIMD_ALIGN double int2dy[nint2d], int2dz[nint2d];
-    memset(int2dy, 0, nint2d * sizeof(double));
-    memset(int2dz, 0, nint2d * sizeof(double));
     ERD_PROFILE_START(erd__2d_pq_integrals)
     erd__2d_pq_integrals(shellp, shellq, simd_mgqijkl,
                           b00, b01, b10, c00x, c00y, c00z, d00x,
