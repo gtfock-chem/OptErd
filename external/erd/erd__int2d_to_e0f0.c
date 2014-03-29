@@ -120,7 +120,6 @@
 /*                                   to all current exponent quadruplets */
 /* ------------------------------------------------------------------------ */
 
-#if 1
 int erd__int2d_to_e0f0 (int shella, int shellp, int shellc, int shellq,
                         int ngqexq, int nxyzet, int nxyzft,
                         double *int2dx, double *int2dy, double *int2dz,
@@ -209,103 +208,6 @@ int erd__int2d_to_e0f0 (int shella, int shellp, int shellc, int shellq,
     return 0;
 }
 
-#else
-int erd__int2d_to_e0f0 (int shella, int shellp, int shellc, int shellq,
-                        int ngqexq, int nxyzet, int nxyzft,
-                        double *int2dx, double *int2dy, double *int2dz,
-                        int **vrrtab, double *batch)
-{
-    int i, j, m, xe, ye, ze, xf, yf, zf;   
-    int m1;
-    int *tabe;
-    int *tabf;
-    uint64_t ke;
-    uint64_t kf;
-    int nxyzet_x_3 = nxyzet * 3;
-    int nxyzet_x_3_aligned = ((nxyzet_x_3 + 15)/16) * 16;
-    int indxyz[nxyzet_x_3_aligned] __attribute__((aligned(64)));
-    uint64_t indx;
-    uint64_t indy;
-    uint64_t indz;
-    uint64_t indb;
-    double sum = 0;
-    int tablesize = 5;
-    int total_combinations = 35;
-
-    //printf("shella = %d, shellc = %d, shellp = %d\n", shella, shellc, shellp);
-    int *tab = vrrtab[shellc * tablesize + shella] + shellp * total_combinations * total_combinations * 3;               
-    indb = 0;
-#if defined (__MIC__)
-    __m512i ngqexq512 = _mm512_set1_epi32(ngqexq);
-    __m512i tab512, indxyz512;
-#endif
-    //printf("in\n");
-    for (kf = 0; kf < nxyzft; kf++)
-    {
-        uint64_t tab_ind = kf * total_combinations * 3;
-#if defined (__MIC__)
-        for(ke = 0; ke < nxyzet_x_3; ke+=16)
-        {
-            tab512 = _mm512_extloadunpacklo_epi32(tab512, &tab[tab_ind + ke], _MM_UPCONV_EPI32_NONE, _MM_HINT_NONE);
-            tab512 = _mm512_extloadunpackhi_epi32(tab512, &tab[tab_ind + ke] + 16, _MM_UPCONV_EPI32_NONE, _MM_HINT_NONE);
-            indxyz512 = _mm512_mullo_epi32(tab512, ngqexq512);
-            _mm512_store_epi32(&indxyz[ke], indxyz512);
-        }
-        tab_ind = 0;
-        for(ke = 0; ke < nxyzet; ke++)
-        {
-            indx = indxyz[tab_ind + 0];
-            indy = indxyz[tab_ind + 1];
-            indz = indxyz[tab_ind + 2];
-            tab_ind += 3;
-            sum = 0.0;
-            for(m = 0; m < ngqexq; m+=SIMDW)
-            {
-#pragma vector aligned
-                for(m1 = 0; m1 < SIMDW; m1++)
-                {
-                    sum += int2dx[m + m1 + indx]
-                        * int2dy[m + m1 + indy]
-                        * int2dz[m + m1 + indz];
-                }
-            }
-            batch[indb++] = sum;
-        }
-#else
-        for(ke = 0; ke < nxyzet_x_3; ke+=SIMDW)
-        {
-#pragma vector
-            for(uint64_t ke1 = 0; ke1 < SIMDW; ke1++)
-            {
-                indxyz[ke + ke1] = tab[tab_ind + ke + ke1] * ngqexq;
-            }
-        }
-        tab_ind = 0;
-        for(ke = 0; ke < nxyzet; ke++)
-        {
-            indx = indxyz[tab_ind + 0];
-            indy = indxyz[tab_ind + 1];
-            indz = indxyz[tab_ind + 2];
-            tab_ind += 3;
-            sum = 0.0;
-            for(m = 0; m < ngqexq; m+=SIMDW)
-            {
-#pragma vector aligned
-                for(m1 = 0; m1 < SIMDW; m1++)
-                {
-                    sum += int2dx[m + m1 + indx]
-                        * int2dy[m + m1 + indy]
-                        * int2dz[m + m1 + indz];
-                }
-            }
-            batch[indb++] = sum;
-        }
-#endif
-    }
-
-    return 0;
-}
-#endif
 
 #ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(pop)
