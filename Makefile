@@ -1,5 +1,5 @@
 all: libs
-
+	make -C testprog
 libs:
 	make -C external
 	make -C libcint

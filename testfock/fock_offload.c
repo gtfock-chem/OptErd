@@ -13,6 +13,7 @@
 #include <stddef.h>
 
 #include "CInt.h"
+#include "config.h"
 #include "fock_offload.h"
 
 
@@ -20,14 +21,18 @@
 #define MIC_MIN_WORK_SIZE 20
 #define PFD0 1
 #define PFD1 12
+#define ALLOC alloc_if(1) free_if(0)
+#define REUSE alloc_if(0) free_if(0)
+#define ONCE  alloc_if(1) free_if(1)
+#define FREE  alloc_if(0) free_if(1)
+#define ALIGNED_8(size) ((((size) + 7)/8)*8)
+#define NUM_F_COPIES_MIC(n) (((n)+3) >> 2)
+#define MY_F_COPY_MIC(tid) ((tid) >> 2)
 
 
-#ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(push, target(mic))
-#endif
 
 pfock_mic_t pfock_mic;
-
 
 static inline void update_F (double *integrals, int dimM, int dimN, int dimP, int dimQ,
                       int flag1, int flag2, int flag3,
@@ -262,9 +267,9 @@ static void compute_chunk (BasisSet_t basis, ERD_t erd,
                 if (nints != 0)
                 {
                     update_F (integrals, dimM, dimN, dimP, dimQ,
-                            flag1, flag2, flag3,
-                            iMN, iPQ, iMP, iNP, iMQ, iNQ,
-                            D1, D2, D3, J1, J2, K3, ldX1, ldX2, ldX3);
+                              flag1, flag2, flag3,
+                              iMN, iPQ, iMP, iNP, iMQ, iNQ,
+                              D1, D2, D3, J1, J2, K3, ldX1, ldX2, ldX3);
                 }
             }
         }
@@ -324,9 +329,7 @@ static void compute_block_of_chunks (BasisSet_t basis, ERD_t erd,
     }
 }
 
-#ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(pop)
-#endif
 
 
 void offload_reset_F (int num_devices)
@@ -369,19 +372,18 @@ void offload_reset_F (int num_devices)
 }
 
 
-void compute_task (int num_devices,
-                   BasisSet_t basis, ERD_t erd,
-                   int *shellptr, double *shellvalue,
-                   int *shellid, int *shellrid, int *f_startind,
-                   int *rowpos, int *colpos, int *rowptr, int *colptr,
-                   double tolscr2, int startrow, int startcol,
-                   int startM, int endM, int startP, int endP,
-                   double *D1, double *D2, double *D3,
-                   double *F1, double *F2, double *F3,
-                   int ldX1, int ldX2, int ldX3,
-                   int sizeX1, int sizeX2, int sizeX3, double mic_fraction,
-                   double *totalcalls, double *totalnintls,
-                   int toOffload)
+void offload_fock_task (int num_devices,
+                        BasisSet_t basis, ERD_t erd,
+                        int *shellptr, double *shellvalue,
+                        int *shellid, int *shellrid, int *f_startind,
+                        int *rowpos, int *colpos, int *rowptr, int *colptr,
+                        double tolscr2, int startrow, int startcol,
+                        int startM, int endM, int startP, int endP,
+                        double *D1, double *D2, double *D3,
+                        double *F1, double *F2, double *F3,
+                        int ldX1, int ldX2, int ldX3,
+                        int sizeX1, int sizeX2, int sizeX3, double mic_fraction,
+                        double *totalcalls, double *totalnintls)
 {
     int startMN;
     int endMN;
@@ -395,17 +397,11 @@ void compute_task (int num_devices,
     int chunksMN = (endMN - startMN) / CHUNK_SIZE;
     int chunksPQ = (endPQ - startPQ) / CHUNK_SIZE;
     int totalChunks = chunksMN * chunksPQ;
-
     int head = 0;
-
-#ifdef  __INTEL_OFFLOAD
+    mic_fraction = 0;
     int initialChunksMIC = totalChunks * mic_fraction;
-    if(toOffload)
-    {
-        head = num_devices * initialChunksMIC;
-    }
-#endif
-
+    
+    head = num_devices * initialChunksMIC;    
     #pragma omp parallel
     {
         int my_chunk;
@@ -415,9 +411,8 @@ void compute_task (int num_devices,
         double *J2 = &(F2[tid * sizeX2]);
         double *K3 = &(F3[tid * sizeX3]);
 
-        if((toOffload == 1) && (tid == 0))
+        if(0)//tid == 0)
         {
-#ifdef __INTEL_OFFLOAD
             int signalled[num_devices];
             int mic_id;
             int startChunk = 0;
@@ -520,8 +515,7 @@ void compute_task (int num_devices,
                     }
                 }
             }
-#endif
-        } /* (toOffload == 1) && (tid == 0) */
+        }
         else
         {
             while(1)
@@ -640,19 +634,67 @@ void offload_reduce (int num_devices,
 }
 
 
-void offload_init (int num_devices, int nshells, int nnz,
+void offload_init (int nshells, int nnz,
                    int *shellptr, int *shellid, 
                    int *shellrid, double *shellvalue,
                    int *f_startind,
                    int *rowpos, int *colpos,
                    int *rowptr, int *colptr,
                    double *D1, double *D2, double *D3,
-                   double *F1_offload, double *F2_offload, double *F3_offload,
+                   double *VD1, double *VD2, double *VD3,
+                   double **_F1_offload,
+                   double **_F2_offload,
+                   double **_F3_offload,
                    int sizeD1, int sizeD2, int sizeD3,
-                   int nthreads_mic)
+                   int *_mic_numdevs,
+                   int *_nthreads_mic)
 {
-    int num_F_mic = NUM_F_COPIES_MIC (nthreads_mic);
-    for(int mic_id = 0; mic_id < num_devices; mic_id++)
+    int mic_numdevs;
+    int nthreads_mic;
+    double *F1_offload;
+    double *F2_offload;
+    double *F3_offload;
+
+    mic_numdevs = _Offload_number_of_devices();
+    if (mic_numdevs <= 0)
+    {
+        *_mic_numdevs = 0;
+        return;
+    }
+
+    #pragma offload target(mic:0) out(nthreads_mic)
+    {
+        nthreads_mic = omp_get_max_threads ();
+    }
+    for(int mic_id = 0; mic_id < mic_numdevs; mic_id++)
+    {
+        #pragma offload target(mic:mic_id) in(nthreads_mic)
+        {
+            omp_set_num_threads (nthreads_mic);
+        }
+    }
+        
+    F1_offload = 
+        (double *) PFOCK_MALLOC (sizeof (double) * sizeD1 * mic_numdevs, 64);
+    F2_offload =
+        (double *) PFOCK_MALLOC (sizeof (double) * sizeD2 * mic_numdevs, 64);
+    F3_offload =
+        (double *) PFOCK_MALLOC (sizeof (double) * sizeD3 * mic_numdevs, 64);
+    if (F1_offload == NULL ||
+        F2_offload == NULL ||
+        F3_offload == NULL)
+    {
+        *_mic_numdevs = 0;
+        return;        
+    }
+
+    *_mic_numdevs = mic_numdevs;
+    *_nthreads_mic = nthreads_mic;
+    *_F1_offload = F1_offload;
+    *_F2_offload = F2_offload;
+    *_F3_offload = F3_offload;
+
+    for(int mic_id = 0; mic_id < mic_numdevs; mic_id++)
     {
         #pragma offload target(mic: mic_id) \
             nocopy(pfock_mic)\
@@ -690,15 +732,67 @@ void offload_init (int num_devices, int nshells, int nnz,
             pfock_mic.F3[0] = F3_offload;
             for (int i = 1; i < num_F; i++) 
             {
-                pfock_mic.F1[i] = (double *)_mm_malloc (sizeof(double) * sizeD1, 64);
-                pfock_mic.F2[i] = (double *)_mm_malloc (sizeof(double) * sizeD2, 64);
-                pfock_mic.F3[i] = (double *)_mm_malloc (sizeof(double) * sizeD3, 64);
+                pfock_mic.F1[i] = (double *)PFOCK_MALLOC (sizeof(double) * sizeD1, 64);
+                pfock_mic.F2[i] = (double *)PFOCK_MALLOC (sizeof(double) * sizeD2, 64);
+                pfock_mic.F3[i] = (double *)PFOCK_MALLOC (sizeof(double) * sizeD3, 64);
                 assert (pfock_mic.F1[i] != NULL &&
                         pfock_mic.F2[i] != NULL &&
                         pfock_mic.F3[i] != NULL);
             }           
         }
     }
+}
+
+
+void offload_deinit (int mic_numdevs,
+                     int *shellptr, int *shellid, 
+                     int *shellrid, double *shellvalue,
+                     int *f_startind,
+                     int *rowpos, int *colpos,
+                     int *rowptr, int *colptr,
+                     double *D1, double *D2, double *D3,
+                     double *VD1, double *VD2, double *VD3,
+                     double *F1_offload,
+                     double *F2_offload,
+                     double *F3_offload)                     
+{
+    for(int mic_id = 0; mic_id < mic_numdevs; mic_id++)
+    {
+        #pragma offload target(mic: mic_id) \
+            nocopy(pfock_mic)\
+            nocopy(D1: length(0) FREE) \
+            nocopy(D2: length(0) FREE) \
+            nocopy(D3: length(0) FREE) \
+            nocopy(F1_offload: length(0) FREE) \
+            nocopy(F2_offload: length(0) FREE) \
+            nocopy(F3_offload: length(0) FREE) \
+            nocopy(shellptr: length(0) FREE) \
+            nocopy(shellid: length(0) FREE)  \
+            nocopy(shellrid: length(0) FREE) \
+            nocopy(shellvalue: length(0) FREE) \
+            nocopy(f_startind: length(0) FREE) \
+            nocopy(rowpos: length(0) FREE) \
+            nocopy(colpos: length(0) FREE) \
+            nocopy(rowptr: length(0) FREE) \
+            nocopy(colptr: length(0) FREE)
+        {
+            int num_F;
+            num_F = pfock_mic.num_F;
+            for (int i = 1; i < num_F; i++) 
+            {
+                PFOCK_FREE (pfock_mic.F1[i]);
+                PFOCK_FREE (pfock_mic.F2[i]);
+                PFOCK_FREE (pfock_mic.F3[i]);
+            }
+            free (pfock_mic.F1);
+            free (pfock_mic.F2);
+            free (pfock_mic.F3);
+        }
+    }
+    
+    PFOCK_FREE (F1_offload);
+    PFOCK_FREE (F2_offload);
+    PFOCK_FREE (F3_offload);
 }
 
 
