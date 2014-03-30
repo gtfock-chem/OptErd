@@ -12,6 +12,9 @@
 #include "fock_offload.h"
 
 
+#define ALIGNED_8(size) ((((size) + 7)/8)*8)
+
+
 int main (int argc, char **argv)
 {
     int nnz;
@@ -39,29 +42,29 @@ int main (int argc, char **argv)
     int sizetask;
     int nfuncs;
     int toOffload = 0;
-    int num_devices = 0;
+    int mic_numdevs = 0;
     struct timeval tv1, tv2;
     double timepass;
+    int nthreads_mic;
 
-    if (argc != 12)
+    if (argc != 11)
     {
         printf ("Usage: %s <basis set> <xyz> <nthreads>"
                 " <startM> <endN> <startP> <endP> <ntasks>"
-                " <toOffload> <nthreads_mic>\n",
+                " <toOffload> <mic_fraction>\n",
                 argv[0]);
         return -1;
     }
 
     const int nthreads = atoi (argv[3]);
     omp_set_num_threads (nthreads);
-    const int nthreads_mic = atoi (argv[10]);
     startM = atoi (argv[4]);
     endM = atoi (argv[5]);
     startP = atoi (argv[6]);
     endP = atoi (argv[7]);
     sizetask = atoi (argv[8]);
     toOffload = atoi (argv[9]);
-    double mic_fraction = atof (argv[11]);
+    double mic_fraction = atof (argv[10]);
 
     // load basis set and create ERD_t
     BasisSet_t basis;
@@ -70,13 +73,12 @@ int main (int argc, char **argv)
     {
         CInt_offload_createBasisSet (&basis);
         CInt_offload_loadBasisSet (basis, argv[1], argv[2]);
-        CInt_offload_createERD (basis, &erd, nthreads, nthreads_mic);
+        
     }
     else
     {
         CInt_createBasisSet (&basis);
         CInt_loadBasisSet (basis, argv[1], argv[2]);
-        CInt_createERD (basis, &erd, nthreads);
     }
     printf ("Molecule info:\n");
     printf ("  #Atoms\t= %d\n", CInt_getNumAtoms (basis));
@@ -127,17 +129,23 @@ int main (int argc, char **argv)
     int sizeD3_aligned = ALIGNED_8 (sizeD3);
     double *D1 = (double *) _mm_malloc (sizeof (double) * sizeD1_aligned, 64);
     double *D2 = (double *) _mm_malloc (sizeof (double) * sizeD2_aligned, 64);
-    double *D3 = (double *) _mm_malloc (sizeof (double) * sizeD3_aligned, 64);
+    double *D3 = (double *) _mm_malloc (sizeof (double) * sizeD3_aligned, 64); 
+    double *VD1 = (double *) _mm_malloc (sizeof (double) * sizeD1_aligned, 64);
+    double *VD2 = (double *) _mm_malloc (sizeof (double) * sizeD2_aligned, 64);
+    double *VD3 = (double *) _mm_malloc (sizeof (double) * sizeD3_aligned, 64);
     double *F1 = (double *) _mm_malloc (sizeof (double) * sizeD1_aligned * nthreads, 64);
     double *F2 = (double *) _mm_malloc (sizeof (double) * sizeD2_aligned * nthreads, 64);
     double *F3 = (double *) _mm_malloc (sizeof (double) * sizeD3_aligned * nthreads, 64);   
-    totalFDsize += 1.0 * sizeof (double) *
+    totalFDsize += 2.0 * sizeof (double) *
         (sizeD1_aligned + sizeD2_aligned + sizeD3_aligned);
     totalFDsize += 1.0 * sizeof (double) *
         (sizeD1_aligned + sizeD2_aligned + sizeD3_aligned) * nthreads;
     assert (D1 != NULL &&
             D2 != NULL &&
             D3 != NULL &&
+            VD1 != NULL &&
+            VD2 != NULL &&
+            VD3 != NULL &&
             F1 != NULL &&
             F2 != NULL &&
             F3 != NULL);
@@ -148,51 +156,22 @@ int main (int argc, char **argv)
     double *F3_offload = NULL;
     if (toOffload == 1)
     {
-        num_devices = _Offload_number_of_devices();
-        if(num_devices == 0)
-        {
-            printf("No target devices available. Exiting\n");
-            exit(0);
-        }
-        else
-        {
-            for(int mic_id = 0; mic_id < num_devices; mic_id++)
-            {
-                #pragma offload target(mic:mic_id) in(nthreads_mic)
-                {
-                    omp_set_num_threads (nthreads_mic);
-                    #pragma omp parallel num_threads(nthreads_mic)
-                    {
-                        int tid = omp_get_thread_num();
-                    }  
-                }
-            }
-        }
-        printf("Number of Target devices installed: %d\n\n",num_devices);
-        
-        if (mic_fraction * num_devices >= 1)
-        {
-            printf ("Invalid mic_fraction value. It should be < %.3lf\n",
-                    ((double) 1) / num_devices);
-            exit (0);
-        }
-        F1_offload =
-            (double *) _mm_malloc (sizeof (double) * sizeD1_aligned * num_devices, 64);
-        F2_offload =
-            (double *) _mm_malloc (sizeof (double) * sizeD2_aligned * num_devices, 64);
-        F3_offload =
-            (double *) _mm_malloc (sizeof (double) * sizeD3_aligned * num_devices, 64);
-        assert (F1_offload != NULL);
-        assert (F2_offload != NULL);
-        assert (F3_offload != NULL);
-        offload_init (num_devices, nshells, nnz, shellptr, shellid, shellrid,
+        offload_init (nshells, nnz, shellptr, shellid, shellrid,
                       shellvalue, f_startind, rowpos, colpos, rowptr, colptr,
                       D1, D2, D3,
-                      F1_offload, F2_offload, F3_offload,
+                      VD1, VD2, VD3,
+                      &F1_offload, &F2_offload, &F3_offload,
                       sizeD1_aligned, sizeD2_aligned,
-                      sizeD3_aligned, nthreads_mic);      
+                      sizeD3_aligned,
+                      &mic_numdevs, &nthreads_mic);
+        CInt_offload_createERD (basis, &erd, nthreads, nthreads_mic);
+        printf ("mic_numdevs %d, num_threads_mic %d\n", mic_numdevs, nthreads_mic);
     }
-
+    else
+    {
+        CInt_createERD (basis, &erd, nthreads);
+    }
+    
     // init D
     #pragma omp parallel for
     for (int j = 0; j < sizeD1_aligned; j++)
@@ -212,9 +191,9 @@ int main (int argc, char **argv)
 
     if (toOffload == 1)
     {
-        offload_copy_D (num_devices, D1, sizeD1_aligned);
-        offload_copy_D (num_devices, D2, sizeD2_aligned);
-        offload_copy_D (num_devices, D3, sizeD3_aligned);
+        offload_copy_D (mic_numdevs, D1, sizeD1_aligned);
+        offload_copy_D (mic_numdevs, D2, sizeD2_aligned);
+        offload_copy_D (mic_numdevs, D3, sizeD3_aligned);
     }
     double tolscr = TOLSRC;
     double tolscr2 = tolscr * tolscr;
@@ -229,7 +208,6 @@ int main (int argc, char **argv)
         totalcalls[i * 64] = 0.0;
         totalnintls[i * 64] = 0.0;
     }
-
     
     /************************************************************/
     // init F
@@ -250,27 +228,42 @@ int main (int argc, char **argv)
     }
     if (toOffload)
     {
-        offload_reset_F (num_devices);
+        offload_reset_F (mic_numdevs);
     }
-
     
     printf ("Compute tasks\n");
     gettimeofday (&tv1, NULL);
     // main computation
-    compute_task (num_devices, basis, erd, shellptr,
-                  shellvalue, shellid, shellrid,
-                  f_startind, rowpos, colpos, rowptr, colptr,
-                  tolscr2, startM, startP,
-                  startM, startM + sizetask - 1,
-                  startP, startP + sizetask - 1,
-                  D1, D2, D3, F1, F2, F3,
-                  rowsize, colsize, colsize,
-                  sizeD1_aligned, sizeD2_aligned, sizeD3_aligned,
-                  mic_fraction, totalcalls, totalnintls, toOffload);
+    if (toOffload == 1)
+    {
+        offload_fock_task(mic_numdevs, basis, erd, shellptr,
+                          shellvalue, shellid, shellrid,
+                          f_startind, rowpos, colpos, rowptr, colptr,
+                          tolscr2, startM, startP,
+                          startM, startM + sizetask - 1,
+                          startP, startP + sizetask - 1,
+                          D1, D2, D3, F1, F2, F3,
+                          rowsize, colsize, colsize,
+                          sizeD1_aligned, sizeD2_aligned, sizeD3_aligned,
+                          mic_fraction, totalcalls, totalnintls);
+    }
+    else
+    {
+        fock_task (basis, erd, shellptr,
+                   shellvalue, shellid, shellrid,
+                   f_startind, rowpos, colpos, rowptr, colptr,
+                   tolscr2, startM, startP,
+                   startM, startM + sizetask - 1,
+                   startP, startP + sizetask - 1,
+                   D1, D2, D3, F1, F2, F3,
+                   rowsize, colsize, colsize,
+                   sizeD1_aligned, sizeD2_aligned, sizeD3_aligned,
+                   totalcalls, totalnintls);
+    }
     gettimeofday (&tv2, NULL);
     if (toOffload == 1)
     {
-        offload_reduce_mic (num_devices, F1_offload, F2_offload, F3_offload,
+        offload_reduce_mic (mic_numdevs, F1_offload, F2_offload, F3_offload,
                             sizeD1_aligned, sizeD2_aligned, sizeD3_aligned);
     }
     // reduction on CPU
@@ -298,8 +291,8 @@ int main (int argc, char **argv)
     
     if (toOffload == 1)
     {
-        offload_wait_mic (num_devices);
-        offload_reduce (num_devices,
+        offload_wait_mic (mic_numdevs);
+        offload_reduce (mic_numdevs,
                         F1, F2, F3,
                         F1_offload, F2_offload, F3_offload,
                         sizeD1_aligned, sizeD2_aligned, sizeD3_aligned);
@@ -326,6 +319,10 @@ int main (int argc, char **argv)
 
     if (toOffload == 1)
     {
+        offload_deinit (mic_numdevs, shellptr, shellid, shellrid,
+                        shellvalue, f_startind, rowpos, colpos,
+                        rowptr, colptr, D1, D2, D3,
+                        VD1, VD2, VD3, F1_offload, F2_offload, F3_offload);
         CInt_offload_destroyERD (erd);
         CInt_offload_destroyBasisSet (basis);
     }
@@ -340,12 +337,9 @@ int main (int argc, char **argv)
     _mm_free (D1);
     _mm_free (D2);
     _mm_free (D3);
-    if (toOffload == 1)
-    {
-        _mm_free (F1_offload);
-        _mm_free (F2_offload);
-        _mm_free (F3_offload);
-    }
+    _mm_free (VD1);
+    _mm_free (VD2);
+    _mm_free (VD3);
     free (rowpos);
     free (colpos);
     free (rowptr);

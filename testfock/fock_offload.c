@@ -398,7 +398,6 @@ void offload_fock_task (int num_devices,
     int chunksPQ = (endPQ - startPQ) / CHUNK_SIZE;
     int totalChunks = chunksMN * chunksPQ;
     int head = 0;
-    mic_fraction = 0;
     int initialChunksMIC = totalChunks * mic_fraction;
     
     head = num_devices * initialChunksMIC;    
@@ -411,7 +410,7 @@ void offload_fock_task (int num_devices,
         double *J2 = &(F2[tid * sizeX2]);
         double *K3 = &(F3[tid * sizeX3]);
 
-        if(0)//tid == 0)
+        if(tid == 0)
         {
             int signalled[num_devices];
             int mic_id;
