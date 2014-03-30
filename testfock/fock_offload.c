@@ -348,7 +348,7 @@ void offload_reset_F (int num_devices)
             int sizeD3 = pfock_mic.sizeD3;
             #pragma omp parallel
             {
-                for (int i = 1; i < num_F; i++)
+                for (int i = 0; i < num_F; i++)
                 {
                     #pragma omp for
                     for (int j = 0; j < sizeD1; j++)
