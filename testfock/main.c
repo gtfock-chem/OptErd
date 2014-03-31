@@ -246,16 +246,16 @@ int main (int argc, char **argv)
     // main computation
     if (toOffload == 1)
     {
-        offload_fock_task(mic_numdevs, basis, erd, shellptr,
-                          shellvalue, shellid, shellrid,
-                          f_startind, rowpos, colpos, rowptr, colptr,
-                          tolscr2, startM, startP,
-                          task_startM, task_endM,
-                          task_startP, task_endP,
-                          D1, D2, D3, F1, F2, F3,
-                          rowsize, colsize, colsize,
-                          sizeD1_aligned, sizeD2_aligned, sizeD3_aligned,
-                          mic_fraction, totalcalls, totalnintls);
+        offload_fock_task (mic_numdevs, basis, erd, shellptr,
+                           shellvalue, shellid, shellrid,
+                           f_startind, rowpos, colpos, rowptr, colptr,
+                           tolscr2, startM, startP,
+                           task_startM, task_endM,
+                           task_startP, task_endP,
+                           D1, D2, D3, F1, F2, F3,
+                           rowsize, colsize, colsize,
+                           sizeD1_aligned, sizeD2_aligned, sizeD3_aligned,
+                           mic_fraction, totalcalls, totalnintls);
     }
     else
     {

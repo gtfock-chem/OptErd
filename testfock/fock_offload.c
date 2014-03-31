@@ -265,7 +265,7 @@ static void compute_chunk (BasisSet_t basis, ERD_t erd,
                 CInt_computeShellQuartet (basis, erd, nt,
                         M, N, P, Q, &integrals, &nints);
                 if (nints != 0)
-                {
+                {              
                     update_F (integrals, dimM, dimN, dimP, dimQ,
                               flag1, flag2, flag3,
                               iMN, iPQ, iMP, iNP, iMQ, iNQ,
@@ -284,7 +284,7 @@ static void compute_block_of_chunks (BasisSet_t basis, ERD_t erd,
                    int *rowpos, int *colpos, int *rowptr, int *colptr,
                    double tolscr2, int startrow, int startcol,
                    int startMN, int endMN, int startPQ, int endPQ,
-                   int startChunk, int endChunk, int chunksMN,
+                   int startChunk, int endChunk, int chunksPQ,
                    double *D1, double *D2, double *D3,
                    int ldX1, int ldX2, int ldX3,
                    int sizeX1, int sizeX2, int sizeX3,
@@ -304,8 +304,8 @@ static void compute_block_of_chunks (BasisSet_t basis, ERD_t erd,
         #pragma omp for schedule(dynamic)
         for(k = startChunk; k < endChunk; k++)
         {
-            int chunkIdMN = k / chunksMN;
-            int chunkIdPQ = k % chunksMN;
+            int chunkIdMN = k / chunksPQ;
+            int chunkIdPQ = k % chunksPQ;
 
             int startChunkMN = startMN + chunkIdMN * CHUNK_SIZE;
             int endChunkMN   = startChunkMN + CHUNK_SIZE;
@@ -395,9 +395,10 @@ void offload_fock_task (int num_devices,
     endPQ = shellptr[endP + 1];
 
     int chunksMN = ((endMN - startMN) + CHUNK_SIZE -1) / CHUNK_SIZE;
-    int chunksPQ = ((endPQ - startPQ) + CHUNK_SIZE -1) / CHUNK_SIZE;
+    int chunksPQ = ((endPQ - startPQ) + CHUNK_SIZE -1) / CHUNK_SIZE;    
     int totalChunks = chunksMN * chunksPQ;
     int head = 0;
+    //mic_fraction = 0.0;
     int initialChunksMIC = totalChunks * mic_fraction;
     head = num_devices * initialChunksMIC;    
     #pragma omp parallel
@@ -428,7 +429,7 @@ void offload_fock_task (int num_devices,
                     in(f_startind, rowpos, colpos, rowptr, colptr: length(0) REUSE) \
                     in(tolscr2, startrow, startcol) \
                     in(startMN, endMN, startPQ, endPQ) \
-                    in(startChunk, endChunk, chunksMN) \
+                    in(startChunk, endChunk, chunksPQ) \
                     in(D1, D2, D3: length(0) REUSE) \
                     in(ldX1, ldX2, ldX3, sizeX1, sizeX2, sizeX3) \
                     nocopy(totalcalls, totalnintls) \
@@ -439,7 +440,7 @@ void offload_fock_task (int num_devices,
                         rowpos, colpos, rowptr, colptr,
                         tolscr2, startrow, startcol,
                         startMN, endMN, startPQ, endPQ,
-                        startChunk, endChunk, chunksMN, 
+                        startChunk, endChunk, chunksPQ, 
                         D1, D2, D3,
                         ldX1, ldX2, ldX3,
                         sizeX1, sizeX2, sizeX3,
@@ -485,7 +486,7 @@ void offload_fock_task (int num_devices,
                                     in(f_startind, rowpos, colpos, rowptr, colptr: length(0) REUSE) \
                                     in(tolscr2, startrow, startcol) \
                                     in(startMN, endMN, startPQ, endPQ) \
-                                    in(startChunk, endChunk, chunksMN) \
+                                    in(startChunk, endChunk, chunksPQ) \
                                     in(D1, D2, D3: length(0) REUSE) \
                                     in(ldX1, ldX2, ldX3, sizeX1, sizeX2, sizeX3) \
                                     nocopy(totalcalls, totalnintls) \
@@ -496,7 +497,7 @@ void offload_fock_task (int num_devices,
                                         rowpos, colpos, rowptr, colptr,
                                         tolscr2, startrow, startcol,
                                         startMN, endMN, startPQ, endPQ,
-                                        startChunk, endChunk, chunksMN, 
+                                        startChunk, endChunk, chunksPQ, 
                                         D1, D2, D3,
                                         ldX1, ldX2, ldX3,
                                         sizeX1, sizeX2, sizeX3,
@@ -513,6 +514,35 @@ void offload_fock_task (int num_devices,
                     }
                 }
             }
+            while(1)
+            {
+                #pragma omp critical
+                {
+                    my_chunk = head;
+                    head++;
+                }
+                if(my_chunk >= totalChunks) break;
+
+                int chunkIdMN = my_chunk / chunksPQ;
+                int chunkIdPQ = my_chunk % chunksPQ;
+                int startChunkMN =  startMN + chunkIdMN * CHUNK_SIZE;
+                int endChunkMN   = startChunkMN + CHUNK_SIZE;
+                if(endChunkMN > endMN) endChunkMN = endMN;
+                int startChunkPQ =  startPQ + chunkIdPQ * CHUNK_SIZE;
+                int endChunkPQ   = startChunkPQ + CHUNK_SIZE;
+                if(endChunkPQ > endPQ) endChunkPQ = endPQ;
+                compute_chunk (basis, erd,
+                        shellptr, shellvalue,
+                        shellid, shellrid, f_startind,
+                        rowpos, colpos, rowptr, colptr,
+                        tolscr2, startrow, startcol,
+                        startChunkMN, endChunkMN, startChunkPQ, endChunkPQ,
+                        D1, D2, D3,
+                        J1, J2, K3,
+                        ldX1, ldX2, ldX3,
+                        sizeX1, sizeX2, sizeX3,
+                        totalcalls, totalnintls, tid);
+            }
         }
         else
         {
@@ -525,9 +555,8 @@ void offload_fock_task (int num_devices,
                 }
                 if(my_chunk >= totalChunks) break;
 
-                int chunkIdMN = my_chunk / chunksMN;
-                int chunkIdPQ = my_chunk % chunksMN;
-
+                int chunkIdMN = my_chunk / chunksPQ;
+                int chunkIdPQ = my_chunk % chunksPQ;
                 int startChunkMN =  startMN + chunkIdMN * CHUNK_SIZE;
                 int endChunkMN   = startChunkMN + CHUNK_SIZE;
                 if(endChunkMN > endMN) endChunkMN = endMN;
