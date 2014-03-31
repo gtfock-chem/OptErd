@@ -209,7 +209,7 @@ void create_buffers (int nshells, int nnz,
     
     compute_FD_ptr (nshells, shellptr, shellid, f_startind, startM, endM,
                     ptrrow, rowsize);
-    count = 0;
+    count = shellptr[startM];
     for (j = startM; j <= endM; j++)
     {
         rowpos[j] = ptrrow[j];
@@ -224,7 +224,7 @@ void create_buffers (int nshells, int nnz,
     compute_FD_ptr (nshells, shellptr, shellid, f_startind,
                     startP, endP,
                     ptrcol, colsize);
-    count= 0;
+    count = shellptr[startP];
     for (j = startP; j <= endP; j++)
     {
        colpos[j] = ptrcol[j];
