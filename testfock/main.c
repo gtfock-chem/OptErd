@@ -39,7 +39,10 @@ int main (int argc, char **argv)
     int endM;
     int startP;
     int endP;
-    int sizetask;
+    int task_startM;
+    int task_endM;
+    int task_startP;
+    int task_endP;
     int nfuncs;
     int toOffload = 0;
     int mic_numdevs = 0;
@@ -47,10 +50,11 @@ int main (int argc, char **argv)
     double timepass;
     int nthreads_mic;
 
-    if (argc != 11)
+    if (argc != 14)
     {
         printf ("Usage: %s <basis set> <xyz> <nthreads>"
-                " <startM> <endN> <startP> <endP> <ntasks>"
+                " <startM> <endM> <startP> <endP>"
+                " <task_startM> <task_endM> <task_startP> <task_endP>"
                 " <toOffload> <mic_fraction>\n",
                 argv[0]);
         return -1;
@@ -62,9 +66,12 @@ int main (int argc, char **argv)
     endM = atoi (argv[5]);
     startP = atoi (argv[6]);
     endP = atoi (argv[7]);
-    sizetask = atoi (argv[8]);
-    toOffload = atoi (argv[9]);
-    double mic_fraction = atof (argv[10]);
+    task_startM = atoi (argv[8]);
+    task_endM = atoi (argv[9]);
+    task_startP = atoi (argv[10]);
+    task_endP = atoi (argv[11]);
+    toOffload = atoi (argv[12]);
+    double mic_fraction = atof (argv[13]);
 
     // load basis set and create ERD_t
     BasisSet_t basis;
@@ -100,16 +107,19 @@ int main (int argc, char **argv)
 
     assert (endM <= nshells - 1);
     assert (endP <= nshells - 1);
-    assert (sizetask > 0);
     assert (startM >= 0 && startM <= endM);
     assert (startP >= 0 && startP <= endP);
-    assert (startM + sizetask <= endM + 1);
-    assert (startP + sizetask <= endP + 1);
+    assert (task_startM >= 0 && task_startM <= task_endM);
+    assert (task_startP >= 0 && task_startP <= task_endP);
+    assert (task_startM >= startM);
+    assert (task_startP >= startP);
+    assert (task_endM <= endM);
+    assert (task_endP <= endP);   
     printf ("\ncreate FD for (%d:%d,0:%d|%d:%d,0:%d)\n",
             startM, endM, nshells - 1, startP, endP, nshells - 1);
     printf ("compute (%d:%d,0:%d|%d:%d,0:%d)\n",
-            startM, startM + sizetask - 1, nshells - 1,
-            startP, startP + sizetask - 1, nshells - 1);
+            task_startM, task_endM, nshells - 1,
+            task_startP, task_endP, nshells - 1);
 
     // fock initialization
     schwartz_screening (basis, &shellptr, &shellid,
@@ -240,8 +250,8 @@ int main (int argc, char **argv)
                           shellvalue, shellid, shellrid,
                           f_startind, rowpos, colpos, rowptr, colptr,
                           tolscr2, startM, startP,
-                          startM, startM + sizetask - 1,
-                          startP, startP + sizetask - 1,
+                          task_startM, task_endM,
+                          task_startP, task_endP,
                           D1, D2, D3, F1, F2, F3,
                           rowsize, colsize, colsize,
                           sizeD1_aligned, sizeD2_aligned, sizeD3_aligned,
@@ -253,8 +263,8 @@ int main (int argc, char **argv)
                    shellvalue, shellid, shellrid,
                    f_startind, rowpos, colpos, rowptr, colptr,
                    tolscr2, startM, startP,
-                   startM, startM + sizetask - 1,
-                   startP, startP + sizetask - 1,
+                   task_startM, task_endM,
+                   task_startP, task_endP,
                    D1, D2, D3, F1, F2, F3,
                    rowsize, colsize, colsize,
                    sizeD1_aligned, sizeD2_aligned, sizeD3_aligned,
