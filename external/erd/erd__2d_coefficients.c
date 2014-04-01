@@ -179,14 +179,20 @@ ERD_OFFLOAD void erd__2d_coefficients(uint32_t mij, uint32_t mkl, uint32_t ngqp,
     const double *restrict p, const double *restrict q,
     const double *restrict px, const double *restrict py, const double *restrict pz,
     const double *restrict qx, const double *restrict qy, const double *restrict qz,
-    double  xa, double  ya, double  za,
-    double  xc, double  yc, double  zc,
+    const double  xyza[], const double xyzc[],
     const double *restrict pinvhf, const double *restrict qinvhf, const double *restrict pqpinv,
-    const double *restrict rts, uint32_t case2d,
+    const double *restrict rts,
     double *restrict b00, double *restrict b01, double *restrict b10,
     double *restrict c00x, double *restrict c00y, double *restrict c00z,
     double *restrict d00x, double *restrict d00y, double *restrict d00z)
 {
+    const double xa = xyza[0];
+    const double ya = xyza[1];
+    const double za = xyza[2];
+    const double xc = xyzc[0];
+    const double yc = xyzc[1];
+    const double zc = xyzc[2];
+
     #if defined (__MIC__)
         uint32_t m = 0;
         uint32_t n = 0;

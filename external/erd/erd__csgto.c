@@ -153,7 +153,7 @@ ERD_OFFLOAD void erd__csgto(
     uint32_t A, uint32_t B, uint32_t C, uint32_t D,
     const uint32_t npgto[restrict static 1], const uint32_t shell[restrict static 1], const double xyz0[restrict static 1],
     const double *restrict alpha[restrict static 1], const double minalpha[restrict static 1], const double *restrict cc[restrict static 1], const double *restrict norm[restrict static 1],
-    int **vrrtab, int ldvrrtab,
+    int **vrrtab,
     bool spheric,
     uint32_t buffer_capacity, uint32_t output_length[restrict static 1], double output_buffer[restrict static 1])
 {
@@ -222,7 +222,6 @@ ERD_OFFLOAD void erd__csgto(
 /*                each p-type shell -> * 2.0. */
     const uint32_t shellp = shella + shellb;
     const uint32_t shellq = shellc + shelld;
-    const uint32_t shellt = shellp + shellq;
     const uint32_t mxshell = max4x32u(shella, shellb, shellc, shelld);
     const uint32_t nxyzp = (shellp + 1) * (shellp + 2) / 2;
     const uint32_t nxyzq = (shellq + 1) * (shellq + 2) / 2;
@@ -279,9 +278,6 @@ ERD_OFFLOAD void erd__csgto(
 /*                return array sizes and pointers for the primitive */
 /*                [e0|f0] generation. Perform also some preparation */
 /*                steps for contraction. */
-    const uint32_t ngqp = shellt / 2 + 1;
-    const uint32_t nmom = (ngqp << 1) - 1;
-    const uint32_t ngqscr = nmom * 5 + (ngqp << 1) - 2;
 
     ERD_PROFILE_START(erd__prepare_ctr)
     const double factor = PREFACT * spnorm;
@@ -316,14 +312,14 @@ ERD_OFFLOAD void erd__csgto(
 /*                primitive [e0|f0] blocks need to be transposed */
 /*                before being contracted. */
     ERD_PROFILE_START(erd__e0f0_pcgto_block)
-    erd__e0f0_pcgto_block(nij, nkl, ngqp, nmom,
+    erd__e0f0_pcgto_block(
+                           A, B, C, D,
+                           nij, nkl,
                            nxyzet, nxyzft, nxyzp, nxyzq,
-                           shella, shellp, shellc, shellq,
-                           xa, ya, za, xb, yb, zb,
-                           xc, yc, zc, xd, yd, zd,
-                           alphaa, alphab, alphac, alphad, 
-                           cca, ccb, ccc, ccd,
-                           vrrtab, ldvrrtab,
+                           shell, xyz0,
+                           alpha,
+                           cc,
+                           vrrtab,
                            prima, primb, primc, primd,
                            norma, normb, normc, normd,
                            rhoab, rhocd,

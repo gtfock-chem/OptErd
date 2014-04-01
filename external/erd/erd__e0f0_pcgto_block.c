@@ -169,19 +169,16 @@
 /*                    BATCH        =  current batch of primitive */
 /*                                    cartesian [E0|F0] integrals */
 /* ------------------------------------------------------------------------ */
-ERD_OFFLOAD void erd__e0f0_pcgto_block(uint32_t nij, uint32_t nkl,
-    uint32_t ngqp, uint32_t nmom,
+ERD_OFFLOAD void erd__e0f0_pcgto_block(
+    uint32_t A, uint32_t B, uint32_t C, uint32_t D,
+    uint32_t nij, uint32_t nkl,
     uint32_t nxyzet, uint32_t nxyzft,
     uint32_t nxyzp, uint32_t nxyzq,
-    uint32_t shella, uint32_t shellp,
-    uint32_t shellc, uint32_t shellq,
-    double xa, double ya, double za,
-    double xb, double yb, double zb,
-    double xc, double yc, double zc,
-    double xd, double yd, double zd,
-    const double alphaa[restrict static nij], const double alphab[restrict static nij], const double alphac[restrict static nkl], const double alphad[restrict static nkl],
-    const double cca[restrict static nij], const double ccb[restrict static nij], const double ccc[restrict static nkl], const double ccd[restrict static nkl],
-    int **vrrtab, int ldvrrtab,
+    const uint32_t shell[restrict static 1],
+    const double xyz0[restrict static 1],
+    const double *restrict alpha[restrict static 1],
+    const double *restrict cc[restrict static 1],
+    int **vrrtab,
     const uint32_t prima[restrict static nij], const uint32_t primb[restrict static nij], const uint32_t primc[restrict static nkl], const uint32_t primd[restrict static nkl],
     const double norma[restrict static nij], const double normb[restrict static nij], const double normc[restrict static nkl], const double normd[restrict static nkl],
     const double rhoab[restrict static nij], const double rhocd[restrict static nkl],
@@ -194,6 +191,15 @@ ERD_OFFLOAD void erd__e0f0_pcgto_block(uint32_t nij, uint32_t nkl,
     const int tid = 0;
     #endif
 #endif
+    double xa = xyz0[A*4], ya = xyz0[A*4+1], za = xyz0[A*4+2];
+    double xb = xyz0[B*4], yb = xyz0[B*4+1], zb = xyz0[B*4+2];
+    double xc = xyz0[C*4], yc = xyz0[C*4+1], zc = xyz0[C*4+2];
+    double xd = xyz0[D*4], yd = xyz0[D*4+1], zd = xyz0[D*4+2];
+    const uint32_t shella = shell[A], shellb = shell[B], shellc = shell[C], shelld = shell[D];
+    const uint32_t shellp = shella + shellb;
+    const uint32_t shellq = shellc + shelld;
+    const uint32_t shellt = shellp + shellq;
+    const uint32_t ngqp = shellt / 2 + 1;
     
 /*            ...predetermine 2D integral case. This is done in */
 /*               order to distinguish the P- and Q-shell combinations */
@@ -223,13 +229,9 @@ ERD_OFFLOAD void erd__e0f0_pcgto_block(uint32_t nij, uint32_t nkl,
     const uint32_t case2d = min32u(2, shellq) * 3 + min32u(2, shellp) + 1;
     const uint32_t nijkl = nij * nkl;
     const uint32_t mgqijkl = ngqp * nijkl;
-    const double abx = xa - xb;
-    const double aby = ya - yb;
-    const double abz = za - zb;
-    const double cdx = xc - xd;
-    const double cdy = yc - yd;
-    const double cdz = zc - zd;
     
+    const double *restrict alphaa = alpha[A], *restrict alphab = alpha[B];
+    const double *restrict cca = cc[A], *restrict ccb = cc[B];
     const size_t simd_nij = PAD_LEN(nij);
     ERD_SIMD_ALIGN double p[simd_nij], px[simd_nij], py[simd_nij], pz[simd_nij], pinvhf[simd_nij], scalep[simd_nij];
     ERD_SIMD_ZERO_TAIL_64f(p, simd_nij);
@@ -255,6 +257,8 @@ ERD_OFFLOAD void erd__e0f0_pcgto_block(uint32_t nij, uint32_t nkl,
         scalep[ij] = norma[i] * normb[j] * rhoab[ij] * cca[i] * ccb[j];
     }
 
+    const double *restrict alphac = alpha[C], *restrict alphad = alpha[D];
+    const double *restrict ccc = cc[C], *restrict ccd = cc[D];
     const size_t simd_nkl = PAD_LEN(nkl);
     ERD_SIMD_ALIGN double q[simd_nkl], qx[simd_nkl], qy[simd_nkl], qz[simd_nkl], qinvhf[simd_nkl], scaleq[simd_nkl];
     ERD_SIMD_ZERO_TAIL_64f(q, simd_nkl);
@@ -336,6 +340,7 @@ ERD_OFFLOAD void erd__e0f0_pcgto_block(uint32_t nij, uint32_t nkl,
 /*             ...calculate all roots and weights. */
     ERD_SIMD_ALIGN double rts[simd_mgqijkl];
     ERD_SIMD_ZERO_TAIL_64f(rts, simd_mgqijkl);
+    const uint32_t nmom = (ngqp << 1) - 1;
     ERD_PROFILE_START(erd__rys_roots_weights)
     erd__rys_roots_weights(nijkl, ngqp, nmom, tval, rts, int2dx);
     ERD_PROFILE_END(erd__rys_roots_weights)
@@ -367,9 +372,9 @@ ERD_OFFLOAD void erd__e0f0_pcgto_block(uint32_t nij, uint32_t nkl,
     ERD_PROFILE_START(erd__2d_coefficients)
     erd__2d_coefficients(nij, nkl, ngqp, p, q,
                           px, py, pz, qx, qy, qz,
-                          xa, ya, za, xc, yc, zc,
+                          &xyz0[A*4], &xyz0[C*4],
                           pinvhf, qinvhf, pqpinv, rts,
-                          case2d, b00, b01, b10,
+                          b00, b01, b10,
                           c00x, c00y, c00z,
                           d00x, d00y, d00z);
     ERD_PROFILE_END(erd__2d_coefficients)
