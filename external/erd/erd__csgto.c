@@ -415,8 +415,10 @@ ERD_OFFLOAD void erd__csgto(
 /*                prefactor during evaluation of the primitive integrals */
 /*                in order to save multiplications. */
     const uint32_t nrowmx = (mxshell / 2 + 1) * (mxshell / 2 + 2) / 2;
-    ERD_SIMD_ALIGN double fbuffer[spheric ? PAD_LEN(nrowmx * 4) : 0];
-    ERD_SIMD_ALIGN uint32_t ibuffer[spheric ? PAD_LEN(nrowmx * 4 + nrya + nryb + nryc + nryd) : 0];
+    const uint32_t nrymx = 2*mxshell + 1;
+    const uint32_t nrotmx = nrowmx * nrymx;
+    ERD_SIMD_ALIGN double fbuffer[spheric ? PAD_LEN(nrotmx * 4) : 0];
+    ERD_SIMD_ALIGN uint32_t ibuffer[spheric ? PAD_LEN(nrotmx * 4 + nrya + nryb + nryc + nryd) : 0];
 
     ERD_SIMD_ALIGN double cartnorm[spheric ? 0 : PAD_LEN(mxshell + 1)];
     uint32_t isrowa, isrowb, isrowc, isrowd;
