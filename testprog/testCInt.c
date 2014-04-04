@@ -59,7 +59,7 @@ int main(int argc, char **argv) {
     int dimMax = CInt_getMaxShellDim(basis);
     double *referenceIntegrals = (double *)malloc(sizeof(double) * dimMax * dimMax * dimMax * dimMax);
     assert(referenceIntegrals != NULL);
-
+#if 0
     int nshells = shellCount;
     for (int M = 0; M < nshells; M++)
     {
@@ -104,6 +104,7 @@ int main(int argc, char **argv) {
             }
         }
     }
+#endif
     uint64_t totalCalls = 0;
     uint64_t totalIntegralsCount = 0;
     uint64_t totalTicks = 0;
