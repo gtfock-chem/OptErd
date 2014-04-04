@@ -60,6 +60,50 @@ int main(int argc, char **argv) {
     double *referenceIntegrals = (double *)malloc(sizeof(double) * dimMax * dimMax * dimMax * dimMax);
     assert(referenceIntegrals != NULL);
 
+    int nshells = shellCount;
+    for (int M = 0; M < nshells; M++)
+    {
+        for (int N = 0; N < nshells; N++)
+        {
+            for (int P = 0; P < nshells; P++)
+            {
+                for (int Q = 0; Q < nshells; Q++)
+                {
+                    if (M < N || P < Q || (M+N) < (P+Q))
+                        continue;
+                    double *integrals;
+                    int nints;
+                    CInt_computeShellQuartet (basis, erd, 0,
+                                              M, N, P, Q, &integrals, &nints);
+                    int dimM = CInt_getShellDim (basis, M);
+                    int dimN = CInt_getShellDim (basis, N);
+                    int dimP = CInt_getShellDim (basis, P);
+                    int dimQ = CInt_getShellDim (basis, Q);
+                    int startM = CInt_getFuncStartInd (basis, M);
+                    int startN = CInt_getFuncStartInd (basis, N);
+                    int startP = CInt_getFuncStartInd (basis, P);
+                    int startQ = CInt_getFuncStartInd (basis, Q);
+                    for (int iM = 0; iM < dimM; iM++)
+                    {
+                        for (int iN = 0; iN < dimN; iN++)
+                        {
+                            for (int iP = 0; iP < dimP; iP++)
+                            {
+                                for (int iQ = 0; iQ < dimQ; iQ++)
+                                {
+                                    double ivalue = integrals[iM + dimM * (iN + dimN * (iP + dimP * iQ))];
+                                    printf ("%d %d %d %d %le\n",
+                                            startM + iM, startN + iN,
+                                            startP + iP, startQ + iQ,
+                                            ivalue);
+                                }
+                            }
+                        }
+                   }
+               }
+            }
+        }
+    }
     uint64_t totalCalls = 0;
     uint64_t totalIntegralsCount = 0;
     uint64_t totalTicks = 0;
