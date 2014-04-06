@@ -85,8 +85,6 @@ oed_sources = [
 
 cint_sources = ["basisset.c", "erd_integral.c", "oed_integral.c"]
 
-testfock_sources = ["fock_init.c", "fock_offload.c", "main.c"]
-
 tab = '  '
 
 with open('build.ninja', 'w') as makefile:
@@ -275,21 +273,3 @@ with open('build.ninja', 'w') as makefile:
 			print('build %s : LINK %s %s %s' % (binary_file, object_file, screening_object_file, libs), file = makefile)
 			print(tab + 'CC = $CC_%s' % suffix[arch], file = makefile)
 			print(tab + 'ARCH = %s' % arch.upper(), file = makefile)
-
-			if version == 'opt' and arch.endswith("+mic"):
-				source_files = ['testfock/' + filename for filename in testfock_sources] 
-				object_files = ['testfock/%s/' % arch + filename + '.o' for filename in testfock_sources]
-				for src, obj in zip(source_files, object_files):
-					print('build %s : COMPILE_C %s include/CInt.h' % (obj, src), file = makefile)
-					print(tab + 'DEP_FILE = %s.d' % obj, file = makefile)
-					print(tab + 'SOURCE = %s' % src, file = makefile)
-					print(tab + 'CC = $CC_%s' % suffix[arch], file = makefile)
-					print(tab + 'CFLAGS = $CFLAGS -Iexternal/erd -Itestfock -Iinclude', file = makefile)
-					print(tab + 'ARCH = %s' % arch.upper(), file = makefile)
-
-				binary_file = 'testfock/%s/fock' % arch
-				libs = " ".join(['lib/' + arch + '/lib' + lib + '-' + version + '.a' for lib in ['cint', 'oed', 'erd']])
-				print('build %s : LINK %s %s' % (binary_file, " ".join(object_files), libs), file = makefile)
-				print(tab + 'CC = $CC_%s' % suffix[arch], file = makefile)
-				print(tab + 'ARCH = %s' % arch.upper(), file = makefile)
-
