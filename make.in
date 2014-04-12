@@ -1,6 +1,6 @@
 alignlen = 64
 offload = 1
-#arch = mic
+arch = avx
 
 CC  = icc -std=gnu99
 CXX = icpc
