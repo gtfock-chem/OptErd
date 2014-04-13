@@ -26,6 +26,34 @@ static uint64_t get_cpu_frequency(void) {
     return end_clock - start_clock;
 }
 
+#define USE_CUSTOM_RAND
+
+#ifdef USE_CUSTOM_RAND
+static inline uint32_t atomic_rand() {
+    static volatile __attribute__((align(64))) uint32_t seed[16] = { 1 };
+    
+    uint32_t x = seed[0];
+    uint32_t y;
+    for (;;) {
+        /* XorShift RNG */
+        y = x ^ (x << 13);
+        y = y ^ (y >> 17);
+        y = y ^ (y << 5);
+
+        const uint32_t newX = __sync_val_compare_and_swap(&seed[0], x, y);
+        if (newX != x)
+            x = newX;
+        else
+            break;
+    }
+    return y;
+}
+#else
+static inline int atomic_rand() {
+    return rand();
+}
+#endif
+
 int main (int argc, char **argv)
 {
     int nnz;
@@ -87,7 +115,13 @@ int main (int argc, char **argv)
 
     srand(1234);
     /* In (fraction) cases rand() returns value not greater than computationThreshold */
-    const int computationThreshold = lround(fraction * RAND_MAX);
+    #ifdef USE_CUSTOM_RAND
+    const uint32_t computationThresholdMax = 0xFFFFFFFEu;
+    const uint32_t computationThreshold = lround(fraction * computationThresholdMax);
+    #else
+    const int computationThresholdMax = RAND_MAX;
+    const int computationThreshold = lround(fraction * computationThresholdMax);
+    #endif
 
     const uint64_t start_clock = __rdtsc();
         
@@ -124,7 +158,7 @@ int main (int argc, char **argv)
                             continue;
 
                         /* Sample random integer. With probability (fraction) process the shell quartet. */
-                        if (rand() <= computationThreshold) {
+                        if ((computationThreshold == computationThresholdMax) || (atomic_rand() <= computationThreshold)) {
                             double *integrals;
                             int nints;
                             CInt_computeShellQuartet(basis, erd, tid, shellIndexM, shellIndexN, shellIndexP, shellIndexQ, &integrals, &nints);
