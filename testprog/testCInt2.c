@@ -13,12 +13,6 @@
 #include <screening.h>
 #include <erd_profile.h>
 
-struct ShellPair {
-    int MP;
-    int NQ;
-    double absValue;
-};
-
 static uint64_t get_cpu_frequency(void) {
     const uint64_t start_clock = __rdtsc();
     sleep(1);
@@ -26,33 +20,14 @@ static uint64_t get_cpu_frequency(void) {
     return end_clock - start_clock;
 }
 
-#define USE_CUSTOM_RAND
-
-#ifdef USE_CUSTOM_RAND
-static inline uint32_t atomic_rand() {
-    static volatile __attribute__((align(64))) uint32_t seed[16] = { 1 };
-    
-    uint32_t x = seed[0];
-    uint32_t y;
-    for (;;) {
-        /* XorShift RNG */
-        y = x ^ (x << 13);
-        y = y ^ (y >> 17);
-        y = y ^ (y << 5);
-
-        const uint32_t newX = __sync_val_compare_and_swap(&seed[0], x, y);
-        if (newX != x)
-            x = newX;
-        else
-            break;
-    }
+static inline uint32_t xorshift_rand(uint32_t* state) {
+    uint32_t y = *state;
+    y ^= y << 13;
+    y ^= y >> 17;
+    y ^= y << 5;
+    *state = y;
     return y;
 }
-#else
-static inline int atomic_rand() {
-    return rand();
-}
-#endif
 
 int main (int argc, char **argv)
 {
@@ -113,15 +88,9 @@ int main (int argc, char **argv)
 
     const uint32_t shellCount = CInt_getNumShells(basis);
 
-    srand(1234);
     /* In (fraction) cases rand() returns value not greater than computationThreshold */
-    #ifdef USE_CUSTOM_RAND
     const uint32_t computationThresholdMax = 0xFFFFFFFEu;
     const uint32_t computationThreshold = lround(fraction * computationThresholdMax);
-    #else
-    const int computationThresholdMax = RAND_MAX;
-    const int computationThreshold = lround(fraction * computationThresholdMax);
-    #endif
 
     const uint64_t start_clock = __rdtsc();
         
@@ -132,40 +101,47 @@ int main (int argc, char **argv)
         #else
         const int tid = 0;
         #endif
-
+        
         #pragma omp for schedule(dynamic)
-        for (uint32_t shellIndexM = 0; shellIndexM < shellCount; shellIndexM++) {
+        for (uint32_t shellIndexMP = 0; shellIndexMP < shellCount * shellCount; shellIndexMP++) {
+            const uint32_t shellIndexM = shellIndexMP / shellCount;
+            const uint32_t shellIndexP = shellIndexMP % shellCount;
+            
             const uint32_t shellIndexNStart = shellptr[shellIndexM];
             const uint32_t shellIndexNEnd = shellptr[shellIndexM+1];
-            for (uint32_t shellIndexP = 0; shellIndexP != shellCount; shellIndexP++) {
-                const uint32_t shellIndexQStart = shellptr[shellIndexP];
-                const uint32_t shellIndexQEnd = shellptr[shellIndexP+1];
+            const uint32_t shellIndexQStart = shellptr[shellIndexP];
+            const uint32_t shellIndexQEnd = shellptr[shellIndexP+1];
 
+            /* Should depend only on loop iteration to guarantee the same value in optimized and reference versions regardless of thread order */
+            uint32_t rng_state = shellIndexMP;
+            /* Do several iteration to make starting value less uniform */
+            xorshift_rand(&rng_state);
+            xorshift_rand(&rng_state);
+            xorshift_rand(&rng_state);
 
-                /* Prepare indices */
-                for (uint32_t shellIndexNOffset = shellIndexNStart; shellIndexNOffset != shellIndexNEnd; shellIndexNOffset++) {
-                    const uint32_t shellIndexN = shellid[shellIndexNOffset];
-                    if (shellIndexM > shellIndexN)
+            /* Prepare indices */
+            for (uint32_t shellIndexNOffset = shellIndexNStart; shellIndexNOffset != shellIndexNEnd; shellIndexNOffset++) {
+                const uint32_t shellIndexN = shellid[shellIndexNOffset];
+                if (shellIndexM > shellIndexN)
+                    continue;
+
+                const double shellValueMN = shellvalue[shellIndexNOffset];
+                for (uint32_t shellIndexQOffset = shellIndexQStart; shellIndexQOffset != shellIndexQEnd; shellIndexQOffset++) {
+                    const uint32_t shellIndexQ = shellid[shellIndexQOffset];
+                    if (shellIndexP > shellIndexQ)
                         continue;
 
-                    const double shellValueMN = shellvalue[shellIndexNOffset];
-                    for (uint32_t shellIndexQOffset = shellIndexQStart; shellIndexQOffset != shellIndexQEnd; shellIndexQOffset++) {
-                        const uint32_t shellIndexQ = shellid[shellIndexQOffset];
-                        if (shellIndexP > shellIndexQ)
-                            continue;
+                    if (shellIndexM + shellIndexN > shellIndexP + shellIndexQ)
+                        continue;
 
-                        if (shellIndexM + shellIndexN > shellIndexP + shellIndexQ)
-                            continue;
+                    /* Sample random integer. With probability (fraction) process the shell quartet. */
+                    if ((computationThreshold == computationThresholdMax) || (xorshift_rand(&rng_state) <= computationThreshold)) {
+                        double *integrals;
+                        int nints;
+                        CInt_computeShellQuartet(basis, erd, tid, shellIndexM, shellIndexN, shellIndexP, shellIndexQ, &integrals, &nints);
 
-                        /* Sample random integer. With probability (fraction) process the shell quartet. */
-                        if ((computationThreshold == computationThresholdMax) || (atomic_rand() <= computationThreshold)) {
-                            double *integrals;
-                            int nints;
-                            CInt_computeShellQuartet(basis, erd, tid, shellIndexM, shellIndexN, shellIndexP, shellIndexQ, &integrals, &nints);
-
-                            totalcalls[tid * 64] += 1;
-                            totalnintls[tid * 64] += nints;
-                        }
+                        totalcalls[tid * 64] += 1;
+                        totalnintls[tid * 64] += nints;
                     }
                 }
             }

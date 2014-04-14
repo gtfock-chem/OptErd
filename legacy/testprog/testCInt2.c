@@ -13,194 +13,171 @@
 #include <screening.h>
 #include <erd_profile.h>
 
+static uint64_t get_cpu_frequency(void) {
+    const uint64_t start_clock = __rdtsc();
+    sleep(1);
+    const uint64_t end_clock = __rdtsc();
+    return end_clock - start_clock;
+}
+
+static inline uint32_t xorshift_rand(uint32_t* state) {
+    uint32_t y = *state;
+    y ^= y << 13;
+    y ^= y >> 17;
+    y ^= y << 5;
+    *state = y;
+    return y;
+}
+
 int main (int argc, char **argv)
 {
-    BasisSet_t basis;
-    ERD_t *erd;
-    int ns;
     int nnz;
-    int i;
-    int nthreads;
-    double *totalcalls = 0;
-    double *totalnintls = 0;
     int *shellptr;
     int *shellid;
     int *shellrid;
     double *shellvalue;
-    double fraction;
-    
-    uint64_t start_clock, end_clock;
-    
-    if (argc != 5)
-    {
+    if (argc != 5) {
         printf ("Usage: %s <basisset> <xyz> <fraction> <nthreads>\n", argv[0]);
         return -1;
     }
 
-    start_clock = __rdtsc();
-    sleep(1);
-    end_clock = __rdtsc();
-    uint64_t freq = end_clock - start_clock;
+    const uint64_t freq = get_cpu_frequency();
 
-    fraction = atof (argv[3]);
-    assert (fraction > 0.0 && fraction <= 1.0);
-    nthreads = atoi (argv[4]);
+    const double fraction = atof(argv[3]);
+    assert(fraction > 0.0 && fraction <= 1.0);
+    const int nthreads = atoi(argv[4]);
     #ifdef _OPENMP
-    omp_set_num_threads (nthreads);
+    omp_set_num_threads(nthreads);
+    #else
+    assert(nthreads == 1);
     #endif
     
     // load basis set
-    CInt_createBasisSet (&basis);
-    CInt_loadBasisSet (basis, argv[1], argv[2]);
-    schwartz_screening (basis, &shellptr, &shellid, &shellrid, &shellvalue, &nnz);
+    BasisSet_t basis;
+    CInt_createBasisSet(&basis);
+    CInt_loadBasisSet(basis, argv[1], argv[2]);
+    schwartz_screening(basis, &shellptr, &shellid, &shellrid, &shellvalue, &nnz);
 
-    printf ("Molecule info:\n");
-    printf ("  #Atoms\t= %d\n", CInt_getNumAtoms (basis));
-    printf ("  #Shells\t= %d\n", CInt_getNumShells (basis));
-    printf ("  #Funcs\t= %d\n", CInt_getNumFuncs (basis));
-    printf ("  #OccOrb\t= %d\n", CInt_getNumOccOrb (basis));
-    printf ("  nthreads\t= %d\n", nthreads);
+    printf("Molecule info:\n");
+    printf("  #Atoms\t= %d\n", CInt_getNumAtoms(basis));
+    printf("  #Shells\t= %d\n", CInt_getNumShells(basis));
+    printf("  #Funcs\t= %d\n", CInt_getNumFuncs(basis));
+    printf("  #OccOrb\t= %d\n", CInt_getNumOccOrb(basis));
+    printf("  nthreads\t= %d\n", nthreads);
 
-    erd = (ERD_t *) malloc (sizeof (ERD_t) * nthreads);
-    assert (erd != NULL);
-    totalcalls = (double *) malloc (sizeof (double) * nthreads * 64);
-    assert (totalcalls != NULL);
-    totalnintls = (double *) malloc (sizeof (double) * nthreads * 64);
-    assert (totalnintls != NULL);
-    
+    ERD_t* erd = (ERD_t*)malloc(sizeof(ERD_t) * nthreads);
+    assert(erd != NULL);
+    double* totalcalls = (double *) malloc(sizeof (double) * nthreads * 64);
+    assert(totalcalls != NULL);
+    double* totalnintls = (double *) malloc(sizeof (double) * nthreads * 64);
+    assert(totalnintls != NULL);
+
     #pragma omp parallel for
-    for (i = 0; i < nthreads; i++)
-    {
-        CInt_createERD (basis, &(erd[i]));
+    for (int i = 0; i < nthreads; i++) {
+        CInt_createERD(basis, &erd[i]);
         totalcalls[i * 64] = 0.0;
         totalnintls[i * 64] = 0.0;
     }
-    printf ("Computing integrals ...\n");
+    printf("Computing integrals ...\n");
 
     // reset profiler
-    erd_reset_profile ();
-        
+    erd_reset_profile();
+
     //printf ("max memory footprint per thread = %lf KB\n",
     //    CInt_getMaxMemory (erd[0])/1024.0);
-    
-    ns = CInt_getNumShells (basis);
-    double timepass = 0.0;
 
-    int slen;
-    int *idx;
-    int swap;
-    int tmpid;
-    int reallen;
-    
-    slen = shellptr[ns];
-    idx = (int *) malloc (sizeof (int) * slen);
-    assert (idx != NULL);
-    srand (1234);
-    for (i = 0; i < slen; i++)
-    {
-        idx[i] = i;
-    }
-    if (fraction != 1.0)
-    {
-        for (i = 0; i < slen - 1; i++)
-        {
-            swap = (int)((double)rand()/RAND_MAX * (slen - i));
-            tmpid = idx[swap];
-            idx[swap] = idx[slen - i - 1];
-            idx[slen - i - 1] = tmpid;
-        }
-    }
-    reallen = (int)(slen * fraction);
-    reallen = ((reallen == 0) ? 1 : reallen);    
-    start_clock = __rdtsc(); 
+    const uint32_t shellCount = CInt_getNumShells(basis);
+
+    /* In (fraction) cases rand() returns value not greater than computationThreshold */
+    const uint32_t computationThresholdMax = 0xFFFFFFFEu;
+    const uint32_t computationThreshold = lround(fraction * computationThresholdMax);
+
+    const uint64_t start_clock = __rdtsc();
+        
     #pragma omp parallel
     {
-        int tid;
-        int M;
-        int N;
-        int P;
-        int Q;
-        int k;
-        int i;
-        int j;
-        double *integrals;
-        int nints;
-        double value1;
-        double value2;
-        int start2;
-        int end2;
-
         #ifdef _OPENMP
-        tid = omp_get_thread_num ();
+        const int tid = omp_get_thread_num();
         #else
-        tid = 0;
+        const int tid = 0;
         #endif
-
+        
         #pragma omp for schedule(dynamic)
-        for (k = 0; k < reallen; k++)
-        {
-            i = idx[k];
-            M = shellrid[i];
-            N = shellid[i];
-            value1 = shellvalue[i];
-            for (P = 0; P < ns; P++)
-            {                               
-                start2 = shellptr[P];
-                end2 = shellptr[P + 1];
-                for (j = start2; j < end2; j++)
-                {                
-                    Q = shellid[j];
-                    value2 = shellvalue[j];
-                    if (M > N || P > Q || (M + N) > (P + Q))
-                        continue;
-                    if (fabs(value1 * value2) < TOLSRC * TOLSRC)
-                        continue;
-                    totalcalls[tid * 64] = totalcalls[tid * 64] + 1;
+        for (uint32_t shellIndexMP = 0; shellIndexMP < shellCount * shellCount; shellIndexMP++) {
+            const uint32_t shellIndexM = shellIndexMP / shellCount;
+            const uint32_t shellIndexP = shellIndexMP % shellCount;
+            
+            const uint32_t shellIndexNStart = shellptr[shellIndexM];
+            const uint32_t shellIndexNEnd = shellptr[shellIndexM+1];
+            const uint32_t shellIndexQStart = shellptr[shellIndexP];
+            const uint32_t shellIndexQEnd = shellptr[shellIndexP+1];
 
-                    CInt_computeShellQuartet (basis, erd[tid], M, N, P, Q, &integrals,
-                                              &nints);
+            /* Should depend only on loop iteration to guarantee the same value in optimized and reference versions regardless of thread order */
+            uint32_t rng_state = shellIndexMP;
+            /* Do several iteration to make starting value less uniform */
+            xorshift_rand(&rng_state);
+            xorshift_rand(&rng_state);
+            xorshift_rand(&rng_state);
+            
+            /* Prepare indices */
+            for (uint32_t shellIndexNOffset = shellIndexNStart; shellIndexNOffset != shellIndexNEnd; shellIndexNOffset++) {
+                const uint32_t shellIndexN = shellid[shellIndexNOffset];
+                if (shellIndexM > shellIndexN)
+                    continue;
 
-                    totalnintls[tid * 64] = totalnintls[tid * 64] + nints;
+                const double shellValueMN = shellvalue[shellIndexNOffset];
+                for (uint32_t shellIndexQOffset = shellIndexQStart; shellIndexQOffset != shellIndexQEnd; shellIndexQOffset++) {
+                    const uint32_t shellIndexQ = shellid[shellIndexQOffset];
+                    if (shellIndexP > shellIndexQ)
+                        continue;
+
+                    if (shellIndexM + shellIndexN > shellIndexP + shellIndexQ)
+                        continue;
+
+                    /* Sample random integer. With probability (fraction) process the shell quartet. */
+                    if ((computationThreshold == computationThresholdMax) || (xorshift_rand(&rng_state) <= computationThreshold)) {
+                        double *integrals;
+                        int nints;
+                        CInt_computeShellQuartet(basis, erd[tid], shellIndexM, shellIndexN, shellIndexP, shellIndexQ, &integrals, &nints);
+
+                        totalcalls[tid * 64] += 1;
+                        totalnintls[tid * 64] += nints;
+                    }
                 }
             }
         }
     }
-    end_clock = __rdtsc();
+    const uint64_t end_clock = __rdtsc();
 
-    for (i = 1; i < nthreads; i++)
-    {
+    for (int i = 1; i < nthreads; i++) {
         totalcalls[0 * 64] = totalcalls[0 * 64] + totalcalls[i * 64];
         totalnintls[0 * 64] = totalnintls[0 * 64] + totalnintls[i * 64];
     } 
-    uint64_t total_ticks = end_clock - start_clock;
-    timepass = ((double) total_ticks) / freq;
+    const uint64_t total_ticks = end_clock - start_clock;
+    const double timepass = ((double) total_ticks) / freq;
 
-    printf ("Done\n");
-    printf ("\n");
-    printf ("Number of calls: %.6le, Number of integrals: %.6le\n",
-            totalcalls[0], totalnintls[0]);
-    printf ("Total GigaTicks: %.3lf, freq = %.3lf GHz\n",
-            (double) (total_ticks) * 1.0e-9, (double)freq/1.0e9);
-    printf ("Total time: %.4lf secs\n", timepass);
-    printf ("Average time per call: %.3le us\n",
-            1000.0 * 1000.0 * timepass / totalcalls[0]);
+    printf("Done\n");
+    printf("\n");
+    printf("Number of calls: %.6le, Number of integrals: %.6le\n", totalcalls[0], totalnintls[0]);
+    printf("Total GigaTicks: %.3lf, freq = %.3lf GHz\n", (double) (total_ticks) * 1.0e-9, (double)freq/1.0e9);
+    printf("Total time: %.4lf secs\n", timepass);
+    printf("Average time per call: %.3le us\n", 1000.0 * 1000.0 * timepass / totalcalls[0]);
 
     // use 1 if thread timing is not required
-    erd_print_profile (1);
+    erd_print_profile(1);
 
-    for (i = 0; i < nthreads; i++)
-    {
-        CInt_destroyERD (erd[i]);
+    for (int i = 0; i < nthreads; i++) {
+        CInt_destroyERD(erd[i]);
     }
-    free (erd);
-    free (totalcalls);
-    free (totalnintls);
-    free (shellptr);
-    free (shellid);
-    free (shellvalue);
-    free (shellrid);
-    
-    CInt_destroyBasisSet (basis);
+    free(erd);
+    free(totalcalls);
+    free(totalnintls);
+    free(shellptr);
+    free(shellid);
+    free(shellvalue);
+    free(shellrid);
+
+    CInt_destroyBasisSet(basis);
 
     return 0;
 }
