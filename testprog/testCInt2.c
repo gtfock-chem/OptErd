@@ -123,6 +123,14 @@ int main (int argc, char **argv)
     const int computationThreshold = lround(fraction * computationThresholdMax);
     #endif
 
+    int N_rand = 1024 * 1024 * 128;
+    int *rand_list = (int *)malloc(N_rand * sizeof(int));
+    int i;
+    for(i = 0; i < N_rand; i++)
+    {
+        rand_list[i] = rand();
+    }
+
     const uint64_t start_clock = __rdtsc();
         
     #pragma omp parallel
@@ -157,8 +165,9 @@ int main (int argc, char **argv)
                         if (shellIndexM + shellIndexN > shellIndexP + shellIndexQ)
                             continue;
 
+                        int rand_ind = ((shellIndexM * shellCount + shellIndexP) * shellCount + shellIndexN) * shellCount + shellIndexQ ;
                         /* Sample random integer. With probability (fraction) process the shell quartet. */
-                        if ((computationThreshold == computationThresholdMax) || (atomic_rand() <= computationThreshold)) {
+                        if (rand_list[rand_ind & (N_rand - 1)] <= computationThreshold) {
                             double *integrals;
                             int nints;
                             CInt_computeShellQuartet(basis, erd, tid, shellIndexM, shellIndexN, shellIndexP, shellIndexQ, &integrals, &nints);
