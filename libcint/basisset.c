@@ -147,11 +147,10 @@ CIntStatus_t CInt_createBasisSet (BasisSet_t *_basis)
 
 CIntStatus_t CInt_destroyBasisSet (BasisSet_t basis)
 {
-    int i;
     free (basis->f_start_id);
     free (basis->f_end_id);
 
-    for (i = 0; i < basis->bs_nshells; i++)
+    for (int i = 0; i < basis->bs_nshells; i++)
     {
         ALIGNED_FREE (basis->bs_cc[i]);
         ALIGNED_FREE (basis->bs_exp[i]);
@@ -161,6 +160,14 @@ CIntStatus_t CInt_destroyBasisSet (BasisSet_t basis)
     free (basis->bs_exp);
     free (basis->bs_norm);
 
+    if (basis->guess != NULL)
+    {
+        for (int i = 0; i < basis->bs_natoms; i++)
+        {
+            free (basis->guess[i]);
+        }
+        free (basis->guess);
+    }    
     free (basis->eid);
     free (basis->xn);
     free (basis->yn);
@@ -241,6 +248,13 @@ CIntStatus_t parse_molecule (BasisSet_t basis)
         eid = basis->eid[i];    
         atom_start = basis->bs_atom_start[basis->bs_eptr[eid - 1]];
         atom_end = basis->bs_atom_start[basis->bs_eptr[eid - 1] + 1];
+        if (basis->bs_eptr[eid - 1] == -1)
+        {
+        #ifndef __INTEL_OFFLOAD
+            CINT_PRINTF (1, "atom %d is not supported\n", i);
+            return CINT_STATUS_INVALID_VALUE;
+        #endif    
+        }
         basis->s_start_id[i] = nshells;
         for (uint32_t j = atom_start; j < atom_end; j++) {
             basis->f_start_id[nshells + j - atom_start] = nfunctions;
@@ -762,6 +776,7 @@ CIntStatus_t import_guess (char *file, BasisSet_t basis)
                     goto end;
                 }
                 sscanf (line, "%le", &(basis->guess[i][j]));
+                basis->guess[i][j] /= 2.0;
             }
             // test symmetry
             for (int j = 0; j < nfunctions; j++)
