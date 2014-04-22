@@ -35,6 +35,18 @@
     #elif ERD_RECORD_K15_DPANY_FLOPS
         #define PERF_ATTR_CONFIG 0xF003
         #define PERF_COUNTER_NAME "DP GFLOPs"
+    #elif ERD_RECORD_C2D_PACKEDDP_UOPS
+        #define PERF_ATTR_CONFIG 0x04CA
+        #define PERF_COUNTER_NAME "Packed DP GuOPs"
+    #elif ERD_RECORD_C2D_SCALARDP_UOPS
+        #define PERF_ATTR_CONFIG 0x08CA
+        #define PERF_COUNTER_NAME "Scalar DP GuOPs"
+    #elif ERD_RECORD_WSM_PACKEDDP_UOPS
+        #define PERF_ATTR_CONFIG 0x04C7
+        #define PERF_COUNTER_NAME "Packed DP GuOPs"
+    #elif ERD_RECORD_WSM_SCALARDP_UOPS
+        #define PERF_ATTR_CONFIG 0x08C7
+        #define PERF_COUNTER_NAME "Scalar DP GuOPs"
     #else
         #error "Implement me"
     #endif
