@@ -9,7 +9,10 @@
 #endif
 #include <math.h>
 #include <sys/time.h>
+#include <config.h>
+#include <inttypes.h>
 
+#include <flops.h>
 #include <screening.h>
 #include <erd_profile.h>
 
@@ -101,7 +104,9 @@ int main (int argc, char **argv)
         #else
         const int tid = 0;
         #endif
-        
+
+        BEGIN_RECORD_FLOPS
+
         #pragma omp for schedule(dynamic)
         for (uint32_t shellIndexMP = 0; shellIndexMP < shellCount * shellCount; shellIndexMP++) {
             const uint32_t shellIndexM = shellIndexMP / shellCount;
@@ -146,6 +151,8 @@ int main (int argc, char **argv)
                 }
             }
         }
+        
+        END_RECORD_FLOPS
     }
     const uint64_t end_clock = __rdtsc();
 
@@ -165,6 +172,8 @@ int main (int argc, char **argv)
 
     // use 1 if thread timing is not required
     erd_print_profile(1);
+
+    REPORT_FLOPS
 
     CInt_destroyERD(erd);
     free(totalcalls);
