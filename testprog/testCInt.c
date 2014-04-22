@@ -5,7 +5,7 @@
 #include <stdint.h>
 #include <math.h>
 #include <time.h>
-#include <malloc.h>
+//#include <malloc.h>
 
 #include <screening.h>
 
@@ -116,8 +116,8 @@ int main(int argc, char **argv) {
             const uint32_t shellIndexQStart = shellptr[shellIndexP];
             const uint32_t shellIndexQEnd = shellptr[shellIndexP+1];
 
-            uint32_t* shellIndicesN = memalign(64, sizeof(double) * (shellIndexNEnd - shellIndexNStart) * (shellIndexQEnd - shellIndexQStart));
-            uint32_t* shellIndicesQ = memalign(64, sizeof(double) * (shellIndexNEnd - shellIndexNStart) * (shellIndexQEnd - shellIndexQStart));
+            uint32_t* shellIndicesN = malloc(sizeof(double) * (shellIndexNEnd - shellIndexNStart) * (shellIndexQEnd - shellIndexQStart));
+            uint32_t* shellIndicesQ = malloc(sizeof(double) * (shellIndexNEnd - shellIndexNStart) * (shellIndexQEnd - shellIndexQStart));
             uint32_t shellIndicesCount = 0;
 
             /* Prepare indices */

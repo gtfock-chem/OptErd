@@ -1,7 +1,7 @@
 include ../make.in
 
 SRC = $(wildcard *.c)
-CFLAGS = -O3 -Wall -w2 -openmp
+CFLAGS = -O3 -Wall -fopenmp
 CFLAGS += -Wunknown-pragmas -Wunused-variable
 CFLAGS += ${OPTFLAGS}
 CFLAGS += -D__ALIGNLEN__=${alignlen}
@@ -21,7 +21,7 @@ all: ${LIBCINT}
 
 ${LIBCINT}: ${OBJS}
 	${AR} $@ $^
-	cp -r *.a ../lib/
+	cp -r *.a ${prefix}/lib/
 	sh genheader.sh
 
 %.o : %.c Makefile

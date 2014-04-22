@@ -13,7 +13,6 @@ OBJS := $(addsuffix .o, $(basename $(SRC)))
 endif
 
 FFLAGS = -O3
-FFLAGS += -reentrancy threaded -recursive
 FFLAGS += ${OPTFLAGS}
 
 CFLAGS = -O3

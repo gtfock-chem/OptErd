@@ -9,8 +9,8 @@
                              //  0 is no debug print info at all,
                              //  10 is full info
 
-#define ALIGNED_MALLOC(size)  _mm_malloc(size, __ALIGNLEN__)
-#define ALIGNED_FREE(addr)    _mm_free(addr)
+#define ALIGNED_MALLOC(size)  malloc(size)
+#define ALIGNED_FREE(addr)    free(addr)
 
 
 #if ( _DEBUG_LEVEL_ == -1 )

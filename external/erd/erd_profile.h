@@ -41,7 +41,7 @@ typedef enum
 } ErdTicks_t;
 
 
-extern __declspec(align(256)) uint64_t erd_ticks[MAXTHREADS][erd__num_ticks + 8];
+extern uint64_t erd_ticks[MAXTHREADS][erd__num_ticks + 8];
 
 
 void erd_reset_profile (void);

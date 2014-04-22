@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <malloc.h>
+//#include <malloc.h>
 #include <math.h>
 #include <assert.h>
 #include <sys/time.h>
@@ -203,5 +203,12 @@ void CInt_offload_getMaxMemory(ERD_t erd, double *mem_mic, double *mem_cpu)
     }
 }
 
+#else
+
+/* this is here to ensure the object has symbols to quite ar/ld */
+CIntStatus_t CInt_offload_createBasisSet (BasisSet_t * _basis)
+{
+    return CINT_STATUS_SUCCESS;
+}
 
 #endif /* #ifdef __INTEL_OFFLOAD */

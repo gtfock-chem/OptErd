@@ -10,7 +10,7 @@
 #include "erd_profile.h"
 
 
-__declspec(align(256)) uint64_t erd_ticks[MAXTHREADS][erd__num_ticks + 8];
+uint64_t erd_ticks[MAXTHREADS][erd__num_ticks + 8];
 
 static char ticks_name[erd__num_ticks][128] = 
 {

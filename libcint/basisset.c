@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
-#include <malloc.h>
+//#include <malloc.h>
 #include <math.h>
 #include <assert.h>
 #include <sys/time.h>
@@ -213,7 +213,7 @@ CIntStatus_t parse_molecule (BasisSet_t basis)
     basis->s_start_id = (uint32_t *)malloc (sizeof(uint32_t) * (natoms + 1));
     basis->f_start_id = (uint32_t *)malloc (sizeof(uint32_t) * nshells);
     basis->f_end_id = (uint32_t *)malloc (sizeof(uint32_t) * nshells);
-    basis->xyz0 = (double *)memalign(32, sizeof(double) * nshells * 4);
+    basis->xyz0 = (double *)malloc(sizeof(double) * nshells * 4);
     basis->nexp = (uint32_t *)malloc (sizeof(uint32_t) * nshells);
     basis->cc = (double **)malloc (sizeof(double *) * nshells);
     basis->exp = (double **)malloc (sizeof(double *) * nshells);
