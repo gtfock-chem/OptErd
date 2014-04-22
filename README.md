@@ -19,6 +19,7 @@ To generate Ninja build files execute `./configure.py <uarch...>` where `<uarch.
 * `snb` to configure build for Intel Sandy Bridge
 * `ivb` to configure build for Intel Ivy Bridge (use for CPU tuning for Endeavour, Stampede, Tianhe-2)
 * `hsw` to configure build for Intel Haswell
+* `pld` to configure build for AMD Piledriver
 * `mic` to configure build for Intel MIC (native execution, **not** offload; use for MIC tuning)
 * `nhm+mic` to configure build to Intel Nehalem/Westmere with code offload to MIC
 * `snb+mic` to configure build to Intel Sandy Bridge with code offload to MIC

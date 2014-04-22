@@ -9,7 +9,7 @@ import glob
 
 root_dir = os.path.dirname(__file__)
 
-supported_archs = ['nhm', 'snb', 'ivb', 'hsw', 'mic', 'nhm+mic', 'snb+mic', 'ivb+mic', 'hsw+mic']
+supported_archs = ['nhm', 'snb', 'ivb', 'hsw', 'mic', 'pld', 'nhm+mic', 'snb+mic', 'ivb+mic', 'hsw+mic']
 for arg in sys.argv[1:]:
 	if arg not in supported_archs:
 		print('Unsupported arch: "%s"' % arg)
@@ -93,6 +93,7 @@ with open('build.ninja', 'w') as makefile:
 	print('FC_IVB = ifort -m64 -xCORE-AVX-I', file = makefile)
 	print('FC_HSW = ifort -m64 -xCORE-AVX2', file = makefile)
 	print('FC_MIC = ifort -mmic', file = makefile)
+	print('FC_PLD = ifort -m64 -mavx -fma', file = makefile)
 	print('FC_NHM_OFFLOAD = $FC_NHM', file = makefile)
 	print('FC_SNB_OFFLOAD = $FC_SNB', file = makefile)
 	print('FC_IVB_OFFLOAD = $FC_IVB', file = makefile)
@@ -105,6 +106,7 @@ with open('build.ninja', 'w') as makefile:
 	print('CC_IVB = icc -m64 -xCORE-AVX-I ' + native_cflags, file = makefile)
 	print('CC_HSW = icc -m64 -xCORE-AVX2 ' + native_cflags, file = makefile)
 	print('CC_MIC = icc -mmic -no-opt-prefetch ' + native_cflags, file = makefile)
+	print('CC_PLD = icc -m64 -mavx -fma ' + native_cflags, file = makefile)
 	print('CC_NHM_OFFLOAD = icc -m64 -xSSE4.2 ' + offload_cflags, file = makefile)
 	print('CC_SNB_OFFLOAD = icc -m64 -xAVX ' + offload_cflags, file = makefile)
 	print('CC_IVB_OFFLOAD = icc -m64 -xCORE-AVX-I ' + offload_cflags, file = makefile)
@@ -120,6 +122,7 @@ with open('build.ninja', 'w') as makefile:
 		'ivb': 'IVB',
 		'hsw': 'HSW',
 		'mic': 'MIC',
+		'pld': 'PLD',
 		'nhm+mic': 'NHM_OFFLOAD',
 		'snb+mic': 'SNB_OFFLOAD',
 		'ivb+mic': 'IVB_OFFLOAD',
