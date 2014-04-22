@@ -9,7 +9,7 @@ import glob
 
 root_dir = os.path.dirname(__file__)
 
-supported_archs = ['nhm', 'snb', 'ivb', 'hsw', 'mic', 'pld', 'nhm+mic', 'snb+mic', 'ivb+mic', 'hsw+mic']
+supported_archs = ['pnr', 'nhm', 'snb', 'ivb', 'hsw', 'mic', 'pld', 'nhm+mic', 'snb+mic', 'ivb+mic', 'hsw+mic']
 for arg in sys.argv[1:]:
 	if arg not in supported_archs:
 		print('Unsupported arch: "%s"' % arg)
@@ -88,6 +88,7 @@ cint_sources = ["basisset.c", "erd_integral.c", "oed_integral.c"]
 tab = '  '
 
 with open('build.ninja', 'w') as makefile:
+	print('FC_PNR = ifort -m64 -xSSE4.1', file = makefile)
 	print('FC_NHM = ifort -m64 -xSSE4.2', file = makefile)
 	print('FC_SNB = ifort -m64 -xAVX ', file = makefile)
 	print('FC_IVB = ifort -m64 -xCORE-AVX-I', file = makefile)
@@ -101,6 +102,7 @@ with open('build.ninja', 'w') as makefile:
 	print('FFLAGS = -O3 -g -reentrancy threaded -recursive', file = makefile)
 	native_cflags = '-D__ERD_PROFILE__ -offload=none -diag-disable 161,2423'
 	offload_cflags = '-offload-option,mic,compiler,"-z defs -no-opt-prefetch"'
+	print('CC_PNR = icc -m64 -xSSE4.1 ' + native_cflags, file = makefile)
 	print('CC_NHM = icc -m64 -xSSE4.2 ' + native_cflags, file = makefile)
 	print('CC_SNB = icc -m64 -xAVX ' + native_cflags, file = makefile)
 	print('CC_IVB = icc -m64 -xCORE-AVX-I ' + native_cflags, file = makefile)
@@ -117,6 +119,7 @@ with open('build.ninja', 'w') as makefile:
 	print('AR_OFFLOAD = xiar -qoffload-build', file = makefile)
 
 	suffix = {
+		'pnr': 'PNR',
 		'nhm': 'NHM',
 		'snb': 'SNB',
 		'ivb': 'IVB',

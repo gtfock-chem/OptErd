@@ -15,6 +15,7 @@ Configuration
 
 To generate Ninja build files execute `./configure.py <uarch...>` where `<uarch...>` specify the target microarchitecture:
 
+* `pnr` to configure build for Intel Penryn-generation processors
 * `nhm` to configure build for Intel Nehalem/Westmere (recommended for Batman)
 * `snb` to configure build for Intel Sandy Bridge
 * `ivb` to configure build for Intel Ivy Bridge (use for CPU tuning for Endeavour, Stampede, Tianhe-2)
