@@ -209,11 +209,11 @@ ERD_OFFLOAD void erd__2d_coefficients(uint32_t mij, uint32_t mkl, uint32_t ngqp,
 
         __mmask8 ij_mask = 0xff;
         __mmask8 kl_mask = 0xff;
-        __m512d pij512;
-        __m512d pxij512, pyij512, pzij512;
-        __m512d qxkl512, qykl512, qzkl512;
-        __m512d twop512, twoq512;
-        __m512d pqpinv512;
+        __m512d pij512 = _mm512_undefined_pd();
+        __m512d pxij512 = _mm512_undefined_pd(), pyij512 = _mm512_undefined_pd(), pzij512 = _mm512_undefined_pd();
+        __m512d qxkl512 = _mm512_undefined_pd(), qykl512 = _mm512_undefined_pd(), qzkl512 = _mm512_undefined_pd();
+        __m512d twop512 = _mm512_undefined_pd(), twoq512 = _mm512_undefined_pd();
+        __m512d pqpinv512 = _mm512_undefined_pd();
 
         for (uint32_t ij = 0; ij < mij; ++ij) {
             pij512  = _mm512_mask_extload_pd(pij512 , ij_mask, &p[ij] , _MM_UPCONV_PD_NONE, _MM_BROADCAST_1X8, _MM_HINT_NONE);
