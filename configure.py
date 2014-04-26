@@ -83,7 +83,7 @@ oed_sources = [
 	"oed__xyz_set_derv_sequence.f", "oed__xyz_to_ry_abc.f", "oed__xyz_to_ry_ab.f", "oed__xyz_to_ry_matrix.f"
 ]
 
-cint_sources = ["basisset.c", "erd_integral.c", "oed_integral.c"]
+cint_sources = ["basisset.c", "erd_integral.c", "oed_integral.c", "cint_offload.c"]
 
 tab = '  '
 
@@ -221,6 +221,9 @@ with open('build.ninja', 'w') as makefile:
 			cint_build_directory = os.path.join(cint_source_directory, arch)
 			cint_objects = list()
 			for source_file in cint_sources:
+				if source_file == "cint_offload.c" and version != "opt":
+					continue
+
 				object_file = os.path.join(cint_build_directory, source_file + '.o')
 				dep_file = os.path.join(cint_build_directory, source_file + '.d')
 				source_file = os.path.join(cint_source_directory, source_file)
