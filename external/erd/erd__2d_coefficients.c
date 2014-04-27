@@ -233,8 +233,8 @@ ERD_OFFLOAD void erd__2d_coefficients(uint32_t mij, uint32_t mkl, uint32_t ngqp,
 
                 for (uint32_t ng = 0; ng < ngqp; ++ng) {
                     n1++;
-                    ij_mask = ij_mask << 1;
-                    kl_mask = kl_mask << 1;
+                    ij_mask = (ij_mask << 1) & 0xFF;
+                    kl_mask = (kl_mask << 1) & 0xFF;
                     if (n1 == SIMDW) {
                         ERD_2D_COEFF(n)
                             n += SIMDW;
