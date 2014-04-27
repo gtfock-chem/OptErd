@@ -4,6 +4,7 @@
 #include <immintrin.h>
 
 #include "erd.h"
+#include "erdutil.h"
 
 #ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(push, target(mic))
@@ -130,9 +131,9 @@ int erd__2d_pq_integrals (int shellp, int shellq,
   L2:
     for (n = 0; n < ngqexq; n+=SIMDW)
     {
-        double int2dx_0[SIMDW], int2dx_1[SIMDW], int2dx_2[SIMDW];
-        double int2dy_0[SIMDW], int2dy_1[SIMDW], int2dy_2[SIMDW];
-        double int2dz_0[SIMDW], int2dz_1[SIMDW], int2dz_2[SIMDW];
+        ERD_SIMD_ALIGN double int2dx_0[SIMDW], int2dx_1[SIMDW], int2dx_2[SIMDW];
+        ERD_SIMD_ALIGN double int2dy_0[SIMDW], int2dy_1[SIMDW], int2dy_2[SIMDW];
+        ERD_SIMD_ALIGN double int2dz_0[SIMDW], int2dz_1[SIMDW], int2dz_2[SIMDW];
         #pragma vector aligned
         #pragma simd
         for(n1 = 0; n1 < SIMDW; n1++)
@@ -180,9 +181,9 @@ int erd__2d_pq_integrals (int shellp, int shellq,
   L3:
     for (n = 0; n < ngqexq; n+=SIMDW)
     {
-        double int2dx_0[SIMDW], int2dx_1[SIMDW], int2dx_2[SIMDW];
-        double int2dy_0[SIMDW], int2dy_1[SIMDW], int2dy_2[SIMDW];
-        double int2dz_0[SIMDW], int2dz_1[SIMDW], int2dz_2[SIMDW];
+        ERD_SIMD_ALIGN double int2dx_0[SIMDW], int2dx_1[SIMDW], int2dx_2[SIMDW];
+        ERD_SIMD_ALIGN double int2dy_0[SIMDW], int2dy_1[SIMDW], int2dy_2[SIMDW];
+        ERD_SIMD_ALIGN double int2dz_0[SIMDW], int2dz_1[SIMDW], int2dz_2[SIMDW];
 
         #pragma vector aligned
         #pragma simd
@@ -232,9 +233,9 @@ int erd__2d_pq_integrals (int shellp, int shellq,
   L4:
     for (n = 0; n < ngqexq; n+=SIMDW)
     {
-        double int2dx_0[SIMDW], int2dx_i1[SIMDW], int2dx_k1[SIMDW], int2dx_2[SIMDW];
-        double int2dy_0[SIMDW], int2dy_i1[SIMDW], int2dy_k1[SIMDW], int2dy_2[SIMDW];
-        double int2dz_0[SIMDW], int2dz_i1[SIMDW], int2dz_k1[SIMDW], int2dz_2[SIMDW];
+        ERD_SIMD_ALIGN double int2dx_0[SIMDW], int2dx_i1[SIMDW], int2dx_k1[SIMDW], int2dx_2[SIMDW];
+        ERD_SIMD_ALIGN double int2dy_0[SIMDW], int2dy_i1[SIMDW], int2dy_k1[SIMDW], int2dy_2[SIMDW];
+        ERD_SIMD_ALIGN double int2dz_0[SIMDW], int2dz_i1[SIMDW], int2dz_k1[SIMDW], int2dz_2[SIMDW];
 
         #pragma vector aligned
         #pragma simd
@@ -323,9 +324,9 @@ int erd__2d_pq_integrals (int shellp, int shellq,
     {
         for (n = 0; n < ngqexq; n+=SIMDW)
         {
-            double int2dx_00[SIMDW], int2dx_10[SIMDW], int2dx_20[SIMDW], int2dx_11[SIMDW];
-            double int2dy_00[SIMDW], int2dy_10[SIMDW], int2dy_20[SIMDW], int2dy_11[SIMDW];
-            double int2dz_00[SIMDW], int2dz_10[SIMDW], int2dz_20[SIMDW], int2dz_11[SIMDW];
+            ERD_SIMD_ALIGN double int2dx_00[SIMDW], int2dx_10[SIMDW], int2dx_20[SIMDW], int2dx_11[SIMDW];
+            ERD_SIMD_ALIGN double int2dy_00[SIMDW], int2dy_10[SIMDW], int2dy_20[SIMDW], int2dy_11[SIMDW];
+            ERD_SIMD_ALIGN double int2dz_00[SIMDW], int2dz_10[SIMDW], int2dz_20[SIMDW], int2dz_11[SIMDW];
 
             for (k = 1; k <= shellq; ++k)
             {
@@ -399,9 +400,9 @@ int erd__2d_pq_integrals (int shellp, int shellq,
     {
         for (n = 0; n < ngqexq; n+=SIMDW)
         {
-            double int2dx_00[SIMDW], int2dx_01[SIMDW], int2dx_02[SIMDW], int2dx_11[SIMDW];
-            double int2dy_00[SIMDW], int2dy_01[SIMDW], int2dy_02[SIMDW], int2dy_11[SIMDW];
-            double int2dz_00[SIMDW], int2dz_01[SIMDW], int2dz_02[SIMDW], int2dz_11[SIMDW];
+            ERD_SIMD_ALIGN double int2dx_00[SIMDW], int2dx_01[SIMDW], int2dx_02[SIMDW], int2dx_11[SIMDW];
+            ERD_SIMD_ALIGN double int2dy_00[SIMDW], int2dy_01[SIMDW], int2dy_02[SIMDW], int2dy_11[SIMDW];
+            ERD_SIMD_ALIGN double int2dz_00[SIMDW], int2dz_01[SIMDW], int2dz_02[SIMDW], int2dz_11[SIMDW];
 
             for (i = 1; i <= shellp; ++i)
             {
