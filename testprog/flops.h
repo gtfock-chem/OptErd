@@ -41,6 +41,12 @@
     #elif ERD_RECORD_C2D_SCALARDP_UOPS
         #define PERF_ATTR_CONFIG 0x08CA
         #define PERF_COUNTER_NAME "Scalar DP GuOPs"
+    #elif ERD_RECORD_WSM_ISSUED_PACKEDFP_UOPS
+        #define PERF_ATTR_CONFIG 0x1010
+        #define PERF_COUNTER_NAME "Issued Packed FP GuOPs"
+    #elif ERD_RECORD_WSM_ISSUED_SCALARFP_UOPS
+        #define PERF_ATTR_CONFIG 0x2010
+        #define PERF_COUNTER_NAME "Issued Scalar FP GuOPs"
     #elif ERD_RECORD_WSM_PACKEDDP_UOPS
         #define PERF_ATTR_CONFIG 0x04C7
         #define PERF_COUNTER_NAME "Packed DP GuOPs"
