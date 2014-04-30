@@ -14,7 +14,7 @@
 #define MAX(a,b)    ((a) < (b) ? (b) : (a))
 #define MIN(a,b)    ((a) > (b) ? (b) : (a))
 #define PREFACT     9.027033336764101
-#if defined (__MIC__)
+#if defined (__MIC__) || defined (__AVX512__)
 #define SIMDW      8
 #elif defined (__AVX__)
 #define SIMDW      4
