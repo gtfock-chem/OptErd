@@ -13,6 +13,7 @@
 #include <inttypes.h>
 
 #include <flops.h>
+#include <ratios.h>
 #include <screening.h>
 #include <erd_profile.h>
 
@@ -106,6 +107,7 @@ int main (int argc, char **argv)
         #endif
 
         BEGIN_RECORD_FLOPS
+        BEGIN_RECORD_RATIO
 
         #pragma omp for schedule(dynamic)
         for (uint32_t shellIndexMP = 0; shellIndexMP < shellCount * shellCount; shellIndexMP++) {
@@ -153,6 +155,7 @@ int main (int argc, char **argv)
         }
         
         END_RECORD_FLOPS
+        END_RECORD_RATIO
     }
     const uint64_t end_clock = __rdtsc();
 
@@ -174,6 +177,7 @@ int main (int argc, char **argv)
     erd_print_profile(1);
 
     REPORT_FLOPS
+    REPORT_RATIO
 
     CInt_destroyERD(erd);
     free(totalcalls);
