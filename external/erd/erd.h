@@ -5,7 +5,6 @@
 #include <stdbool.h>
 #include <math.h>
 #include <omp.h>
-#include <yepPredefines.h>
 
 #ifdef __ERD_PROFILE__
 #include "erd_profile.h"

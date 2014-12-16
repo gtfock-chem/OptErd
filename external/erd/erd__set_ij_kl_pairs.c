@@ -12,11 +12,11 @@
 #include <immintrin.h>
 #endif
 
-ERD_OFFLOAD static YEP_INLINE double pow3o4(double x) {
+ERD_OFFLOAD static inline double pow3o4(double x) {
     return __builtin_sqrt(x * __builtin_sqrt(x));
 }
 
-ERD_OFFLOAD static YEP_INLINE double square(double x) {
+ERD_OFFLOAD static inline double square(double x) {
     return x * x;
 }
 
@@ -31,7 +31,7 @@ ERD_OFFLOAD static const double c5 = 0x1.DFF4D0D064A26p-10;
 ERD_OFFLOAD static const double x0 = 0x1.628C5E7D820BFp-5;
 
 #ifdef __AVX__
-    YEP_ALIGN(16) static const uint8_t xmm_pack_table[16*16] = {
+    __attribute__((aligned(16))) static const uint8_t xmm_pack_table[16*16] = {
         0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80,
            0,    1,    2,    3, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80,
            4,    5,    6,    7, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80, 0x80,
@@ -83,7 +83,7 @@ ERD_OFFLOAD static const double x0 = 0x1.628C5E7D820BFp-5;
     ERD_OFFLOAD static const __m512i zmm_init_j = { 0, 1, 2, 3, 4, 5, 6, 7, 0, 0, 0, 0, 0, 0, 0, 0 };
 #endif
 
-ERD_OFFLOAD YEP_NOINLINE uint32_t set_pairs(
+ERD_OFFLOAD __attribute__((noinline)) uint32_t set_pairs(
     uint32_t npgtoa, uint32_t npgtob, double rnabsq,
     const double alphaa[restrict static npgtoa], const double alphab[restrict static npgtoa],
     uint32_t prima[restrict static npgtoa*npgtob], uint32_t primb[restrict static npgtoa*npgtob],

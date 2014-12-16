@@ -113,7 +113,7 @@ with open('build.ninja', 'w') as makefile:
 	print('CC_SNB_OFFLOAD = icc -m64 -xAVX -DERD_SNB ' + offload_cflags, file = makefile)
 	print('CC_IVB_OFFLOAD = icc -m64 -xCORE-AVX-I -DERD_IVB ' + offload_cflags, file = makefile)
 	print('CC_HSW_OFFLOAD = icc -m64 -xCORE-AVX2 -DERD_HSW ' + offload_cflags, file = makefile)
-	print('CFLAGS = -O3 -g -std=gnu99 -D__ALIGNLEN__=64 -Iexternal/Yeppp/include -Wall -Wextra -Werror -Wno-unused-variable -openmp', file = makefile)
+	print('CFLAGS = -O3 -g -std=gnu99 -D__ALIGNLEN__=64 -Wall -Wextra -Werror -Wno-unused-variable -openmp', file = makefile)
 	print('LDFLAGS = -static-intel -lifcore -openmp -lrt', file = makefile)
 	print('AR = xiar', file = makefile)
 	print('AR_OFFLOAD = xiar -qoffload-build', file = makefile)
