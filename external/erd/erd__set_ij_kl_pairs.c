@@ -121,7 +121,7 @@ ERD_OFFLOAD __attribute__((noinline)) uint32_t set_pairs(
             /* approximates square(erf(sqrt(x))) on [0, 5] */
             const double f0 = c0 + x * (c1 + x * (c2 + x * (c3 + x * (c4 + x * c5))));
             const double f = f0 < 1.0 ? f0 : 1.0;
-            if (ab*square(square(rhoab*csmaxcd) * (ab*f)) >= square((x*pqp)*square(p))) {
+            if (1){//ab*square(square(rhoab*csmaxcd) * (ab*f)) >= square((x*pqp)*square(p))) {
                 rho[nij] = rhoab;
                 prima[nij] = i;
                 primb[nij] = j;
