@@ -169,7 +169,10 @@ with open('build.ninja', 'w') as makefile:
 		print(tab + 'WORKDIR = %s' % cint_source_directory, file = makefile)
 
 		for arch in sys.argv[1:]:
-			erd_source_directory = os.path.join({"ref": "legacy", "opt": "external"}[version], "erd")
+			if version == "opt":
+				erd_source_directory = "erd"
+			else:
+				erd_source_directory = os.path.join("legacy", "erd")
 			erd_build_directory = os.path.join(erd_source_directory, arch)
 			erd_objects = list()
 			erd_sources = {"ref": erd_ref_sources, "opt": erd_opt_sources}[version]
@@ -196,7 +199,10 @@ with open('build.ninja', 'w') as makefile:
 			print('build lib/' + arch + '/liberd-' + version + '.a : CREATE_STATIC_LIBRARY ' + ' '.join(erd_objects), file = makefile)
 			print(tab + 'ARCH = %s' % arch.upper(), file = makefile)
 
-			oed_source_directory = os.path.join({"ref": "legacy", "opt": "external"}[version], "oed")
+			if version == "opt":
+				oed_source_directory = "oed"
+			else:
+				oed_source_directory = os.path.join("legacy", "oed")
 			oed_build_directory = os.path.join(oed_source_directory, arch)
 			oed_objects = list()
 			for source_file in oed_sources:
@@ -258,7 +264,7 @@ with open('build.ninja', 'w') as makefile:
 			print(tab + 'DEP_FILE = %s.d' % object_file, file = makefile)
 			print(tab + 'SOURCE = %s/testCInt.c' % test_directory, file = makefile)
 			print(tab + 'CC = $CC_%s' % suffix[arch], file = makefile)
-			print(tab + 'CFLAGS = $CFLAGS -Iexternal/erd -I%s' % test_directory +
+			print(tab + 'CFLAGS = $CFLAGS -Ierd -I%s' % test_directory +
 				' -I' + {'opt': 'include', 'ref': os.path.join('legacy', 'include')}[version], file = makefile)
 			print(tab + 'ARCH = %s' % arch.upper(), file = makefile)
 
@@ -273,7 +279,7 @@ with open('build.ninja', 'w') as makefile:
 			print(tab + 'DEP_FILE = %s.d' % object_file, file = makefile)
 			print(tab + 'SOURCE = %s/testCInt2.c' % test_directory, file = makefile)
 			print(tab + 'CC = $CC_%s' % suffix[arch], file = makefile)
-			print(tab + 'CFLAGS = $CFLAGS -Iexternal/erd -I%s' % test_directory +
+			print(tab + 'CFLAGS = $CFLAGS -Ierd -I%s' % test_directory +
 				' -I' + {'opt': 'include', 'ref': os.path.join('legacy', 'include')}[version], file = makefile)
 			print(tab + 'ARCH = %s' % arch.upper(), file = makefile)
 
