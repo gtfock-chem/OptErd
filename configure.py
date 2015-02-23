@@ -2,16 +2,35 @@
 
 from __future__ import print_function
 import os
-import subprocess
-import fnmatch
 import sys
 import argparse
-import operator
 import ninja
 
 
+def get_program_info(program, arguments, use_stdout=True):
+    from subprocess import PIPE, Popen
+
+    if not isinstance(arguments, list):
+        arguments = [str(arguments)]
+    process = Popen([program] + arguments, stdout=PIPE, stderr=PIPE, bufsize=1)
+    outdata, errdata = process.communicate()
+    if use_stdout:
+        return outdata
+    else:
+        return errdata
+
+
+def detect_intel_compiler(program):
+    banner = get_program_info(program, "-v", use_stdout=False)
+    if banner:
+        version = banner.splitlines()[0]
+        import re
+        return bool(re.match("(icc|ifort) version (\d+(:?\.\d+)+)", version))
+    return False
+
+
 class Configuration:
-    _fflags_map = {
+    _fflags_intel_map = {
         "penryn": ["-m64", "-xSSE4.1"],
         "nehalem": ["-m64", "-xSSE4.2"],
         "sandybridge": ["-m64", "-xAVX"],
@@ -20,7 +39,15 @@ class Configuration:
         "mic": ["-mmic"],
         "piledriver": ["-m64", "-mavx", "-fma"]
     }
-    _cflags_map = {
+    _fflags_gnu_map = {
+        "penryn": ["-m64", "-march=core2", "-msse4.1"],
+        "nehalem": ["-m64", "-march=corei7"],
+        "sandybridge": ["-m64", "-march=corei7-avx"],
+        "ivybridge": ["-m64", "-march=core-avx-i"],
+        "haswell": ["-m64", "-march=core-avx2"],
+        "piledriver": ["-m64", "-march=bdver2"]
+    }
+    _cflags_intel_map = {
         "penryn": ["-m64", "-xSSE4.1", "-DERD_PNR"],
         "nehalem": ["-m64", "-xSSE4.2", "-DERD_NHM"],
         "sandybridge": ["-m64", "-xAVX", "-DERD_SNB"],
@@ -29,11 +56,19 @@ class Configuration:
         "mic": ["-mmic", "-no-opt-prefetch", "-DEFD_MIC"],
         "piledriver": ["-m64", "-mavx", "-fma", "-DERD_PLD"]
     }
+    _cflags_gnu_map = {
+        "penryn": ["-m64", "-march=core2", "-msse4.1", "-DERD_PNR"],
+        "nehalem": ["-m64", "-march=corei7", "-DERD_NHM"],
+        "sandybridge": ["-m64", "-march=corei7-avx", "-DERD_SNB"],
+        "ivybridge": ["-m64", "-march=core-avx-i", "-DERD_IVB"],
+        "haswell": ["-m64", "-march=core-avx2", "-DERD_HSW"],
+        "piledriver": ["-m64", "-march=bdver2", "-DERD_PLD"]
+    }
     _extra_fflags = ["-O3", "-g", "-reentrancy", "threaded", "-recursive"]
     _extra_cflags = ["-O3", "-g", "-std=gnu99", "-D__ALIGNLEN__=64", "-Wall", "-Wextra", "-Werror", "-Wno-unused-variable", "-openmp"]
-    _native_cflags = ["-D__ERD_PROFILE__", "-offload=none", "-diag-disable", "161,2423"]
+    _native_cflags = ["-D__ERD_PROFILE__"]
     _offload_cflags = ["-offload-option,mic,compiler,\"-z defs -no-opt-prefetch\""]
-    _extra_ldflags = ["-static-intel", "-lifcore", "-lrt", "-openmp"]
+    _extra_ldflags = ["-static-intel", "-no-intel-extensions", "-lifcore", "-lrt", "-openmp"]
 
     def __init__(self, options, ninja_build_file=os.path.join(os.path.dirname(os.path.abspath(__file__)), "build.ninja")):
         self.output = open(ninja_build_file, "w")
@@ -43,28 +78,47 @@ class Configuration:
         self.artifact_dir = None
         self.object_ext = ".o"
 
-        # print('AR = xiar', file = makefile)
-        # print('AR_OFFLOAD = xiar -qoffload-build', file = makefile)
+        use_icc = detect_intel_compiler(options.cc)
+        use_ifort = detect_intel_compiler(options.fc)
 
-
-        cc = "icc"
-        cflags = Configuration._cflags_map[options.arch]
+        if use_icc:
+            cflags = Configuration._cflags_intel_map[options.arch]
+        else:
+            cflags = Configuration._cflags_gnu_map[options.arch]
         if options.offload:
             cflags += Configuration._offload_cflags
         else:
-            cflags += Configuration._native_cflags
+            cflags += ["-D__ERD_PROFILE__"]
+            if use_icc:
+                cflags += ["-offload=none", "-diag-disable", "161,2423"]
         cflags += Configuration._extra_cflags
-        fflags = Configuration._fflags_map[options.arch] + Configuration._extra_fflags
+        fflags = []
+        if use_ifort:
+            fflags = Configuration._fflags_intel_map[options.arch]
+        else:
+            fflags = Configuration._fflags_gnu_map[options.arch]
+        fflags += Configuration._extra_fflags
         ldflags = Configuration._extra_ldflags
 
+        cflags = " ".join(cflags)
+        if options.cflags:
+            cflags = cflags + " " + options.cflags
+        fflags = " ".join(fflags)
+        if options.fflags:
+            fflags = fflags + " " + options.fflags
+        ldflags = " ".join(ldflags)
+        if options.ldflags:
+            ldflags = ldflags + " " + options.ldflags
 
         # Variables
-        self.writer.variable("fc", "ifort")
-        self.writer.variable("fflags", " ".join(fflags))
-        self.writer.variable("cc", "icc")
-        self.writer.variable("cflags", " ".join(cflags))
-        self.writer.variable("ldflags", " ".join(ldflags))
-        self.writer.variable("ar", "xiar")
+        self.writer.variable("fc", options.fc)
+        self.writer.variable("fflags", fflags)
+        self.writer.variable("cc", options.cc)
+        self.writer.variable("cflags", cflags)
+        self.writer.variable("ldflags", ldflags)
+        self.writer.variable("ar", options.ar)
+        if options.offload:
+            self.writer.variable("arflags", "-qoffload-build")
 
         # Rules
         self.writer.rule("CC", "$cc $cflags $includes -MMD -MT $out -MF $out.d -o $out -c $in",
@@ -128,6 +182,12 @@ parser.add_argument("-arch", dest="arch", required=True,
     help="Target microarchitecture")
 parser.add_argument("-enable-offload", dest="offload", action="store_true",
     help="Enable MIC offload")
+parser.add_argument("--with-cc", dest="cc", default=os.getenv("CC", "icc"))
+parser.add_argument("--with-cflags", dest="cflags", default=os.getenv("CFLAGS"))
+parser.add_argument("--with-fc", dest="fc", default=os.getenv("FC", "ifort"))
+parser.add_argument("--with-fflags", dest="fflags", default=os.getenv("FFLAGS"))
+parser.add_argument("--with-ar", dest="ar", default=os.getenv("AR", "xiar"))
+parser.add_argument("--with-ldflags", dest="ldflags", default=os.getenv("LDFLAGS"))
 
 
 erd_sources = [
