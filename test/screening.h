@@ -1,5 +1,4 @@
 /*
- * Copyright (c) 2003-2010 University of Florida
  * Copyright (c) 2013-2015 Georgia Institute of Technology
  *
  * This program is free software; you can redistribute it and/or modify
@@ -17,25 +16,9 @@
  */
 
 #pragma once
+#include <stdint.h>
+#include <OptErd.h>
 
-#ifdef __INTEL_OFFLOAD
-#pragma offload_attribute(push, target(mic))
-#endif
+#define TOLSRC 1e-10
 
-/* (2i+1) / ((4i-1) * (4i+3)) for i = 1...100 */
-extern const double r2[100];
-
-/* ((4i-3) * (4i+1) * square(4i-1)) / (2i * (2i+1) * square(2i-1)) for i = 1...100 */
-extern const double sinv[100];
-
-extern const double csmall[16];
-
-/* (4i * (2i+1) - 1) / ((4i+3) * (4i-1)) for i = 0...99 */
-extern const double ajac[100];
-
-/* (4*square(i) * (4*square(i) - 4*i + 1)) / ((4i-3) * (4i+1) * square(4i-1)) for i = 1...99 */
-extern const double bjac[99];
-
-#ifdef __INTEL_OFFLOAD
-#pragma offload_attribute(pop)
-#endif
+void schwartz_screening (BasisSet_t basis, int **shellptr, int **shellid, int **shellrid, double **shellvalue, int *nnz);

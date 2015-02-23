@@ -1,5 +1,4 @@
 /*
- * Copyright (c) 2003-2010 University of Florida
  * Copyright (c) 2013-2015 Georgia Institute of Technology
  *
  * This program is free software; you can redistribute it and/or modify
@@ -16,26 +15,31 @@
  * in the file COPYING.
  */
 
-#pragma once
+#ifndef __CINT_BASISSET_H__
+#define __CINT_BASISSET_H__
+
+
+#include <cint_def.h>
+
+void _maxMomentum (BasisSet_t basis, int *max_momentum);
+
+void _maxPrimid (BasisSet_t basis, int *max_primid);
+
+void _maxnumExp (BasisSet_t basis, int *max_nexp);
+
+CIntStatus_t import_basis (char *file, BasisSet_t basis);
+
+CIntStatus_t import_molecule (char *file, BasisSet_t basis);
 
 #ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(push, target(mic))
 #endif
 
-/* (2i+1) / ((4i-1) * (4i+3)) for i = 1...100 */
-extern const double r2[100];
-
-/* ((4i-3) * (4i+1) * square(4i-1)) / (2i * (2i+1) * square(2i-1)) for i = 1...100 */
-extern const double sinv[100];
-
-extern const double csmall[16];
-
-/* (4i * (2i+1) - 1) / ((4i+3) * (4i-1)) for i = 0...99 */
-extern const double ajac[100];
-
-/* (4*square(i) * (4*square(i) - 4*i + 1)) / ((4i-3) * (4i+1) * square(4i-1)) for i = 1...99 */
-extern const double bjac[99];
+CIntStatus_t parse_molecule (BasisSet_t basis);
 
 #ifdef __INTEL_OFFLOAD
 #pragma offload_attribute(pop)
 #endif
+
+
+#endif /* __CINT_BASISSET_H__ */

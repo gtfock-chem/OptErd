@@ -2,20 +2,17 @@
 *.d
 
 # Binaries
-testprog/*/Test.Opt
-testprog/*/Test.Ref
-testprog/*/Bench.Opt
-testprog/*/Bench.Ref
-testfock/*/fock
-lib/*
-
-# Auto-generated includes
-include/CInt.h
-legacy/include/CInt.h
+test/unit-test
+test/perf-test
+lib/*.a
+build/
 
 # Logs
 *.log
 ivalues.ref
+
+# Generated files
+legacy/include/CInt.h
 
 # Ninja files
 .ninja_deps
